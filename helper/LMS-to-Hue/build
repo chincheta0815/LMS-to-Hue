@@ -1,0 +1,4 @@
+make -f Makefile.armv5te $1
+make -f Makefile.armv6hf $1
+make -f Makefile.x86 $1
+make -f Makefile.x86-64 $1
