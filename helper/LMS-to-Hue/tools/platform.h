@@ -96,6 +96,8 @@ typedef u_int64_t u64_t;
 typedef int16_t   s16_t;
 typedef int32_t   s32_t;
 typedef int64_t   s64_t;
+
+char *strnstr(const char *big, const char *little, size_t len);
 #endif
 
 #define last_error() errno
@@ -132,6 +134,8 @@ typedef __int64 s64_t;
 #define inline __inline
 
 int gettimeofday(struct timeval *tv, struct timezone *tz);
+int asprintf(char **strp, const char *fmt, ...);
+char *strnstr(const char *big, const char *little, size_t len);
 
 //#define poll(fds,numfds,timeout) WSAPoll(fds,numfds,timeout)
 

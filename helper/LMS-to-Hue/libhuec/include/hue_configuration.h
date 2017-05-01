@@ -23,8 +23,6 @@
 #define __HUE_CONFIGURATION_H
 
 
-#include <netinet/in.h>
-
 #include "hue_common.h"
 #include "hue_interface.h"
 

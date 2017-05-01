@@ -37,75 +37,56 @@ extern int hue_get_all_capabilities(hue_bridge_t *bridge) {
 
     json_t *root, *available, *lights, *data, *hue_error;
     json_error_t error;
+	hue_request_t request;
+	hue_response_t response;
 
-    hue_request_t *request;
-    request = malloc(sizeof(hue_request_t));
+	if (hue_connect(bridge)) {
+		return 1;
+	}
 
-    hue_response_t *response;
-    response = malloc(sizeof(hue_response_t));
+	request.method = _GET;
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_lock(&request->mutex);
-#endif
+	snprintf(request.uri, HB_STR_LEN,
+			 "/api/%s/capabilities",
+			 bridge->userName
+	);
 
-    request->method = GET;
-   
-    asprintf(&request->uri,
-             "/api/%s/capabilities",
-             bridge->userName
-    );
+	// send empty body for getting the configuration
+	request.body = "";
 
-    // send empty body for getting the configuration
-    request->body = "";
+	hue_send_request(bridge, &request);
+	hue_receive_response(bridge, &response);
 
-    hue_connect(bridge);
-    hue_send_request(bridge, request);
+	hue_disconnect(bridge);
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_unlock(&request->mutex);    
-#endif
-    free(request);
+	root = json_loads(response.body, 0, &error);
+	if (response.body) free(response.body);
 
-    hue_receive_response(bridge, response);
+	if (!root) {
+		printf("Error root.\n");
+		return 1;
+	}
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_lock(&response->mutex);
-#endif
+	if (json_is_array(root)) {
 
-    root = json_loads(response->body, 0, &error);
-    free(response->body);
+		data = json_array_get(root, 0);
+		hue_error = json_object_get(data, "error");
+		json_object_get(hue_error, "description");
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_unlock(&response->mutex);
-#endif
-    free(response);
-    
-    if (!root) {
-        printf("Error root.\n");
-        return 1;
-    }
+		json_decref(root);
+		return 1;
+	}
 
+	if (json_is_object(root)) {
+		lights = json_object_get(root, "lights");
+		available = json_object_get(lights, "available");
+		bridge->capabilities.lights = json_integer_value(available);
 
-    if (json_is_array(root)) {
+		printf("Available lights: %d\n", bridge->capabilities.lights);
 
-        data = json_array_get(root, 0);
-        hue_error = json_object_get(data, "error");
-        json_object_get(hue_error, "description");
-        
-        json_decref(root);
-        return 1;
-    }
-    
-    if (json_is_object(root)) {
-        lights = json_object_get(root, "lights");
-        available = json_object_get(lights, "available");
-        bridge->capabilities.lights = json_integer_value(available);
+	}
 
-        printf("Available lights: %d\n", bridge->capabilities.lights);
+	json_decref(root);
 
-    }
-
-    json_decref(root);
-
-    return 0;
+	return 0;
 }

@@ -20,9 +20,6 @@
 
 #define _GNU_SOURCE
 
-#include <stdbool.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,91 +58,97 @@ int hue_light_attributes_rename(hue_bridge_t *hue_bridge, hue_light_t *hue_light
  */
 int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, char *command_arg) {
     
-    hue_request_t *request;
-    request = malloc(sizeof(hue_request_t));
-    
-    hue_response_t *response;
-    response = malloc(sizeof(hue_response_t));
-    
-    json_t *json = NULL;
-    
-    asprintf(&request->uri,
-             "/api/%s/lights/%d/state",
-             bridge->userName, light->attribute.id
-    );
+	hue_request_t request;
+	hue_response_t response;
+	json_t *json = NULL;
 
-    request->method = PUT;
+	if (hue_connect(bridge)) {
+		return 1;
+	}
 
-    switch(command) {
-        case(SWITCH):
-            if( strcmp(command_arg, "ON") == 0 ){
-                json = json_pack("{sb}", "on", true);
-            }
-            else if( strcmp(command_arg, "OFF") == 0 ){
-                json = json_pack("{sb}", "on", false);
-            }
-            else{
-                return 1;
-            }
-            break;
-        
-        case(BRI):
-            light->state.bri = atoi(command_arg);
-            json = json_pack("{si}", "bri", light->state.bri);
-            break;
-            
-        case(HUE):
-            json = json_pack("{si}", "hue", atoi(command_arg));
-            break;
-            
-        case(SAT):
-            //json = json_pack("{si}", "sat", atoi(command_arg));
-            break;
-            
-        case(XY):
-            break;
-            
-        case(CT):
-            //json = json_pack("{si}", "ct", atoi(command_arg));
-            break;
-            
-        case(ALERT):
-            break;
-            
-        case(EFFECT):
-            break;
-            
-        case(TRANSITIONTIME):
-            light->state.transitiontime = atoi(command_arg);
-            json = json_pack("{si}", "transitiontime", light->state.transitiontime);
-            break;
-            
-        case(BRI_INC):
-            break;
-            
-        case(SAT_INC):
-            break;
-            
-        case(HUE_INC):
-            break;
-            
-        case(CT_INC):
-            break;
-            
-        case(XY_INC):
-            break;
+	snprintf(request.uri, HB_STR_LEN,
+			 "/api/%s/lights/%d/state",
+			 bridge->userName, light->attribute.id
+	);
 
-    }
+	request.method = _PUT;
 
-    request->body = json_dumps(json, JSON_ENCODE_ANY | JSON_INDENT(1));
+	switch(command) {
+		case(SWITCH):
+			if( strcmp(command_arg, "ON") == 0 ){
+				json = json_pack("{sb}", "on", true);
+			}
+			else if( strcmp(command_arg, "OFF") == 0 ){
+				json = json_pack("{sb}", "on", false);
+			}
+			else{
+				hue_disconnect(bridge);
+				return 1;
+			}
+			break;
 
-    hue_connect(bridge);
-    hue_send_request(bridge, request);
-    hue_receive_response(bridge, response);
+		case(BRI):
+			light->state.bri = atoi(command_arg);
+			json = json_pack("{si}", "bri", light->state.bri);
+			break;
 
-    return 0;
+		case(HUE):
+			json = json_pack("{si}", "hue", atoi(command_arg));
+			break;
+
+		case(SAT):
+			//json = json_pack("{si}", "sat", atoi(command_arg));
+			break;
+
+		case(XY):
+			break;
+
+		case(CT):
+			//json = json_pack("{si}", "ct", atoi(command_arg));
+			break;
+
+		case(ALERT):
+			break;
+
+		case(EFFECT):
+			break;
+
+		case(TRANSITIONTIME):
+			light->state.transitiontime = atoi(command_arg);
+			json = json_pack("{si}", "transitiontime", light->state.transitiontime);
+			break;
+
+		case(BRI_INC):
+			break;
+
+		case(SAT_INC):
+			break;
+
+		case(HUE_INC):
+			break;
+
+		case(CT_INC):
+			break;
+
+		case(XY_INC):
+			break;
+
+	}
+
+	request.body = json_dumps(json, JSON_ENCODE_ANY | JSON_INDENT(1));
+	json_decref(json);
+
+	hue_send_request(bridge, &request);
+	free(request.body);
+
+	hue_receive_response(bridge, &response);
+    if (response.body) free(response.body);
+
+	hue_disconnect(bridge);
+
+	return 0;
 }
 
 int hue_delete_light(hue_bridge_t *hue_bridge) {
-    return -1;
+	return -1;
 }

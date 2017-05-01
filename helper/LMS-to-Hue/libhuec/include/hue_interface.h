@@ -27,7 +27,7 @@
 #include "hue_configuration.h"
 
 
-enum { GET, DELETE, POST, PUT };
+enum { _GET, _DELETE, _POST, _PUT };
 
 
 char *hue_request_method2string(int method_value);

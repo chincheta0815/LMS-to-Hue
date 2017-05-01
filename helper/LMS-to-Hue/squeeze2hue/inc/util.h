@@ -35,8 +35,7 @@ typedef struct sQueue {
 	void *item;
 } tQueue;
 
-void 		ExtractIP(const char *URL, in_addr_t *IP);
-
+in_addr_t 	ExtractIP(const char *URL);
 void		*GetRequest(tQueue *Queue, pthread_mutex_t *Mutex, pthread_cond_t *Cond, u32_t timeout);
 void 		QueueInit(tQueue *queue);
 void 		QueueInsert(tQueue *queue, void *item);

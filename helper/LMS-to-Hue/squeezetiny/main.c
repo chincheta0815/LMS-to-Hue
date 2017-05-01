@@ -81,8 +81,12 @@ void sq_wipe_device(struct thread_ctx_s *ctx) {
 
 /*--------------------------------------------------------------------------*/
 void sq_delete_device(sq_dev_handle_t handle) {
-	struct thread_ctx_s *ctx = &thread_ctx[handle - 1];
-	sq_wipe_device(ctx);
+	struct thread_ctx_s *ctx;
+
+	if (handle) {
+		ctx = &thread_ctx[handle - 1];
+		sq_wipe_device(ctx);
+    }
 }
 
 /*---------------------------------------------------------------------------*/
