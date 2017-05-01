@@ -57,7 +57,7 @@ sub connect {
     
     $log->debug('Initiating hue bridge connect.');
     
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_send_ConnectRequest, $deviceIndex);
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceIndex);
     Slim::Utils::Timers::setTimer(undef, time() + 30, \&unconnect);
     
     $connectDisconnectStatus = 1;
@@ -71,6 +71,17 @@ sub disconnect {
 #    my @hueBridges = @{$prefs->get{'devices'}};
 #    $log->debug('Disconnecting device with index ' . $deviceIndex);
     
+    $connectDisconnectStatus = 0;
+}
+
+sub unconnect {
+    $log->debug('Stopping HueBridge connect.');
+    
+    Slim::Utils::Timers::killTimers( undef, \&_sendConnectRequest );
+    Slim::Utils::Timers::killTimers( undef, \&unconnect );
+    
+    $connectProgress = 0;
+    $discoverProgress = 0;
     $connectDisconnectStatus = 0;
 }
 
