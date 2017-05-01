@@ -26,7 +26,6 @@
 
 #include "hue_configuration.h"
 
-
 uint8_t *hue_stringMac2uint8_t(const char *stringMac) {
     int i;
     static uint8_t uint8tmac[6];
@@ -72,6 +71,7 @@ extern int hue_get_bridge_config(hue_bridge_t *bridge) {
 	hue_disconnect(bridge);
 
 	root = json_loads(response.body, 0, &error);
+	if (response.body) free(response.body);
 
 	if (!root) {
 		printf("Error root.\n");

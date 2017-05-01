@@ -100,7 +100,7 @@ int asprintf(char **strp, const char *fmt, ...)
 #endif
 
 
-#if WIN
+#if !SUNOS
 /*----------------------------------------------------------------------------*/
 char *strnstr(const char *big, const char *little, size_t len)
 {

@@ -20,14 +20,9 @@
 
 #define _GNU_SOURCE
 
-/*
-#include <stdbool.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-*/
 
 #include "jansson.h"
 
@@ -87,6 +82,7 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
 				json = json_pack("{sb}", "on", false);
 			}
 			else{
+				hue_disconnect(bridge);
 				return 1;
 			}
 			break;
@@ -140,11 +136,13 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
 	}
 
 	request.body = json_dumps(json, JSON_ENCODE_ANY | JSON_INDENT(1));
+	json_decref(json);
 
 	hue_send_request(bridge, &request);
-	hue_receive_response(bridge, &response);
-
 	free(request.body);
+
+	hue_receive_response(bridge, &response);
+    if (response.body) free(response.body);
 
 	hue_disconnect(bridge);
 

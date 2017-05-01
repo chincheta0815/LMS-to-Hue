@@ -18,6 +18,10 @@
  *
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #define _GNU_SOURCE
 
 #define HUE_MSG_CHUNK 1024
@@ -57,40 +61,15 @@ static void set_nosigpipe(sockfd s) {
 
 
 /*----------------------------------------------------------------------------*/
-static void set_nonblock(sockfd s) {
-#if WIN
-	u_long iMode = 1;
-	ioctlsocket(s, FIONBIO, &iMode);
-#else
-	int flags = fcntl(s, F_GETFL,0);
-	fcntl(s, F_SETFL, flags | O_NONBLOCK);
-#endif
-}
-
-
-/*----------------------------------------------------------------------------*/
-static void set_block(sockfd s) {
-#if WIN
-	u_long iMode = 0;
-	ioctlsocket(s, FIONBIO, &iMode);
-#else
-	int flags = fcntl(s, F_GETFL,0);
-	fcntl(s, F_SETFL, flags & (~O_NONBLOCK));
-#endif
-}
-
-
-/*----------------------------------------------------------------------------*/
 static int connect_timeout(sockfd sock, const struct sockaddr *addr, socklen_t addrlen, int timeout) {
 	fd_set w, e;
 	struct timeval tval;
 
 	if (connect(sock, addr, addrlen) < 0) {
-		int error = errno;
 #if !WIN
-		if (errno && errno != EINPROGRESS) {
+		if (errno != EINPROGRESS) {
 #else
-		if (errno && errno != WSAEWOULDBLOCK) {
+		if (errno != WSAEWOULDBLOCK) {
 #endif
 			return -1;
 		}
