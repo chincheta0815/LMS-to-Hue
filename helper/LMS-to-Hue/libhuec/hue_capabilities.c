@@ -38,17 +38,18 @@ extern int hue_get_all_capabilities(hue_bridge_t *bridge) {
     json_t *root, *available, *lights, *data, *hue_error;
     json_error_t error;
 
-    hue_request_t *request;
-    request = malloc(sizeof(hue_request_t));
+	hue_request_t *request;
+	hue_response_t *response;
 
-    hue_response_t *response;
-    response = malloc(sizeof(hue_response_t));
+	request = malloc(sizeof(hue_request_t));
+
+	response = malloc(sizeof(hue_response_t));
 
 #ifdef _LIBHUEC_USE_PTHREADS
     pthread_mutex_lock(&request->mutex);
 #endif
 
-    request->method = GET;
+	request->method = _GET;
    
     asprintf(&request->uri,
              "/api/%s/capabilities",

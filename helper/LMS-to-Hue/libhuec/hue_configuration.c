@@ -47,73 +47,54 @@ uint8_t *hue_stringMac2uint8_t(const char *stringMac) {
  */
 extern int hue_get_bridge_config(hue_bridge_t *bridge) {
 
-    json_t *root, *apiVersion, *macAddr, *name;
-    json_error_t error;
+	json_t *root, *apiVersion, *macAddr, *name;
+	json_error_t error;
+	hue_request_t request;
+	hue_response_t response;
 
-    hue_request_t *request;
-    request = malloc(sizeof(hue_request_t));
+	if (hue_connect(bridge)) {
+		return 1;
+	}
 
-    hue_response_t *response;
-    response = malloc(sizeof(hue_response_t));
+	request.method = _GET;
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_lock(&request->mutex);
-#endif
+	// send empty body for getting the configuration
+	request.body = "";
 
-    request->method = GET;
-   
-    asprintf(&request->uri,
-             "/api/%s/config",
-             bridge->userName
-    );
+	snprintf(request.uri, HB_STR_LEN,
+		 "/api/%s/config",
+		 bridge->userName
+	);
 
-    // send empty body for getting the configuration
-    request->body = "";
+	hue_send_request(bridge, &request);
+	hue_receive_response(bridge, &response);
 
-    hue_connect(bridge);
-    hue_send_request(bridge, request);
+	hue_disconnect(bridge);
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_unlock(&request->mutex);    
-#endif
-    free(request);
+	root = json_loads(response.body, 0, &error);
 
-    hue_receive_response(bridge, response);
+	if (!root) {
+		printf("Error root.\n");
+		return 1;
+	}
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_lock(&response->mutex);
-#endif
+	if (!json_is_object(root)) {
+		printf("Error object.\n");
+		json_decref(root);
+		return 1;
+	}
 
-    root = json_loads(response->body, 0, &error);
-    free(response->body);
+	apiVersion = json_object_get(root, "apiversion");
+	strcpy(bridge->apiVersion, json_string_value(apiVersion));
 
-#ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_unlock(&response->mutex);
-#endif
-    free(response);
-    
-    if (!root) {
-        printf("Error root.\n");
-        return 1;
-    }
+	// maybe make a function for that conversion.
+	macAddr = json_object_get(root, "mac");
+	memcpy(bridge->mac, hue_stringMac2uint8_t(json_string_value(macAddr)), sizeof(bridge->mac));
 
-    if (!json_is_object(root)) {
-        printf("Error object.\n");
-        json_decref(root);
-        return 1;
-    }
-    
-    apiVersion = json_object_get(root, "apiversion");
-    strcpy(bridge->apiVersion, json_string_value(apiVersion));
+	name = json_object_get(root, "name");
+	strcpy(bridge->name, json_string_value(name));
 
-    // maybe make a function for that conversion.
-    macAddr = json_object_get(root, "mac");
-    memcpy(bridge->mac, hue_stringMac2uint8_t(json_string_value(macAddr)), sizeof(bridge->mac));
-    
-    name = json_object_get(root, "name");
-    strcpy(bridge->name, json_string_value(name)); 
+	json_decref(root);
 
-    json_decref(root);
-
-    return 0;
+	return 0;
 }

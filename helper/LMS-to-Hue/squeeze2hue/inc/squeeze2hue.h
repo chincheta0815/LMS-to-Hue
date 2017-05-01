@@ -53,7 +53,8 @@ typedef struct sHueReq {
 
 typedef struct sHBConfig {
                 bool Enabled;
-                char Name[SQ_STR_LENGTH];
+				char Name[SQ_STR_LENGTH];
+				char UserName[SQ_STR_LENGTH];
                 int	RemoveCount;
 } tHBConfig;
 

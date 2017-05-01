@@ -24,77 +24,77 @@
 
 #define LIBHUEC_VERSION "1.0"
 #define MAX_LIGHTS_PER_BRIDGE 50
+#define	HB_STR_LEN	128
 
 #if _LIBHUEC_USE_PTHREADS
 #include <pthread.h>
 #endif
 
 
-#include <stdbool.h>
-#include <sys/socket.h>
-
+#include "platform.h"
 
 typedef int sockfd;
 
 
+
 typedef struct hue_capabilities_s {
-    int lights;
+	int lights;
 } hue_capabilities_t;
 
 
 typedef struct hue_light_state_s {
-    bool on;
-    int bri;
-    int hue;
-    int sat;
-    //xy;
-    int ct;
-    char *alert;
-    char *effect;
-    int transitiontime;
-    //bri_inc;
-    //sat_inc;
-    //hue_inc;
-    //ct_inc;
-    //xy_inc;
+	bool on;
+	int bri;
+	int hue;
+	int sat;
+	//xy;
+	int ct;
+	char *alert;
+	char *effect;
+	int transitiontime;
+	//bri_inc;
+	//sat_inc;
+	//hue_inc;
+	//ct_inc;
+	//xy_inc;
 } hue_light_state_t;
 
 typedef struct hue_light_attribute_s {
-    int id;
-    char name[32];
+	int id;
+	char name[32];
 } hue_light_attribute_t;
 
 typedef struct hue_light_s {
-    hue_light_state_t state;
-    hue_light_attribute_t attribute;
+	hue_light_state_t state;
+	hue_light_attribute_t attribute;
 } hue_light_t;
 
 
 typedef struct hue_bridge_s {
 #if _LIBHUEC_USE_PTHREADS
-    pthread_mutex_t mutex;
+	pthread_mutex_t mutex;
 #endif
-    sockfd sock;
-    char apiVersion[6];
-    struct in_addr ipAddress;
-    uint8_t mac[6];
-    char name[16];
-    char userName[41];
-    hue_capabilities_t capabilities;
+	sockfd sock;
+	char apiVersion[6];
+	struct in_addr ipAddress;
+	uint8_t mac[6];
+	char name[16];
+	char userName[41];
+	hue_capabilities_t capabilities;
 } hue_bridge_t;
 
 typedef struct hue_request_s {
 #ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_t mutex;
+	pthread_mutex_t mutex;
 #endif
-    int method;
-    char *uri;
-    char *body;
+	int method;
+	char uri[HB_STR_LEN + 1];
+	char *body;
 } hue_request_t;
 
 typedef struct hue_response_s {
 #ifdef _LIBHUEC_USE_PTHREADS
-    pthread_mutex_t mutex;
+	pthread_mutex_t mutex;
 #endif
     int status_code;
     char *body;

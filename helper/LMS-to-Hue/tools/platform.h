@@ -132,6 +132,8 @@ typedef __int64 s64_t;
 #define inline __inline
 
 int gettimeofday(struct timeval *tv, struct timezone *tz);
+int asprintf(char **strp, const char *fmt, ...);
+char *strnstr(const char *big, const char *little, size_t len);
 
 //#define poll(fds,numfds,timeout) WSAPoll(fds,numfds,timeout)
 

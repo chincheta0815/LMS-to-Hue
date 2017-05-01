@@ -34,23 +34,17 @@ static log_level 	*loglevel = &util_loglevel;
 
 
 /*----------------------------------------------------------------------------*/
-void ExtractIP(const char *URL, in_addr_t *IP)
+in_addr_t ExtractIP(const char *URL)
 {
-	int i;
-	char *p1 = malloc(strlen(URL) + 1);
-	char *p2;
+	char *p1, ip[32];
 
-	strcpy(p1, URL);
-	p2 = strtok(p1,"/");
-	p2 = strtok(NULL,"/");
-	strtok(p2, ".");
-	for (i = 0; i < 3; i++) {
-		*((u8_t*) IP + i) = p2 ? atoi(p2) : 0;
-		p2 = strtok(NULL, ".");
-	}
-	strtok(p2, ":");
-	*((u8_t*) IP + 3) = p2 ? atoi(p2) : 0;
-	free(p1);
+	sscanf(URL, "http://%31s", ip);
+
+	ip[31] = '\0';
+	p1 = strchr(ip, ':');
+	if (p1) *p1 = '\0';
+
+	return inet_addr(ip);;
 }
 
 
@@ -85,6 +79,40 @@ int pthread_cond_reltimedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, u32_
 
 	return pthread_cond_timedwait(cond, mutex, &ts);
 }
+
+#if WIN
+/*----------------------------------------------------------------------------*/
+int asprintf(char **strp, const char *fmt, ...)
+{
+	va_list args, cp;
+	int len, ret = 0;
+
+	va_start(args, fmt);
+	len = vsnprintf(NULL, 0, fmt, args);
+	*strp = malloc(len + 1);
+
+	if (*strp) ret = vsprintf(*strp, fmt, args);
+
+	va_end(args);
+
+	return ret;
+}
+#endif
+
+
+#if WIN
+/*----------------------------------------------------------------------------*/
+char *strnstr(const char *big, const char *little, size_t len)
+{
+	char *res, *str = malloc(len + 1);
+
+	strncpy(str, big, len);
+	str[len-1] = '\0';
+	res = strstr(big, little);
+	free(str);
+	return res;
+}
+#endif
 
 
 /*----------------------------------------------------------------------------*/

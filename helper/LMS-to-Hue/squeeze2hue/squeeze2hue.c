@@ -44,8 +44,6 @@
 
 #include "libhuec.h"
 
-hue_light_t *hueLight;
-
 /*----------------------------------------------------------------------------*/
 /* globals initialized */
 /*----------------------------------------------------------------------------*/
@@ -71,6 +69,7 @@ log_level	util_loglevel = lINFO;
 
 tHBConfig			glHBConfig = {
 							true,
+							"",
 							"",
 							30,
 					};
@@ -486,27 +485,28 @@ static void *PlayerThread(void *args)
 		LOG_INFO("[%p]: request %s", Device, req->Type);
 
 		if (!strcasecmp(req->Type, "CONNECT")) {
-            
-            hueLight = malloc(sizeof(hue_light_t));
-            hueLight->attribute.id = 2;
-            strcpy(hueLight->attribute.name, "Dieter");
-        
-            hue_set_light_state(&Device->Hue, hueLight, SWITCH, "ON");
+			hue_light_t hueLight;
+
+			hueLight.attribute.id = 2;
+			strcpy(hueLight.attribute.name, "Dieter");
+
+			hue_set_light_state(&Device->Hue, &hueLight, SWITCH, "ON");
 		}
 
 		if (!strcasecmp(req->Type, "PAUSE")) {
 		}
 
 		if (!strcasecmp(req->Type, "STOP")) {
+			hue_light_t hueLight;
+
+			hueLight.attribute.id = 2;
+			strcpy(hueLight.attribute.name, "Dieter");
+
+			hue_set_light_state(&Device->Hue, &hueLight, SWITCH, "OFF");
+
 		}
 
 		if (!strcasecmp(req->Type, "OFF")) {
-                    
-            hueLight = malloc(sizeof(hue_light_t));
-            hueLight->attribute.id = 2;
-            strcpy(hueLight->attribute.name, "Dieter");
-        
-            hue_set_light_state(&Device->Hue, hueLight, SWITCH, "OFF");
 		}
 
 		if (!strcasecmp(req->Type, "VOLUME")) {
@@ -710,15 +710,13 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	char *friendlyName = NULL;
 	char *URLBase = NULL;
 	char *presURL = NULL;
-    char *manufacturer = NULL;
+	char *manufacturer = NULL;
 	pthread_attr_t attr;
 	u32_t mac_size = 6;
+	bool ret = true;
 
 	// read parameters from default then config file
 	memset(Device, 0, sizeof(struct sHB));
-// NEW
-    memset(&Device->Hue, 0, sizeof(hue_bridge_t));
-//
 	memcpy(&Device->Config, &glHBConfig, sizeof(tHBConfig));
 	memcpy(&Device->sq_config, &glDeviceParam, sizeof(sq_dev_param_t));
 	LoadHBConfig(glConfigID, UDN, &Device->Config, &Device->sq_config);
@@ -730,7 +728,7 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	if (!friendlyName || !*friendlyName) friendlyName = strdup(UDN);
 	URLBase = XMLGetFirstDocumentItem(DescDoc, "URLBase");
 	presURL = XMLGetFirstDocumentItem(DescDoc, "presentationURL");
-    manufacturer = XMLGetFirstDocumentItem(DescDoc, "manufacturer");
+	manufacturer = XMLGetFirstDocumentItem(DescDoc, "manufacturer");
 
 	LOG_SDEBUG("UDN:\t%s\nDeviceType:\t%s\nFriendlyName:\t%s", UDN, deviceType, friendlyName);
 
@@ -751,31 +749,31 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	Device->InUse = true;
 	Device->sqState = SQ_STOP;
 	strcpy(Device->UDN, UDN);
-    strcpy(Device->DescDocURL, location);
+	strcpy(Device->DescDocURL, location);
 	strcpy(Device->FriendlyName, friendlyName);
-    strcpy(Device->Manufacturer, manufacturer);
+	strcpy(Device->Manufacturer, manufacturer);
 
-// NEW
-    ExtractIP(location, &Device->Hue.ipAddress.s_addr);
+	Device->Hue.ipAddress.s_addr = ExtractIP(location);
 
-    // TODO: Check here for access to bridge with valid username.
-    //strcpy(Device->Hue.userName, "none");
-    strcpy(Device->Hue.userName, "HDS9QHpawzrvenaLUfn8IkBAguKgWDSLRmzS35yA");
-    hue_get_bridge_config(&Device->Hue);
-    LOG_SDEBUG("Got bridge info: %s", Device->Hue.name);
-// ENDNEW
+	strcpy(Device->Hue.userName, Device->Config.UserName);
+	if (!hue_get_bridge_config(&Device->Hue)) {
+		LOG_SDEBUG("[%]: Got bridge info: %s", Device, Device->Hue.name);
 
-	if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {
-        memcpy(Device->sq_config.mac, Device->Hue.mac, mac_size);
+		if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {
+			memcpy(Device->sq_config.mac, Device->Hue.mac, mac_size);
+		}
+	} else {
+		LOG_WARN("[%p]: cannot get bridge info (check username)", Device);
+		ret = false;
 	}
 
-    NFREE(manufacturer)
+	NFREE(manufacturer)
 	NFREE(deviceType);
 	NFREE(friendlyName);
 	NFREE(URLBase);
 	NFREE(presURL);
 
-    pthread_mutex_init(&Device->Mutex, 0);
+	pthread_mutex_init(&Device->Mutex, 0);
 	pthread_cond_init(&Device->Cond, 0);
 	QueueInit(&Device->Queue);
 
@@ -784,7 +782,7 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	pthread_create(&Device->Thread, &attr, &PlayerThread, Device);
 	pthread_attr_destroy(&attr);
 
-	return true;
+	return ret;
 }
 
 
