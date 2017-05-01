@@ -64,7 +64,7 @@ sub connect {
 }
 
 sub disconnect {
-    my ($self, $deviceIndex) =@_;
+    my ($self, $deviceIndex) = @_;
     
     $connectDisconnectStatus = 1;
     
@@ -85,7 +85,7 @@ sub getConnectDisconnectStatus {
 sub _sendConnectRequest {
     my ($self, $deviceIndex) = @_;
     
-#    my $bridgeIpAddress = XXX;
+    my $bridgeIpAddress = '0.0.0.0';
 
     my $uri = join('', 'http://', $bridgeIpAddress, '/api');
     my $contentType = "application/json";
@@ -113,26 +113,26 @@ sub _sendConnectRequestOK{
     
     my $content = $asyncHTTP->content();
     
-    $log->debug('Connect request sucessfully sent to hue bridge (' . $bridgeIpAddress . ')');
+#    $log->debug('Connect request sucessfully sent to hue bridge (' . $bridgeIpAddress . ')');
     my $bridgeResponse = decode_json($asyncHTTP->content);
     
-    @hueBridges = @{$prefs->get('devices')};
+#    @hueBridges = @{$prefs->get('devices')};
     
     if(exists($bridgeResponse->[0]->{error})){
-        $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ' failed.');
-        $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
+#        $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ' failed.');
+#        $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
         
         $connectProgress += 1;
         Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceIndex);
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
-        $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
-        $log->debug('Got username \'' . $bridgeResponse->[]->{} . '\' from hue bridge (' . $bridgeIpAddress . ').');
+#        $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
+#        $log->debug('Got username \'' . $bridgeResponse->[]->{} . '\' from hue bridge (' . $bridgeIpAddress . ').');
         
         # Save the name...
     }
     else{
-        $log->error('Got nothing useful at all from hue bridge (' . $bridgeIpAddress . ' )');
+#        $log->error('Got nothing useful at all from hue bridge (' . $bridgeIpAddress . ' )');
         
         $connectProgress += 1;
         Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceIndex);
@@ -143,7 +143,7 @@ sub _sendConnectRequestERROR {
     my $asyncHTTP = shift;
     my $deviceIndex = $asyncHTTP->params('deviceIndex');
     
-    $log->error('Request to hue bridge (' . $bridgeIpAddress . ') could not be processed.');
+#    $log->error('Request to hue bridge (' . $bridgeIpAddress . ') could not be processed.');
     
     $connectProgress += 1;
     Slim::Utils::Timers::setTimer(undef, time() + 1, \&connectRequest, $deviceIndex );

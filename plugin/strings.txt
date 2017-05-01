@@ -227,6 +227,12 @@ PLUGIN_HUEBRIDGE_INFO_MAC
 PLUGIN_HUEBRIDGE_CONNECT_BUTTON
 	EN	Connect
 
+PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_TITLE
+	EN	Connecting HueBridge
+
+PLUGIN_HUELIGHTNING_MESSAGEBOX_CONNECT_MSG
+	EN	Press the push-link button on the Hue Bridge you want to connect to.
+
 	
 	
 
