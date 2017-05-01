@@ -18,11 +18,11 @@
  *
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#define _GNU_SOURCE
 
 #define HUE_MSG_CHUNK 1024
 
@@ -183,7 +183,9 @@ extern int hue_receive_response(hue_bridge_t *bridge, hue_response_t *response) 
 
     if (!response_message) {
         return 1;
-    }
+	}
+
+	response->body = NULL;
 
     while (wait--) {
         fd_set rfds;
@@ -258,7 +260,7 @@ extern int hue_receive_response(hue_bridge_t *bridge, hue_response_t *response) 
 		response_message[len] = '\0';
 
 		if ((p = strstr(response_message, "\r\n\r\n")) != NULL) {
-			response->body = strdup(p) + 4;
+			response->body = strdup(p + 4);
 			ret = 0;
 		}
 

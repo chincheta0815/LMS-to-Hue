@@ -30,7 +30,6 @@
 #include <pthread.h>
 #endif
 
-
 #include "platform.h"
 
 typedef int sockfd;
@@ -61,7 +60,7 @@ typedef struct hue_light_state_s {
 
 typedef struct hue_light_attribute_s {
 	int id;
-	char name[32];
+	char name[HB_STR_LEN+1];
 } hue_light_attribute_t;
 
 typedef struct hue_light_s {
@@ -75,11 +74,11 @@ typedef struct hue_bridge_s {
 	pthread_mutex_t mutex;
 #endif
 	sockfd sock;
-	char apiVersion[6];
+	char apiVersion[HB_STR_LEN+1];
 	struct in_addr ipAddress;
 	uint8_t mac[6];
-	char name[16];
-	char userName[41];
+	char name[HB_STR_LEN+1];
+	char userName[HB_STR_LEN+1];
 	hue_capabilities_t capabilities;
 } hue_bridge_t;
 

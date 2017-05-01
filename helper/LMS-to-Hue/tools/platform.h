@@ -96,6 +96,8 @@ typedef u_int64_t u64_t;
 typedef int16_t   s16_t;
 typedef int32_t   s32_t;
 typedef int64_t   s64_t;
+
+char *strnstr(const char *big, const char *little, size_t len);
 #endif
 
 #define last_error() errno

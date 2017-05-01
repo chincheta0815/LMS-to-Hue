@@ -85,14 +85,16 @@ extern int hue_get_bridge_config(hue_bridge_t *bridge) {
 	}
 
 	apiVersion = json_object_get(root, "apiversion");
-	strcpy(bridge->apiVersion, json_string_value(apiVersion));
+	// will be zero-terminated as the whole context if NULL'd at init
+	strncpy(bridge->apiVersion, json_string_value(apiVersion), HB_STR_LEN);
 
 	// maybe make a function for that conversion.
 	macAddr = json_object_get(root, "mac");
 	memcpy(bridge->mac, hue_stringMac2uint8_t(json_string_value(macAddr)), sizeof(bridge->mac));
 
 	name = json_object_get(root, "name");
-	strcpy(bridge->name, json_string_value(name));
+	// will be zero-terminated as the whole context if NULL'd at init
+	strncpy(bridge->name, json_string_value(name), HB_STR_LEN);
 
 	json_decref(root);
 
