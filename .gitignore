@@ -28,7 +28,6 @@ local.properties
 # PDT-specific
 .buildpath
 
-
 #################
 ## Visual Studio
 #################
@@ -183,7 +182,7 @@ $RECYCLE.BIN/
 
 # Mac crap
 .DS_Store
-
+*.xcodeproj
 
 #############
 ## Python
@@ -221,3 +220,5 @@ pip-log.txt
 *.td*
 *.map
 /perl/
+
+
