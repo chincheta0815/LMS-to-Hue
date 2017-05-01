@@ -219,4 +219,4 @@ pip-log.txt
 *.res
 *.td*
 *.map
-perl/
+/perl/
