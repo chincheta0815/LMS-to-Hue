@@ -39,6 +39,9 @@ sub initPlugin {
 		Slim::Web::Pages->addPageFunction("huebridge-guide.htm", \&Plugins::HueBridge::Squeeze2hue::guideHandler);
 	}
 	
+   # require Plugins::HueBridge::HueCom;
+   # Plugins::HueBridge::HueCom->initCLICommands;
+    
 	$log->warn(Dumper(Slim::Utils::OSDetect::details()));
 }
 

@@ -28,7 +28,21 @@ sub handler {
 	
 	require Plugins::HueBridge::Squeeze2hue;
 	require Plugins::HueBridge::Plugin;
-			
+
+#    for ( my $i; defined($params->{'connectHueBridgeButtonHelper$i'}); $i++) {
+#        if ( $params->{'connectHueBridge$i} ) {
+#            Plugins::HueBridge::HueCom->connect{ $i };
+#            $params->{saveSettings} = 0;
+#        }
+#    }
+#
+#    for ( my $i; defined($params->{'disconnectHueBridgeButtonHelper$i'}); $i++) {
+#        if ( $params->{'disconnectHueBridge$i} ) {
+#            Plugins::HueBridge::HueCom->disconnect{ $i };
+#            $params->{saveSettings} = 0;
+#        }
+#    }
+
 	if ($params->{ 'delconfig' }) {
 				
 		my $conf = Plugins::HueBridge::Squeeze2hue->configFile($class);

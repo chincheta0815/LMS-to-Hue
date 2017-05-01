@@ -223,7 +223,10 @@ PLUGIN_HUEBRIDGE_INFO_WIN
 PLUGIN_HUEBRIDGE_INFO_MAC
 	EN	HueBridge uses the squeeze2hue software player which is installed as part of the plugin.  You can control it from the server
 	EN	web interface or any other Squeezebox control application.
-	
+
+PLUGIN_HUEBRIDGE_CONNECT_BUTTON
+	EN	Connect
+
 	
 	
 

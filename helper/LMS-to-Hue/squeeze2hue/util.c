@@ -44,9 +44,8 @@ in_addr_t ExtractIP(const char *URL)
 	p1 = strchr(ip, ':');
 	if (p1) *p1 = '\0';
 
-	return inet_addr(ip);;
+	return inet_addr(ip);
 }
-
 
 /*----------------------------------------------------------------------------*/
 int pthread_cond_reltimedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, u32_t msWait)
@@ -93,7 +92,8 @@ int asprintf(char **strp, const char *fmt, ...)
 
 	if (*strp) ret = vsprintf(*strp, fmt, args);
 
-	va_end(args);
+
+	va_end(args);
 
 	return ret;
 }

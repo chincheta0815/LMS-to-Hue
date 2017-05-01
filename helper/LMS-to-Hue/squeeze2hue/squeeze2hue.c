@@ -1,5 +1,5 @@
 /*
- *  Squeeze2raop - LMS to RAOP gateway
+ *  Squeeze2hue - LMS to Hue gateway
  *
  *  (c) Philippe, philippe_44@outlook.com
  *
@@ -68,10 +68,11 @@ log_level	slimmain_loglevel = lINFO;
 log_level	util_loglevel = lINFO;
 
 tHBConfig			glHBConfig = {
-							true,
-							"",
-							"",
-							30,
+							true,   // enabled
+                            false,  // connected (valid username)
+							"",     // device name
+							"none", // user name
+							30,     // remove count
 					};
 
 static u8_t LMSVolumeMap[101] = {
@@ -756,14 +757,18 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	Device->Hue.ipAddress.s_addr = ExtractIP(location);
 
 	strcpy(Device->Hue.userName, Device->Config.UserName);
-	if (!hue_get_bridge_config(&Device->Hue)) {
-		LOG_SDEBUG("[%]: Got bridge info: %s", Device, Device->Hue.name);
 
-		if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {
-			memcpy(Device->sq_config.mac, Device->Hue.mac, mac_size);
-		}
-	} else {
-		LOG_WARN("[%p]: cannot get bridge info (check username)", Device);
+    hue_get_bridge_config(&Device->Hue);
+    if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {
+        memcpy(Device->sq_config.mac, Device->Hue.mac, mac_size);
+    }
+
+	if (!hue_get_all_capabilities(&Device->Hue)) {
+		LOG_SDEBUG("[%p]: connected to bridge (%s)", Device, Device->Hue.name);
+        Device->UserValid = true;
+    } else {
+		LOG_WARN("[%p]: cannot get bridge capabilities (check username)", Device);
+        Device->UserValid = false;
 		ret = false;
 	}
 

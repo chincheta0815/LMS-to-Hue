@@ -109,10 +109,28 @@
 	<hr>
 	<b>[% "PLUGIN_HUEBRIDGE_PLAYERLIST" | string %]</b><br>
 	<br><table>
+    <tr>
+        <th>&nbsp;</th>
+        <th>&nbsp;Name</th>
+        <th>&nbsp;IP Address</th>
+        <th>&nbsp;MAC Address</th>
+        <th>&nbsp;User Name</th>
+        <th>&nbsp;Connected</th>
+        <th>&nbsp;</th>
+    </tr>
 	[% FOREACH entry IN devices %]
 		[% IF entry.udn != '.common.' %]
-			<tr><td><input name="enabled.[% entry.udn %]" type="checkbox" value="1" [% IF entry.enabled %] checked [% END %]></td>
-			<th>[% entry.name %]</th><th>&nbsp[% entry.mac %]</th><th>&nbsp[% entry.udn %]</th><th>&nbsp[% entry.friendly_name %]</th></tr>
+			<tr>
+                <td><input name="enabled.[% entry.udn %]" type="checkbox" value="1" [% IF entry.enabled %] checked [% END %]></td>
+                <th>&nbsp;[% entry.name %]</th>
+                <th>&nbsp;[% entry.ip_address %]</th>
+                <th>&nbsp;[% entry.mac %]</th>
+                <th>&nbsp;[% entry.user_name %]</th>
+                <td align="center"><input name="enabled.[% entry.user_valid %]" type="checkbox" value="1" disabled readonly [% IF entry.user_valid %] checked [% END %]/></td>
+                <td><input type="hidden" name="connectBridgeButtonHelper[% loop.index %]" value="1"/>
+                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% "PLUGIN_HUEBRIDGE_CONNECT_BUTTON" | string %]" class="stdclick disabledOnHueBridgePairing" [% IF status_hueBridgeParing %]disabled[% END %]/>
+                </td>
+            </tr>
 		[% END %]
 	[% END %]
 	</table>

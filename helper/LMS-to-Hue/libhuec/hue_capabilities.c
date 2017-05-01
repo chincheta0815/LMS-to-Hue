@@ -47,8 +47,8 @@ extern int hue_get_all_capabilities(hue_bridge_t *bridge) {
 	request.method = _GET;
 
 	snprintf(request.uri, HB_STR_LEN,
-			 "/api/%s/capabilities",
-			 bridge->userName
+        "/api/%s/capabilities",
+        bridge->userName
 	);
 
 	// send empty body for getting the configuration

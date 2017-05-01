@@ -53,6 +53,7 @@ typedef struct sHueReq {
 
 typedef struct sHBConfig {
                 bool Enabled;
+                bool UserValid;
 				char Name[SQ_STR_LENGTH];
 				char UserName[SQ_STR_LENGTH];
                 int	RemoveCount;
@@ -65,6 +66,7 @@ struct sHB {
     sq_dev_param_t sq_config;
     bool on;
     hue_bridge_t    Hue;
+    bool UserValid;
     char Manufacturer[RESOURCE_LENGTH];
     char UDN[RESOURCE_LENGTH];
     char FriendlyName[RESOURCE_LENGTH];
