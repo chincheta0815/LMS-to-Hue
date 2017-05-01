@@ -1,3 +1,66 @@
+[% extJsScripts = BLOCK %]
+    <script TYPE="text/javascript">
+        Ext.onReady(function(){        
+            new Ext.util.TaskRunner().start({
+                run: function(items){
+                    SqueezeJS.Controller.request({
+                        params: [ '', [ "hue", "bridge", "connect", "progress" ] ],
+                        
+                        success: function(response) {
+                            response = Ext.util.JSON.decode(response.responseText);
+                            if (response && response.result) {
+                                items.each(function(item) {
+                                
+                                    var connectProgressValue = response.result['_hueBridgeConnectProgress'];
+                                
+                                    if ( connectProgressValue != -1 ) {
+                                        if ( connectProgressValue > 0.00 ) {
+                                            item.dom.disable = true;
+                                        
+                                            Ext.MessageBox.show({
+                                                title: "[% 'PLUGIN_HUELIGHTNING_MESSAGEBOX_CONNECT_TITLE' | string %]",
+                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUELIGHTNING_MESSAGEBOX_CONNECT_MSG' | string %]</p><img src='/plugins/HueLightning/html/images/pushlink_bridgev2.png' style='display:block; margin-left:auto; margin-right:auto; width:150px; height:auto;'>",
+                                                progressText: '',
+                                                width: 300,
+                                                progress: true,
+                                                closable: false,
+                                                buttons: Ext.MessageBox.CANCEL,
+                                                fn: function(btn, text) {
+                                                    SqueezeJS.Controller.request({
+                                                        params: [ '', [ "hue", "bridge", "connect", "cancel" ] ],
+                        
+                                                        success: function(response) {
+                                                            response = Ext.util.JSON.decode(response.responseText);
+                                                            if ( response && response.result ) {
+                                                                if ( response.result['_hueBridgeConnectCancel'] == 1) {
+                                                                    Ext.MessageBox.hide();
+                                                                }
+                                                            }
+                                                        }
+                                                    })
+                                                }
+                                            });
+                                        
+                                            if ( connectProgressValue < 1.00 ) {
+                                                Ext.MessageBox.updateProgress(connectProgressValue, 'Waiting ...');
+                                            }
+                                        }
+                                        else {
+                                            item.dom.disabled = false;
+                                            Ext.MessageBox.hide()
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    })
+                },
+                args: [ Ext.select('.disableOnHueBridgePairing') ],
+                interval: 2000
+            });
+        });
+    </script>
+[% END %]
 [% PROCESS settings/header.html %]
 
 	[% YESNOBOX = [['',''], ['yes','1'], ['no','0']] %]
