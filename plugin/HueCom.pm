@@ -7,11 +7,15 @@ use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 
 use JSON::XS;
+use XML::Simple;
 
+my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
+
+my $params;
 
 sub initCLICommands {
     # Command init
@@ -53,14 +57,27 @@ sub cancelHueBridgeConnect {
 sub connect {
     my ($self, $deviceIndex) = @_;
     
-    $connectProgress = 0;
+    my $xmlconfig = XMLin($prefs->get('configfile'), ForceArray => ['device'], KeepRoot => 0, NoAttr => 1, KeyAttr => 'device');
+
+    if ($xmlconfig) {
+	
+		$params->{'devices'} = \@{$xmlconfig->{'device'}};
+
+        $connectProgress = 0;
     
-    $log->debug('Initiating hue bridge connect.');
+        $log->debug('Initiating hue bridge connect.');
     
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceIndex);
-    Slim::Utils::Timers::setTimer(undef, time() + 30, \&unconnect);
+        Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceIndex);
+        Slim::Utils::Timers::setTimer(undef, time() + 30, \&unconnect);
     
-    $connectDisconnectStatus = 1;
+        $connectDisconnectStatus = 1;
+    }
+    else {
+        $connectProgress = 0;
+        $connectDisconnectStatus = 0;
+        $log->error('Connect failed.');
+        
+    }
 }
 
 sub disconnect {
@@ -68,7 +85,7 @@ sub disconnect {
     
     $connectDisconnectStatus = 1;
     
-#    my @hueBridges = @{$prefs->get{'devices'}};
+#    my @hueBridges = @{$params->{'devices'}};
 #    $log->debug('Disconnecting device with index ' . $deviceIndex);
     
     $connectDisconnectStatus = 0;
@@ -81,7 +98,6 @@ sub unconnect {
     Slim::Utils::Timers::killTimers( undef, \&unconnect );
     
     $connectProgress = 0;
-    $discoverProgress = 0;
     $connectDisconnectStatus = 0;
 }
 

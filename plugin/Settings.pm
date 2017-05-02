@@ -11,7 +11,6 @@ use Slim::Utils::PluginManager;
 use Slim::Utils::Prefs;
 use Slim::Utils::Log;
 
-
 my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
 my @xmlmain = qw(interface scan_interval scan_timeout log_limit);
@@ -29,20 +28,6 @@ sub handler {
     require Plugins::HueBridge::HueCom;
 	require Plugins::HueBridge::Squeeze2hue;
 	require Plugins::HueBridge::Plugin;
-
-    for (my $i; defined($params->{'connectHueBridgeButtonHelper$i'}); $i++) {
-        if ( $params->{'connectHueBridge$i'} ) {
-#            Plugins::HueBridge::HueCom->connect{ $i };
-            $params->{saveSettings} = 0;
-        }
-    }
-
-    for (my $i; defined($params->{'disconnectHueBridgeButtonHelper$i'}); $i++) {
-        if ( $params->{'disconnectHueBridge$i'} ) {
-#            Plugins::HueBridge::HueCom->disconnect{ $i };
-            $params->{saveSettings} = 0;
-        }
-    }
 
 	if ($params->{ 'delconfig' }) {
 				
@@ -259,12 +244,26 @@ sub handler2 {
 		
 	#load XML parameters from config file	
 	if ($xmlconfig) {
-	
+
 		$params->{'devices'} = \@{$xmlconfig->{'device'}};
 		unshift(@{$params->{'devices'}}, {'name' => '[common parameters]', 'udn' => '.common.'});
 		
 		$log->info("reading config: ", $params->{'seldevice'});
 		$log->debug(Dumper($params->{'devices'}));
+
+        for (my $i; defined($params->{'connectHueBridgeButtonHelper$i'}); $i++) {
+            if ( $params->{'connectHueBridge$i'} ) {
+               Plugins::HueBridge::HueCom->connect( $i );
+               delete $params->{saveSettings};
+            }
+        }
+
+        for (my $i; defined($params->{'disconnectHueBridgeButtonHelper$i'}); $i++) {
+            if ( $params->{'disconnectHueBridge$i'} ) {
+               Plugins::HueBridge::HueCom->disconnect( $i );
+               delete $params->{saveSettings};
+            }
+        }
 				
 		#read global parameters
 		for my $p (@xmlmain) {

@@ -1,6 +1,6 @@
 [% extJsScripts = BLOCK %]
     <script TYPE="text/javascript">
-        Ext.onReady(function(){        
+        Ext.onReady(function(){
             new Ext.util.TaskRunner().start({
                 run: function(items){
                     SqueezeJS.Controller.request({
@@ -15,11 +15,11 @@
                                 
                                     if ( connectProgressValue != -1 ) {
                                         if ( connectProgressValue > 0.00 ) {
-                                            item.dom.disable = true;
+                                            item.dom.disabled = true;
                                         
                                             Ext.MessageBox.show({
-                                                title: "[% 'PLUGIN_HUELIGHTNING_MESSAGEBOX_CONNECT_TITLE' | string %]",
-                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUELIGHTNING_MESSAGEBOX_CONNECT_MSG' | string %]</p><img src='/plugins/HueLightning/html/images/pushlink_bridgev2.png' style='display:block; margin-left:auto; margin-right:auto; width:150px; height:auto;'>",
+                                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_TITLE' | string %]",
+                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_MSG' | string %]</p><img src='/plugins/HueBridge/html/images/pushlink_bridgev2.png' style='display:block; margin-left:auto; margin-right:auto; width:150px; height:auto;'>",
                                                 progressText: '',
                                                 width: 300,
                                                 progress: true,
