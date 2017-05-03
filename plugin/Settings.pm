@@ -60,25 +60,31 @@ sub handler {
         delete $params->{'saveSettings'};
     }
 
-    for (my $i; defined($params->{'connectHueBridgeButtonHelper$i'}); $i++) {
+    for (my $i = 0; defined($params->{ 'connectHueBridgeButtonHelper$i' }); $i++) {
+    
+        if ( $params->{ 'connectHueBridge$i' } ) {
 
-        if ( $params->{'connectHueBridge$i'} ) {
-
-            my $ip_address = \@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
+            $log->debug('Triggered connect with index '. $i);
+            my $ip_address = '192.168.47.251';#\@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
             Plugins::HueBridge::HueCom->connect( $ip_address );
-            delete $params->{saveSettings};
+            delete $params->{'saveSettings'};
+            
+            $update = 1;
         }
     }
 
-    for (my $i; defined($params->{'disconnectHueBridgeButtonHelper$i'}); $i++) {
-
-        if ( $params->{'disconnectHueBridge$i'} ) {
-
-            my $ip_address = \@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
-            Plugins::HueBridge::HueCom->disconnect( $ip_address );
-            delete $params->{saveSettings};
-        }
-    }
+#    for (my $i = 0; defined($params->{ 'disconnectHueBridgeButtonHelper$i' }); $i++) {
+#
+#        if ( $params->{ 'disconnectHueBridge$i' } ) {
+        
+#            $log->debug('Triggered disconnect with index '. $i);
+#            my $ip_address = '192.168.47.251';#\@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
+#            Plugins::HueBridge::HueCom->disconnect( $ip_address );
+#            delete $params->{'saveSettings'};
+            
+#            $update = 1;
+#        }
+#    }
 
     if ($params->{'saveSettings'}) {
 

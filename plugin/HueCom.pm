@@ -17,8 +17,6 @@ my $bridgeUserName = 'none';
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
 
-my $params;
-
 sub initCLICommands {
     # Command init
     #    |requires client
@@ -64,7 +62,7 @@ sub connect {
     
     $log->debug('Initiating hue bridge connect (' . $bridgeIpAddress . ').');
     
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceIndex);
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
     Slim::Utils::Timers::setTimer(undef, time() + 30, \&unconnect);
     
     $connectDisconnectStatus = 1;
@@ -146,7 +144,7 @@ sub _sendConnectRequestOK{
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
-        $log->debug('Got username \'' . $bridgeResponse->[]->{} . '\' from hue bridge (' . $bridgeIpAddress . ').');
+        $log->debug('Got username \'' . $bridgeResponse->[0]->{success}->{username} . '\' from hue bridge (' . $bridgeIpAddress . ').');
         
         $bridgeUserName = $bridgeResponse->[0]->{success}->{username};
         
@@ -162,7 +160,7 @@ sub _sendConnectRequestOK{
 
 sub _sendConnectRequestERROR {
     my $asyncHTTP = shift;
-    my $deviceIndex = $asyncHTTP->params('deviceIndex');
+    my $bridgeIpAddress = $asyncHTTP->params('bridgeIpAddress');
     
     $log->error('Request to hue bridge (' . $bridgeIpAddress . ') could not be processed.');
     

@@ -190,8 +190,8 @@
                 <th>&nbsp;[% entry.mac %]</th>
                 <th>&nbsp;[% entry.user_name %]</th>
                 <td align="center"><input name="enabled.[% entry.user_valid %]" type="checkbox" value="1" disabled readonly [% IF entry.user_valid %] checked [% END %]/></td>
-                <td><input type="hidden" name="connectBridgeButtonHelper[% loop.index %]" value="1"/>
-                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% "PLUGIN_HUEBRIDGE_CONNECT_BUTTON" | string %]" class="stdclick disabledOnHueBridgePairing" [% IF status_hueBridgeParing %]disabled[% END %]/>
+                <td><input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="1">
+                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% "PLUGIN_HUEBRIDGE_CONNECT_BUTTON" | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]/>
                 </td>
             </tr>
 		[% END %]
