@@ -59,7 +59,23 @@ sub handler {
 		#okay, this is hacky, will change in the future, just don't want another indent layer :-(
 		$params->{'saveSettings'} = 0;
 	}
-	
+
+    for (my $i; defined($params->{'connectHueBridgeButtonHelper$i'}); $i++) {
+        if ( $params->{'connectHueBridge$i'} ) {
+           my $ip_address = \@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
+           Plugins::HueBridge::HueCom->connect( $ip_address );
+           delete $params->{saveSettings};
+        }
+    }
+
+    for (my $i; defined($params->{'disconnectHueBridgeButtonHelper$i'}); $i++) {
+        if ( $params->{'disconnectHueBridge$i'} ) {
+           my $ip_address = \@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
+           Plugins::HueBridge::HueCom->disconnect( $ip_address );
+           delete $params->{saveSettings};
+        }
+    }
+
 	if ($params->{'saveSettings'}) {
 
 		$log->debug("save settings required");
@@ -250,21 +266,7 @@ sub handler2 {
 		
 		$log->info("reading config: ", $params->{'seldevice'});
 		$log->debug(Dumper($params->{'devices'}));
-
-        for (my $i; defined($params->{'connectHueBridgeButtonHelper$i'}); $i++) {
-            if ( $params->{'connectHueBridge$i'} ) {
-               Plugins::HueBridge::HueCom->connect( $i );
-               delete $params->{saveSettings};
-            }
-        }
-
-        for (my $i; defined($params->{'disconnectHueBridgeButtonHelper$i'}); $i++) {
-            if ( $params->{'disconnectHueBridge$i'} ) {
-               Plugins::HueBridge::HueCom->disconnect( $i );
-               delete $params->{saveSettings};
-            }
-        }
-				
+			
 		#read global parameters
 		for my $p (@xmlmain) {
 			$params->{ $p } = $xmlconfig->{ $p };
