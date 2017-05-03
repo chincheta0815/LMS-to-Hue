@@ -12,6 +12,8 @@ use XML::Simple;
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
+my $bridgeUserName = 'none';
+
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
 
@@ -64,6 +66,7 @@ sub connect {
 		$params->{'devices'} = \@{$xmlconfig->{'device'}};
 
         $connectProgress = 0;
+        $bridgeUserName = 'none';
     
         $log->debug('Initiating hue bridge connect.');
     
@@ -74,6 +77,7 @@ sub connect {
     }
     else {
         $connectProgress = 0;
+        $bridgeUserName = 0;
         $connectDisconnectStatus = 0;
         $log->error('Connect failed.');
         
@@ -99,6 +103,10 @@ sub unconnect {
     
     $connectProgress = 0;
     $connectDisconnectStatus = 0;
+}
+
+sub getBridgeUserName {
+    return $bridgeUserName;
 }
 
 sub getConnectProgress {
@@ -156,7 +164,9 @@ sub _sendConnectRequestOK{
 #        $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
 #        $log->debug('Got username \'' . $bridgeResponse->[]->{} . '\' from hue bridge (' . $bridgeIpAddress . ').');
         
-        # Save the name...
+        $bridgeUserName = $bridgeResponse->[0]->{success}->{username};
+        
+        unconnect();
     }
     else{
 #        $log->error('Got nothing useful at all from hue bridge (' . $bridgeIpAddress . ' )');
