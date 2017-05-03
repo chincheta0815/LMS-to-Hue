@@ -77,6 +77,8 @@ sub disconnect {
     
     $log->debug('Disconnecting device (' . $bridgeIpAddress .').');
     
+    $bridgeUserName = 'none';
+    
     $connectDisconnectStatus = 0;
 }
 
