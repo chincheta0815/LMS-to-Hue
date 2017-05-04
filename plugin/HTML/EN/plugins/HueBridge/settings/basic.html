@@ -63,6 +63,11 @@
 [% END %]
 [% PROCESS settings/header.html %]
 
+    <style>
+        .x-progress-bar { background: #008d89#; }
+        .x-progress-text { color: #008d89; }
+    </style>
+
 	[% YESNOBOX = [['',''], ['yes','1'], ['no','0']] %]
 		
 	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_AUTORUN" desc="PLUGIN_HUEBRIDGE_AUTORUN_DESC" %]
@@ -182,8 +187,8 @@
         <th>&nbsp;</th>
     </tr>
 	[% FOREACH entry IN devices %]
-		[% IF entry.udn != '.common.' %]
-			<tr>
+        [% IF entry.udn != '.common.' %]
+            <tr>
                 <td><input name="enabled.[% entry.udn %]" type="checkbox" value="1" [% IF entry.enabled %] checked [% END %]></td>
                 <th>&nbsp;[% entry.name %]</th>
                 <th>&nbsp;[% entry.ip_address %]</th>
@@ -194,8 +199,8 @@
                     <input type="submit" name="connectHueBridge[% loop.index %]" value="[% "PLUGIN_HUEBRIDGE_CONNECT_BUTTON" | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]/>
                 </td>
             </tr>
-		[% END %]
-	[% END %]
+        [% END %]
+    [% END %]
 	</table>
 	
 	[% END %]
