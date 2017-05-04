@@ -14,6 +14,7 @@ my $log = logger('plugin.huebridge');
 
 my $bridgeUserName = 'none';
 
+my $timeForConnect = 30;
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
 
@@ -63,7 +64,7 @@ sub connect {
     $log->debug('Initiating hue bridge connect (' . $bridgeIpAddress . ').');
     
     Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
-    Slim::Utils::Timers::setTimer(undef, time() + 30, \&unconnect);
+    Slim::Utils::Timers::setTimer(undef, time() + $timeForConnect, \&unconnect);
     
     $connectDisconnectStatus = 1;
 }
@@ -95,7 +96,7 @@ sub getBridgeUserName {
 }
 
 sub getConnectProgress {
-    return ($connectProgress >= 0.0) ? ($connectProgress / 30) : -1;
+    return ($connectProgress >= 0.0) ? ($connectProgress / $timeForConnect) : -1;
 }
 
 sub getConnectDisconnectStatus {
@@ -139,8 +140,14 @@ sub _sendConnectRequestOK{
         $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ' failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
         
-        $connectProgress += 1;
-        Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+        if ( $connectProgress >= $timeForConnect ) {
+            $log->debug('Link button not pressed within ' . $timeForConnect . '.');
+            unconnect();
+        }
+        else {
+            $connectProgress += 1;
+            Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+        }
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
@@ -153,8 +160,14 @@ sub _sendConnectRequestOK{
     else{
         $log->error('Got nothing useful at all from hue bridge (' . $bridgeIpAddress . ' ).');
         
-        $connectProgress += 1;
-        Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+        if ( $connectProgress >= $timeForConnect ) {
+            $log->debug('Link button not pressed within ' . $timeForConnect . '.');
+            unconnect();
+        }
+        else {
+            $connectProgress += 1;
+            Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+        }
     }
 }
 
