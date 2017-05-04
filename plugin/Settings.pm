@@ -60,9 +60,10 @@ sub handler {
         delete $params->{'saveSettings'};
     }
 
-    for (my $i = 0; defined($params->{ 'connectHueBridgeButtonHelper$i' }); $i++) {
+    # Double quota & starting by $i = 1 make the world go round. Change from index to hashkey.
+    for (my $i = 1; defined($params->{ "connectHueBridgeButtonHelper$i" }); $i++) {
     
-        if ( $params->{ 'connectHueBridge$i' } ) {
+        if ( $params->{ "connectHueBridge$i" } ) {
 
             $log->debug('Triggered connect with index '. $i);
             my $ip_address = '192.168.47.251';#\@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
@@ -73,9 +74,9 @@ sub handler {
         }
     }
 
-#    for (my $i = 0; defined($params->{ 'disconnectHueBridgeButtonHelper$i' }); $i++) {
+#    for (my $i = 1; defined($params->{ "disconnectHueBridgeButtonHelper$i" }); $i++) {
 #
-#        if ( $params->{ 'disconnectHueBridge$i' } ) {
+#        if ( $params->{ "disconnectHueBridge$i" } ) {
         
 #            $log->debug('Triggered disconnect with index '. $i);
 #            my $ip_address = '192.168.47.251';#\@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
