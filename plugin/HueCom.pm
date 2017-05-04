@@ -14,7 +14,7 @@ my $log = logger('plugin.huebridge');
 
 my $bridgeUserName = 'none';
 
-my $timeForConnect = 30;
+my $timeForConnect = 29.33;
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
 
@@ -84,11 +84,11 @@ sub disconnect {
 sub unconnect {
     $log->debug('Stopping HueBridge connect.');
     
-    $connectProgress = -1;
-    $connectDisconnectStatus = 0;
-    
     Slim::Utils::Timers::killTimers(undef, \&_sendConnectRequest);
     Slim::Utils::Timers::killTimers(undef, \&unconnect);
+
+    $connectDisconnectStatus = 0;
+    $connectProgress = -1;
 }
 
 sub getBridgeUserName {
@@ -96,7 +96,11 @@ sub getBridgeUserName {
 }
 
 sub getConnectProgress {
-    return ($connectProgress >= 0.0) ? ($connectProgress / $timeForConnect) : -1;
+    my $ret;
+    if ( $connectProgress >= 0.0 ) {
+        $ret =  $connectProgress / $timeForConnect;
+    }
+    return $ret;
 }
 
 sub getConnectDisconnectStatus {
@@ -112,6 +116,11 @@ sub _sendConnectRequest {
     my $request = { 'devicetype' => 'squeeze2hue#lms' };
     my $requestBody = encode_json($request);
     
+    $connectDisconnectStatus = 1;
+    $connectProgress += 1;
+    
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+    
     my $asyncHTTP = Slim::Networking::SimpleAsyncHTTP->new(
         \&_sendConnectRequestOK,
         \&_sendConnectReqeustERROR,
@@ -120,8 +129,7 @@ sub _sendConnectRequest {
             error       => "Can't get response.",
         },
     );
-    
-    $connectDisconnectStatus = 1;
+
     $asyncHTTP->_createHTTPRequest(POST => ($uri, 'Content-Type' => $contentType, $requestBody));
 }
 
@@ -134,20 +142,10 @@ sub _sendConnectRequestOK{
     
     $log->debug('Connect request sucessfully sent to hue bridge (' . $bridgeIpAddress . ').');
     my $bridgeResponse = decode_json($asyncHTTP->content);
-    
-   
+ 
     if(exists($bridgeResponse->[0]->{error})){
         $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
-        
-        if ( $connectProgress < $timeForConnect ) {
-            $connectProgress += 1;
-            Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
-        }
-        else {
-            $log->debug('Link button not pressed within ' . $timeForConnect . '.');
-            unconnect();
-        }
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
@@ -159,16 +157,6 @@ sub _sendConnectRequestOK{
     }
     else{
         $log->error('Got nothing useful at all from hue bridge (' . $bridgeIpAddress . ' ).');
-        
-        if ( $connectProgress >= $timeForConnect ) {
-            $log->debug('Link button not pressed within ' . $timeForConnect . '.');
-
-            unconnect();
-        }
-        else {
-            $connectProgress += 1;
-            Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
-        }
     }
 }
 
@@ -178,8 +166,7 @@ sub _sendConnectRequestERROR {
     
     $log->error('Request to hue bridge (' . $bridgeIpAddress . ') could not be processed.');
     
-    $connectProgress += 1;
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&connectRequest, $bridgeIpAddress );
+    unconnect();
 }
 
 1;

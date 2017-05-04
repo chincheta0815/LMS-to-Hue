@@ -65,7 +65,10 @@ sub handler {
 
         $log->debug('Triggered connect for bridge with udn '. $params->{'connectHueBridgeButtonHelper'});
 
-        my $ip_address = '192.168.47.251';
+        $xmlconfig = readconfig($class, KeyAttr => 'device');
+        my $device = findUDN($params->{'connectHueBridgeButtonHelper'}, \@{$xmlconfig->{'device'}});
+
+        my $ip_address = $device->{'ip_address'};
         $log->debug('Triggered connect for ip '. $ip_address);
         Plugins::HueBridge::HueCom->connect( $ip_address );
         delete $params->{'saveSettings'};
@@ -341,7 +344,6 @@ sub mergeprofile{
         $p1->{ $m } = $p2-> { $m };
     }	
 }
-
 
 sub findUDN {
     my $udn = shift(@_);
