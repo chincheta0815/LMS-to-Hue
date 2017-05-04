@@ -84,11 +84,11 @@ sub disconnect {
 sub unconnect {
     $log->debug('Stopping HueBridge connect.');
     
+    $connectProgress = -1;
+    $connectDisconnectStatus = 0;
+    
     Slim::Utils::Timers::killTimers(undef, \&_sendConnectRequest);
     Slim::Utils::Timers::killTimers(undef, \&unconnect);
-    
-    $connectProgress = 0;
-    $connectDisconnectStatus = 0;
 }
 
 sub getBridgeUserName {
@@ -137,16 +137,16 @@ sub _sendConnectRequestOK{
     
    
     if(exists($bridgeResponse->[0]->{error})){
-        $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ' failed.');
+        $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
         
-        if ( $connectProgress >= $timeForConnect ) {
-            $log->debug('Link button not pressed within ' . $timeForConnect . '.');
-            unconnect();
-        }
-        else {
+        if ( $connectProgress < $timeForConnect ) {
             $connectProgress += 1;
             Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+        }
+        else {
+            $log->debug('Link button not pressed within ' . $timeForConnect . '.');
+            unconnect();
         }
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
@@ -162,6 +162,7 @@ sub _sendConnectRequestOK{
         
         if ( $connectProgress >= $timeForConnect ) {
             $log->debug('Link button not pressed within ' . $timeForConnect . '.');
+
             unconnect();
         }
         else {

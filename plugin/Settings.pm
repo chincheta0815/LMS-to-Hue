@@ -61,18 +61,16 @@ sub handler {
         delete $params->{'saveSettings'};
     }
 
-    # Double quotes & starting by $i = 1 make the world go round. Change from index to hashkey.
-    for (my $i = 1; defined($params->{ "connectHueBridgeButtonHelper$i" }); $i++) {
-    
-        if ( $params->{ "connectHueBridge$i" } ) {
+    if ( $params->{ "connectHueBridgeButtonHelper" } ) {
 
-            $log->debug('Triggered connect with index '. $i);
-            my $ip_address = \@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
-            Plugins::HueBridge::HueCom->connect( $ip_address );
-            delete $params->{'saveSettings'};
+        $log->debug('Triggered connect for bridge with udn '. $params->{'connectHueBridgeButtonHelper'});
+
+        my $ip_address = '192.168.47.251';
+        $log->debug('Triggered connect for ip '. $ip_address);
+        Plugins::HueBridge::HueCom->connect( $ip_address );
+        delete $params->{'saveSettings'};
             
-            $update = 1;
-        }
+        $update = 1;
     }
 
 #    for (my $i = 1; defined($params->{ "disconnectHueBridgeButtonHelper$i" }); $i++) {
