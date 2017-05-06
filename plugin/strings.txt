@@ -207,7 +207,10 @@ PLUGIN_HUEBRIDGE_REMOVECOUNT_2
 	EN	failed scans
 	
 PLUGIN_HUEBRIDGE_PLAYERLIST
-	EN	List of players currently in configuration file - Note that more devices might have been discovered
+	EN	List of players currently in configuration file
+
+PLUGIN_HUEBRIDGE_PLAYERLIST_DESC
+	EN	Note that more devices might have been discovered
 		
 PLUGIN_HUEBRIDGE_NOCONFIG
 	EN	Configuration file missing - create one by clicking "generate" or, if autosave is on, refresh this page

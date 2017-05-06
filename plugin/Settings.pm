@@ -31,10 +31,14 @@ sub page {
     return Slim::Web::HTTP::CSRF->protectURI('plugins/HueBridge/settings/basic.html');
 }
 
+sub prefs {
+    return ( $prefs );
+}
+
 sub beforeRender {
     my ($class, $params) = @_;
     
-    if( Plugins::HueBridge::HueCom->getHueBridgeConnectProgress() || Plugins::HueBridge::HueCom->getConnectDisconnectStatus() ) {
+    if( Plugins::HueBridge::HueCom->getConnectProgress() || Plugins::HueBridge::HueCom->getConnectDisconnectStatus() ) {
             $params->{'statusHueBridgeConnect'} = 1;
     }
     else {
@@ -92,19 +96,6 @@ sub handler {
             
         $update = 1;
     }
-
-#    for (my $i = 1; defined($params->{ "disconnectHueBridgeButtonHelper$i" }); $i++) {
-#
-#        if ( $params->{ "disconnectHueBridge$i" } ) {
-        
-#            $log->debug('Triggered disconnect with index '. $i);
-#            my $ip_address = \@{$xmlconfig->{'device'}->[$i]->{'ip_address'};
-#            Plugins::HueBridge::HueCom->disconnect( $ip_address );
-#            delete $params->{'saveSettings'};
-            
-#            $update = 1;
-#        }
-#    }
 
     if ($params->{'saveSettings'}) {
 

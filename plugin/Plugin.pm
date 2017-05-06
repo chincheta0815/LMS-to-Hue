@@ -27,7 +27,7 @@ sub initPlugin {
 		
 	require Plugins::HueBridge::Squeeze2hue;		
     require Plugins::HueBridge::HueCom;
-    Plugins::HueBridge::HueCom->initCLICommands;
+    Plugins::HueBridge::HueCom->initHueComCLICommands;
 
 	if ($prefs->get('autorun')) {
 		Plugins::HueBridge::Squeeze2hue->start;
