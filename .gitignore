@@ -28,7 +28,6 @@ local.properties
 # PDT-specific
 .buildpath
 
-
 #################
 ## Visual Studio
 #################
@@ -151,6 +150,7 @@ ClientBin/
 *.[Pp]ublish.xml
 *.pfx
 *.publishsettings
+*.a
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -182,7 +182,7 @@ $RECYCLE.BIN/
 
 # Mac crap
 .DS_Store
-
+*.xcodeproj
 
 #############
 ## Python
@@ -219,4 +219,6 @@ pip-log.txt
 *.res
 *.td*
 *.map
-perl/
+/perl/
+
+

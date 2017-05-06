@@ -26,7 +26,9 @@ sub initPlugin {
 	$class->SUPER::initPlugin(@_);
 		
 	require Plugins::HueBridge::Squeeze2hue;		
-	
+    require Plugins::HueBridge::HueCom;
+    Plugins::HueBridge::HueCom->initCLICommands;
+
 	if ($prefs->get('autorun')) {
 		Plugins::HueBridge::Squeeze2hue->start;
 	}
@@ -38,7 +40,7 @@ sub initPlugin {
 		Slim::Web::Pages->addPageFunction("^huebridge-config.xml", \&Plugins::HueBridge::Squeeze2hue::configHandler);
 		Slim::Web::Pages->addPageFunction("huebridge-guide.htm", \&Plugins::HueBridge::Squeeze2hue::guideHandler);
 	}
-	
+    
 	$log->warn(Dumper(Slim::Utils::OSDetect::details()));
 }
 

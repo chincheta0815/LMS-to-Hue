@@ -1,0 +1,208 @@
+[% extJsScripts = BLOCK %]
+    <script TYPE="text/javascript">
+        Ext.onReady(function(){
+            new Ext.util.TaskRunner().start({
+                run: function(items){
+                    SqueezeJS.Controller.request({
+                        params: [ '', [ "hue", "bridge", "connect", "progress" ] ],
+                        
+                        success: function(response) {
+                            response = Ext.util.JSON.decode(response.responseText);
+                            if (response && response.result) {
+                                items.each(function(item) {
+                                
+                                    var connectProgressValue = response.result['_hueBridgeConnectProgress'];
+                                
+                                    if ( connectProgressValue != -1.0 ) {
+                                        if ( connectProgressValue > 0.00 ) {
+                                            item.dom.disabled = true;
+                                        
+                                            Ext.MessageBox.show({
+                                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_TITLE' | string %]",
+                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_MSG' | string %]</p><img src='/plugins/HueBridge/html/images/pushlink_bridgev2.png' style='display:block; margin-left:auto; margin-right:auto; width:150px; height:auto;'>",
+                                                progressText: '',
+                                                width: 300,
+                                                progress: true,
+                                                closable: false,
+                                                buttons: Ext.MessageBox.CANCEL,
+                                                fn: function(btn, text) {
+                                                    SqueezeJS.Controller.request({
+                                                        params: [ '', [ "hue", "bridge", "connect", "cancel" ] ],
+                        
+                                                        success: function(response) {
+                                                            response = Ext.util.JSON.decode(response.responseText);
+                                                            if ( response && response.result ) {
+                                                                if ( response.result['_hueBridgeConnectCancel'] == 1) {
+                                                                    Ext.MessageBox.hide();
+                                                                }
+                                                            }
+                                                        }
+                                                    })
+                                                }
+                                            });
+                                        
+                                            if ( connectProgressValue < 1.00 ) {
+                                                Ext.MessageBox.updateProgress(connectProgressValue, 'Waiting ...');
+                                            }
+                                        }
+                                        else {
+                                            item.dom.disabled = false;
+                                            Ext.MessageBox.hide()
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    })
+                },
+                args: [ Ext.select('.disableOnHueBridgePairing') ],
+                interval: 2000
+            });
+        });
+    </script>
+[% END %]
+[% PROCESS settings/header.html %]
+
+    <style>
+        .x-progress-bar { background: #008d89#; }
+        .x-progress-text { color: #008d89; }
+    </style>
+
+	[% YESNOBOX = [['',''], ['yes','1'], ['no','0']] %]
+		
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_AUTORUN" desc="PLUGIN_HUEBRIDGE_AUTORUN_DESC" %]
+		<input name="autorun" type="checkbox" [% IF autorun %] checked [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]> [% "PLUGIN_HUEBRIDGE_RUNNING_$running" | string %] [% IF binary %] ([% binary %]) [% END %]
+		&nbsp&nbsp<b><a href="[% webroot %]huebridge-guide.htm" target="user guide">[% "PLUGIN_HUEBRIDGE_USERGUIDELINK" | string %]</a></b>
+		[%IF running %] <b><font color="red">&nbsp&nbsp[% "PLUGIN_HUEBRIDGE_WARNING" | string %]</font></b> [% END %]
+	[% END %]
+	
+	[% IF binaries.size > 1 %]
+		[% WRAPPER setting title="PLUGIN_HUEBRIDGE_BINARIES" desc="PLUGIN_HUEBRIDGE_BINARIES_DESC" %]
+			<select class="stdedit" name="bin" id="bin">
+			[% FOREACH entry IN binaries %]
+				<option [% IF entry == bin %]selected[% found = 1 %][% END %] [% IF status_hueBridgeConnect %]disabled[% END %] value="[% entry %]">[% entry %]</option>
+			[% END %]
+			[% IF not found %]
+				<option selected value="">[% "PLUGIN_HUEBRIDGE_BINARIES" | string %]</option>
+			[% END %]
+			</select>
+		[% END %]
+	[% END %]
+		
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_OPTIONS" desc="PLUGIN_HUEBRIDGE_OPTIONS_DESC" %]
+		<input type="text" class="stdedit" name="opts" id="opts" value="[% opts %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="100">
+	[% END %]
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_DEBUG" desc="PLUGIN_HUEBRIDGE_DEBUG_DESC" %]
+		<select class="stdedit" name="debugs" [% IF status_hueBridgeConnect %]disabled[% END %] id="debugs">
+		[% FOREACH entry IN [ '', 'all', 'output', 'stream', 'slimproto', 'decode', 'slimmain', 'hue', 'util', 'main'] %]
+			<option [% IF entry == debugs %]selected[% END %] value="[% entry %]">[% "PLUGIN_HUEBRIDGE_$entry" | string %]</option>
+		[% END %]
+		</select>
+	[% END %]
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_LOGGING" desc="PLUGIN_HUEBRIDGE_LOGGING_DESC" %]
+		<input name="logging" type="checkbox" [% IF logging %] checked [% END %]  [% IF status_hueBridgeConnect %]disabled[% END %]>&nbsp[% "PLUGIN_HUEBRIDGE_LOGENABLE" | string %]
+		&nbsp<a href="[% webroot %]huebridge-log.log" target="log">[% "PLUGIN_HUEBRIDGE_LOGLINK" | string %]</a>
+		&nbsp[% "PLUGIN_HUEBRIDGE_LOGSIZE" | string %]&nbsp<input type="text" class="stdedit" name="log_limit" id="log_limit" value="[% log_limit %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2">
+		&nbsp<input name="eraselog" type="checkbox" [% IF eraselog %] checked [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]>&nbsp[% "PLUGIN_HUEBRIDGE_ERASELOG" | string %]
+		&nbsp<input name="cleanlog" type="submit" value=[% "PLUGIN_HUEBRIDGE_CLEANLOG" | string %]> 
+	[% END %]
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_CONFIG" desc="PLUGIN_HUEBRIDGE_CONFIG_DESC" %]
+		[% configpath %]
+		<input type="text" class="stdedit" name="configfile" id="configfile" value="[% configfile %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="20">
+		<a href="[% webroot %]huebridge-config.xml" target="config">[% "PLUGIN_HUEBRIDGE_CONFLINK" | string %]</a>
+		&nbsp&nbsp<input name="autosave" type="checkbox" [% IF autosave %] checked [% END %]>[% "PLUGIN_HUEBRIDGE_AUTOSAVECONFIG" | string %]
+		[% IF binary %]
+			&nbsp<input name="genconfig" type="submit" onclick="alert('generating configuration will take ~30 seconds')" value=[% "PLUGIN_HUEBRIDGE_GENCONFIG" | string %]>
+		[% END %]	
+		&nbsp<input name="delconfig" type="submit" [% IF status_hueBridgeConnect %]disabled[% END %] value=[% "PLUGIN_HUEBRIDGE_DELCONFIG" | string %]>
+	[% END %]
+	
+	[% IF !xmlparams %]
+		[% WRAPPER settingSection %]
+			<b><font color=red>[% "PLUGIN_HUEBRIDGE_NOCONFIG" | string %]</font></b>
+		[% END %]	
+	[% ELSE %]
+	
+	<input hidden type="text" class="stdedit" name="xmlparams" id="xmlparams" value="1" size="5">
+	<input hidden type="text" class="stdedit" name="prevseldevice" id="prevseldevice" value="[% prevseldevice %]" size="5">
+	
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_SCAN" desc="PLUGIN_HUEBRIDGE_SCAN_DESC" %]
+		[% "PLUGIN_HUEBRIDGE_SCANINTERVAL" | string %]</th>&nbsp<td><input type="text" class="stdedit" name="scan_interval" id="scan_interval" value="[% scan_interval %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2"> (s)
+		[% "PLUGIN_HUEBRIDGE_SCANTIMEOUT" | string %]&nbsp<input type="text" class="stdedit" name="scan_timeout" id="scan_timeout" value="[% scan_timeout %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2"> (s)
+	[% END %]
+	
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_INTERFACE" desc="PLUGIN_HUEBRIDGE_INTERFACE_DESC" %]
+		<input [% IF useLMSsocket %] disabled [% END %]  [% IF status_hueBridgeConnect %]disabled[% END %] type="text" class="stdedit" name="interface" id="interface" value="[% interface %]" size="20">
+		&nbsp<input name="useLMSsocket" type="checkbox" [% IF useLMSsocket %] checked [% END %]>&nbsp[% "PLUGIN_HUEBRIDGE_USELMSSOCKET" | string %]
+	[% END %]
+	
+	<hr>
+
+	[% WRAPPER settingSection %]
+		<select class="stdedit" name="seldevice" id="seldevice" onchange="form.submit()">
+		[% FOREACH entry IN devices %]
+			<option [% IF entry.udn == seldevice %]selected[% END %] value="[% entry.udn %]"  [% IF status_hueBridgeConnect %]disabled[% END %]>[% entry.name %]</option>
+		[% END %]
+		</select>
+		[% IF seldevice == '.common.' %]<b><font color=red>&nbsp&nbsp&nbsp[% "PLUGIN_HUEBRIDGE_COMMONPARAMINFO" | string %]</font></b>
+		[% ELSE %]<b><font color=red>&nbsp&nbsp&nbsp[% "PLUGIN_HUEBRIDGE_PARAMINFO" | string %]</font></b>[% END %]
+	[% END %]
+	
+	[% IF seldevice != '.common.' %]
+		[% WRAPPER setting title="PLUGIN_HUEBRIDGE_PLAYERINFO" desc="PLUGIN_HUEBRIDGE_PLAYERINFO_DESC" %]
+			<th>[% "PLUGIN_HUEBRIDGE_PLAYERNAME" | string %]</th>
+			<td><input type="text" class="stdedit" name="name" id="name" value="[% name %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="25"></td>
+			<th>[% "PLUGIN_HUEBRIDGE_PLAYERMAC" | string %]</th>
+			<td><input type="text" class="stdedit" name="mac" id="mac" value="[% mac %]"  [% IF status_hueBridgeConnect %]disabled[% END %]size="20"></td>
+			<td><input name="deldevice" type="checkbox"  [% IF status_hueBridgeConnect %]disabled[% END %]></td>
+			<th>[% "PLUGIN_HUEBRIDGE_DELETEPLAYER" | string %]</th>
+		[% END %]
+	[% END %]		
+
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_AUDIOPARAM" desc="PLUGIN_HUEBRIDGE_AUDIOPARAM_DESC" %]
+		[% "PLUGIN_HUEBRIDGE_CODECS" | string %]&nbsp<input type="text" class="stdedit" name="codecs" id="codecs" value="[% codecs %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="15">
+	[% END %]
+	
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_UPNPMGMT" desc="PLUGIN_HUEBRIDGE_UPNPMGMT_DESC" %]
+		[% "PLUGIN_HUEBRIDGE_SERVER" | string %]&nbsp<input type="text" class="stdedit" name="server" id="server" value="[% server %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="10">
+		&nbsp[% "PLUGIN_HUEBRIDGE_ENABLEDEFS" | string %]
+		<select class="stdedit" name="enabled" id="enabled">
+		[% FOREACH entry IN YESNOBOX %] 
+			<option [% IF entry.1 == enabled %]selected[% END %] value="[% entry.1 %]"  [% IF status_hueBridgeConnect %]disabled[% END %]>[% entry.0 %]</option>
+		[% END %]
+		</select>
+		[% "PLUGIN_HUEBRIDGE_REMOVECOUNT_1" | string %]<input type="text" class="stdedit" name="remove_count" id="remove_count" value="[% remove_count %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2">&nbsp[% "PLUGIN_HUEBRIDGE_REMOVECOUNT_2" | string %]
+	[% END %]
+	
+	<hr>
+	<b>[% "PLUGIN_HUEBRIDGE_PLAYERLIST" | string %]</b><br>
+	<br><table>
+    <tr>
+        <th>&nbsp;</th>
+        <th>&nbsp;Name</th>
+        <th>&nbsp;IP Address</th>
+        <th>&nbsp;MAC Address</th>
+        <th>&nbsp;User Name</th>
+        <th>&nbsp;Connected</th>
+        <th>&nbsp;</th>
+    </tr>
+	[% FOREACH entry IN devices %]
+        [% IF entry.udn != '.common.' %]
+            <tr>
+                <td><input name="enabled.[% entry.udn %]" type="checkbox" value="1" [% IF status_hueBridgeConnect %]disabled[% END %] [% IF entry.enabled %] checked [% END %]></td>
+                <th>&nbsp;[% entry.name %]</th>
+                <th>&nbsp;[% entry.ip_address %]</th>
+                <th>&nbsp;[% entry.mac %]</th>
+                <th>&nbsp;[% entry.user_name %]</th>
+                <td align="center"><input name="enabled.[% entry.user_valid %]" type="checkbox" value="1" disabled readonly [% IF entry.user_valid %] checked [% END %]/></td>
+                <td><input type="hidden" name="connectHueBridgeButtonHelper" value="[% entry.udn %]">
+                    <input type="submit" name="connectHueBridge" value="[% "PLUGIN_HUEBRIDGE_CONNECT_BUTTON" | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgeConnect %]disabled[% END %]/>
+                </td>
+            </tr>
+        [% END %]
+    [% END %]
+	</table>
+	
+	[% END %]
+
+[% PROCESS settings/footer.html %]

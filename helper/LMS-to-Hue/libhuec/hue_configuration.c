@@ -57,13 +57,13 @@ extern int hue_get_bridge_config(hue_bridge_t *bridge) {
 
 	request.method = _GET;
 
-	// send empty body for getting the configuration
-	request.body = "";
-
 	snprintf(request.uri, HB_STR_LEN,
 		 "/api/%s/config",
 		 bridge->userName
 	);
+    
+	// send empty body for getting the configuration
+	request.body = "";
 
 	hue_send_request(bridge, &request);
 	hue_receive_response(bridge, &response);

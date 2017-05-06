@@ -116,7 +116,10 @@ void SaveConfig(char *name, void *ref, bool full)
 			ixmlDocument_importNode(doc, dev_node, true, &dev_node);
 			ixmlNode_appendChild((IXML_Node*) root, dev_node);
 
-			XMLUpdateNode(doc, dev_node, false, "friendly_name", p->FriendlyName);
+			//XMLUpdateNode(doc, dev_node, false, "friendly_name", p->FriendlyName);
+            XMLUpdateNode(doc, dev_node, true, "ip_address", inet_ntoa(p->Hue.ipAddress));
+            XMLUpdateNode(doc, dev_node, true, "user_valid", "%d", (int) p->UserValid);
+            XMLUpdateNode(doc, dev_node, true, "name", p->Hue.name);
 			XMLUpdateNode(doc, dev_node, true, "name", p->sq_config.name);
 			if (memcmp(p->sq_config.mac, "\0\0\0\0\0\0", 6)) {
 				XMLUpdateNode(doc, dev_node, true, "mac", "%02x:%02x:%02x:%02x:%02x:%02x", p->sq_config.mac[0],
@@ -131,12 +134,14 @@ void SaveConfig(char *name, void *ref, bool full)
 			XMLAddNode(doc, dev_node, "udn", p->UDN);
 			XMLAddNode(doc, dev_node, "name", p->Hue.name);
 			XMLAddNode(doc, dev_node, "user_name", p->Hue.userName);
-			XMLAddNode(doc, dev_node, "friendly_name", p->FriendlyName);
+            XMLAddNode(doc, dev_node, "user_valid", "%d", (int) p->UserValid);
+			//XMLAddNode(doc, dev_node, "friendly_name", p->FriendlyName);
+            XMLAddNode(doc, dev_node, "ip_address", inet_ntoa(p->Hue.ipAddress));
 			if (*p->sq_config.dynamic.server) XMLAddNode(doc, dev_node, "server", p->sq_config.dynamic.server);
-			if (!memcmp(p->sq_config.mac, "\0\0\0\0\0\0", 6)) {
+			//if (!memcmp(p->sq_config.mac, "\0\0\0\0\0\0", 6)) {
 				XMLAddNode(doc, dev_node, "mac", "%02x:%02x:%02x:%02x:%02x:%02x", p->sq_config.mac[0],
 						   p->sq_config.mac[1], p->sq_config.mac[2], p->sq_config.mac[3], p->sq_config.mac[4], p->sq_config.mac[5]);
-			}
+			//}
 			XMLAddNode(doc, dev_node, "enabled", "%d", (int) p->Config.Enabled);
 		}
 	}
