@@ -7,29 +7,46 @@ use LWP::Simple;
 use base qw(Slim::Web::Settings);
 use XML::Simple;
 use Data::Dumper;
+
 use Slim::Utils::PluginManager;
 use Slim::Utils::Prefs;
 use Slim::Utils::Log;
 
+use Plugins::HueBridge::Plugin;
+use Plugins::HueBridge::HueCom;
+use Plugins::HueBridge::Squeeze2hue;
+
 my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
+
 my @xmlmain = qw(interface scan_interval scan_timeout log_limit);
 my @xmldevice = qw(name user_name mac codecs enabled remove_count server);
 my $xmlconfig;
 
-sub name { 'PLUGIN_HUEBRIDGE' }
+sub name {
+    return Slim::Web::HTTP::CSRF->protectName('PLUGIN_HUEBRIDGE');
+}
 
-sub page { 'plugins/HueBridge/settings/basic.html' }
-	
+sub page {
+    return Slim::Web::HTTP::CSRF->protectURI('plugins/HueBridge/settings/basic.html');
+}
+
+sub beforeRender {
+    my ($class, $params) = @_;
+    
+    if( Plugins::HueBridge::HueCom->getHueBridgeConnectProgress() || Plugins::HueBridge::HueCom->getConnectDisconnectStatus() ) {
+            $params->{'statusHueBridgeConnect'} = 1;
+    }
+    else {
+        $params->{'statusHueBridgeConnect'} = 0;
+    }
+}
+
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
 
     my $update;
 	
-    require Plugins::HueBridge::HueCom;
-    require Plugins::HueBridge::Squeeze2hue;
-    require Plugins::HueBridge::Plugin;
-
     if ($params->{ 'delconfig' }) {
 
         my $conf = Plugins::HueBridge::Squeeze2hue->configFile($class);
