@@ -1,231 +1,44 @@
-PLUGIN_HUEBRIDGE
-	EN	Hue bridge
+PLUGIN_HUEBRIDGE_NAME
+	EN	Hue Bridge Plugin
 
 PLUGIN_HUEBRIDGE_DESC
-	EN	Use Hue compatible devices in LMS 
-	
-PLUGIN_HUEBRIDGE_YES
-	EN	Yes
-		
-PLUGIN_HUEBRIDGE_NO
-	EN	No
-	
-PLUGIN_HUEBRIDGE_AUTORUN
-	EN	Start the Bridge
+	EN	Use Philips Hue compatible devices in Logitech Media Server
 
-PLUGIN_HUEBRIDGE_AUTORUN_DESC
+PLUGIN_HUEBRIDGE_LIST_NAME
+	EN	List of Hue Bridges
+
+PLUGIN_HUEBRIDGE_LIST_DESC
+	EN	List of Hue Bridges on your network
+
+PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_NAME
+	EN	General Settings
+
+PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_DESC
+	EN	Settings that apply to the overall performance of the binary helper.
+
+PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME
+	EN	Autorun binary
+
+PLUGIN_HUEBRIDGE_BINARY_AUTORUN_DESC
 	EN	Automatically start the Hue bridge instance when the server starts.
 
-PLUGIN_HUEBRIDGE_RUNNING_0
-	EN	Not Running
+PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME
+	EN	Selected binary
 
-PLUGIN_HUEBRIDGE_RUNNING_1
-	EN	Running
-	
-PLUGIN_HUEBRIDGE_USERGUIDELINK
-	EN	View User Guide
-	
-PLUGIN_HUEBRIDGE_BINARIES
-	EN	Select Binary
+PLUGIN_HUEBRIDGE_BINARY_SELECTED_DESC
+	EN	Choose the helper binary version to start.
 
-PLUGIN_HUEBRIDGE_BINARIES_DESC
-	EN	Select the squeeze2hue binary which best matches your machine's architecture. 
-	EN	<br>- on raspi, use only armv6hf version
-	EN	<br>- armv5te emulates floating point
+PLUGIN_HUEBRIDGE_BINARY_SELECT_MENU_NAME
+	EN	Select binary
 
-PLUGIN_HUEBRIDGE_WARNING
-	EN	It is HIGHLY recommended to stop the bridge before changing parameters
-	
-PLUGIN_HUEBRIDGE_PARAMINFO
-	EN	An EMPTY parameter value means that [default parameter] is used
-	
-PLUGIN_HUEBRIDGE_COMMONPARAMINFO
-	EN	These parameters set the defaults for all players (EMPTY value means use built-in default)
+PLUGIN_HUEBRIDGE_ADVANCED_OPTIONS_NAME
+	EN	Advanced Options
 
-PLUGIN_HUEBRIDGE_OPTIONS
-	EN	Extra command line options
+PLUGIN_HUEBRIDGE_ADVANCED_OPTIONS_DESC
+	EN	Set some more sophisticated options for running the plugin.
 
-PLUGIN_HUEBRIDGE_OPTIONS_DESC
-	EN	Add additional squeeze2hue startup command line options here.  
-	EN	for details.
-
-PLUGIN_HUEBRIDGE_DEBUG
-	EN	Additional debugging
-
-PLUGIN_HUEBRIDGE_DEBUG_DESC
-	EN	Specify debugging level for writing to the log file.
-
-PLUGIN_HUEBRIDGE_
-	EN	none
-	
-PLUGIN_HUEBRIDGE_ALL
-	EN	All items below
-	
-PLUGIN_HUEBRIDGE_OUTPUT
-	EN	Output device debugging
-
-PLUGIN_HUEBRIDGE_STREAM
-	EN	Stream debugging
-
-PLUGIN_HUEBRIDGE_SLIMPROTO
-	EN	Control protocol debugging (slimproto)
-
-PLUGIN_HUEBRIDGE_DECODE
-	EN	Decode debugging
-
-PLUGIN_HUEBRIDGE_HUE
-	EN	Hue debugging
-
-PLUGIN_HUEBRIDGE_UTIL
-	EN	Utilities debugging
-
-PLUGIN_HUEBRIDGE_SLIMMAIN
-	EN	Main slimdevice debugging
-
-PLUGIN_HUEBRIDGE_MAIN
-	EN	Main application debugging
-
-PLUGIN_HUEBRIDGE_LOGGING
-	EN	Logging options
-	
-PLUGIN_HUEBRIDGE_LOGGING_DESC
-	EN	Enable logging of error and debug messages.
-	EN	<br>- Set a value in MB to limit log size (-1 for unlimited)
-
-PLUGIN_HUEBRIDGE_LOGENABLE
-	EN	Enable
-
-PLUGIN_HUEBRIDGE_LOGLINK
-	EN	View
-	
-PLUGIN_HUEBRIDGE_ERASELOG
-	EN	Erase at start
-	
-PLUGIN_HUEBRIDGE_LOGSIZE
-	EN	Max size (MB)
-
-PLUGIN_HUEBRIDGE_CLEANLOG
-	EN	Clean
-	
-PLUGIN_HUEBRIDGE_PLAYER
-	EN	Select Hue player
-		
-PLUGIN_HUEBRIDGE_CONFIG
-	EN	Configuration file
-
-PLUGIN_HUEBRIDGE_CONFIG_DESC
-	EN	<i>Generate</i> re-scans the network and builds a configuration file including all discovered players while retaining
-	EN	existing parameters and players (this will stop the bridge for ~30s)
-	EN	<br>When autosave is checked, the configuration file will be automatically updated at every network scan (see mDNS scanning options)
-
-PLUGIN_HUEBRIDGE_CONFLINK
-	EN	View
-	
-PLUGIN_HUEBRIDGE_GENCONFIG
-	EN	Generate
-
-PLUGIN_HUEBRIDGE_AUTOSAVECONFIG
-	EN	Autosave
-
-PLUGIN_HUEBRIDGE_DELCONFIG
-	EN	Erase
-	
-PLUGIN_HUEBRIDGE_SCAN
-	EN	Hue device scanning options
-
-PLUGIN_HUEBRIDGE_SCAN_DESC
-	EN	How often and for how long the network is scanned for added/removed Hue players on your network
-
-PLUGIN_HUEBRIDGE_INTERFACE
-	EN	Network interface 
-	
-PLUGIN_HUEBRIDGE_USELMSSOCKET
-	EN	Use LMS' network interface
-
-PLUGIN_HUEBRIDGE_INTERFACE_DESC
-	EN	The network interface (ip address in format xxx.xxx.xxx.xxx) used by the bridge. This is especially useful if you have a
-	EN	computer with multiple network interfaces. Use ? to let the bridge decide or check "use LMS' network
-	EN	interface" to make sure the Bridge uses the same network as LMS
-	
-PLUGIN_HUEBRIDGE_SCANINTERVAL
-	EN	Scan for Hue devices every
-	
-PLUGIN_HUEBRIDGE_SCANTIMEOUT
-	EN	during 	
-	
-PLUGIN_HUEBRIDGE_TEXTDEFAULT
-	EN	The following parameters apply to ALL players - enter "default" (without ") in text boxes to set to default values
-
-PLUGIN_HUEBRIDGE_AUDIOPARAM
-	EN	Audio parameters
-
-PLUGIN_HUEBRIDGE_CODECS
-	EN	Codecs
-
-PLUGIN_HUEBRIDGE_AUDIOPARAM_DESC
-	EN	Several codecs are supported by an Hue player. They will be reported to LMS that will decide 
-	EN	when to do transcoding. 
-
-PLUGIN_HUEBRIDGE_SERVER
-	EN	LMS Server
-	
-PLUGIN_HUEBRIDGE_ENABLED
-	EN	Enabled
-	
-PLUGIN_HUEBRIDGE_PLAYERINFO
-	EN	Player information
-	
-PLUGIN_HUEBRIDGE_PLAYERINFO_DESC
-	EN	The Name and MAC address of the player can be changed here. The <i>Name</i> is superseeded by value in LMS player's configuration page
-		
-PLUGIN_HUEBRIDGE_PLAYERNAME
-	EN	Name
-	
-PLUGIN_HUEBRIDGE_PLAYERMAC
-	EN	MAC address
-
-PLUGIN_HUEBRIDGE_DELETEPLAYER
-	EN	Delete
-
-PLUGIN_HUEBRIDGE_UPNPMGMT
-	EN	Player discovery options
-	
-PLUGIN_HUEBRIDGE_UPNPMGMT_DESC
-	EN	Misc options
-	EN	<br>- For the default list newly discovered players can be automatically added to LMS 
-	EN	<br>– For individual players a player can be enabled or disabled
-	EN	<br>- Number of UPnP scan cycles a player can be found missing before being removed
-	EN	<br>- Force LMS server (? for auto-discovery)
-
-PLUGIN_HUEBRIDGE_ENABLEDEFS
-	EN	Player is enabled
-
-PLUGIN_HUEBRIDGE_REMOVECOUNT_1
-	EN	but removed after  
-	
-PLUGIN_HUEBRIDGE_REMOVECOUNT_2
-	EN	failed scans
-	
-PLUGIN_HUEBRIDGE_PLAYERLIST
-	EN	List of players currently in configuration file
-
-PLUGIN_HUEBRIDGE_PLAYERLIST_DESC
-	EN	Note that more devices might have been discovered
-		
-PLUGIN_HUEBRIDGE_NOCONFIG
-	EN	Configuration file missing - create one by clicking "generate" or, if autosave is on, refresh this page
-
-PLUGIN_HUEBRIDGE_INFO_UNIX
-	EN	HueBridge uses the squeeze2hue software player which is installed as part of the plugin.  You can control it from the server
-	EN	web interface or any other Squeezebox control application.
-
-PLUGIN_HUEBRIDGE_INFO_WIN
-	EN	HueBridge uses the squeeze2hue software player which is installed as part of the plugin.  You can control it from the server
-	EN	web interface or any other Squeezebox control application.
-
-PLUGIN_HUEBRIDGE_INFO_MAC
-	EN	HueBridge uses the squeeze2hue software player which is installed as part of the plugin.  You can control it from the server
-	EN	web interface or any other Squeezebox control application.
+PLUGIN_HUEBRIDGE_SHOW_ADVANCED_OPTIONS_NAME
+	EN	Show Advanced Options
 
 PLUGIN_HUEBRIDGE_CONNECT_BUTTON
 	EN	Connect
@@ -235,9 +48,3 @@ PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_TITLE
 
 PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_MSG
 	EN	Press the push-link button on the Hue Bridge you want to connect to.
-
-	
-	
-
-	
-

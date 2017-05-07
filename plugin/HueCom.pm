@@ -11,13 +11,13 @@ use JSON::XS;
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
-my $bridgeUserName = 'none';
+my $bridgeUserName = 'huenone';
 
 my $timeForConnect = 29.33;
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
 
-sub initHueComCLICommands {
+sub initCLICommands {
     # Command init
     #    |requires client
     #    |  |is a query
@@ -26,13 +26,13 @@ sub initHueComCLICommands {
     #    C  Q  T  F
     
     Slim::Control::Request::addDispatch(['hue','bridge','connect','progress'],
-        [0, 1, 0, \&CLIgetHueBridgeConnectProgress]);
+        [0, 1, 0, \&CLICommand_getHueBridgeConnectProgress]);
     
     Slim::Control::Request::addDispatch(['hue','bridge','connect','cancel'],
-        [0, 1, 0, \&CLIcancelHueBridgeConnect]);
+        [0, 1, 0, \&CLICommand_cancelHueBridgeConnect]);
 }
 
-sub CLIgetHueBridgeConnectProgress {
+sub CLICommand_getHueBridgeConnectProgress {
     my $request = shift;
     
     $request->addResult('_hueBridgeConnectProgress', sprintf("%.2f", Plugins::HueBridge::HueCom->getConnectProgress()));
@@ -40,7 +40,7 @@ sub CLIgetHueBridgeConnectProgress {
     $request->setStatusDone();
 }
 
-sub CLIcancelHueBridgeConnect {
+sub CLICommand_cancelHueBridgeConnect {
     my $request = shift;
     
     if(Plugins::HueBridge::HueCom->getConnectDisconnectStatus()) {

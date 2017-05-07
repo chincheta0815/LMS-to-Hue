@@ -1,6 +1,6 @@
 <?xml version='1.0' standalone='yes'?>
 <extensions>
-  <name>PLUGIN_HUEBRIDGE</name>
+  <name>PLUGIN_HUEBRIDGE_NAME</name>
   <optionsURL>plugins/HueBridge/settings/basic.html</optionsURL>
   <email></email>
   <targetApplication>

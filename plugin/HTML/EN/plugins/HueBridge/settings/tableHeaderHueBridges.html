@@ -1,0 +1,14 @@
+            [% IF huebridges.0 %]
+                <tr>
+                    <th>[% 'PLUGIN_HUELIGHTNING_HUEBRIDGENAME' | string %]&nbsp;&nbsp;&nbsp;</th>
+                    <th>[% 'PLUGIN_HUELIGHTNING_HUEBRIDGEIP' | string %]&nbsp;&nbsp;&nbsp;</th>
+                    <th align="center">[% 'PLUGIN_HUELIGHTNING_HUEBRIDGEPAIRED' | string %]</th>
+                    <th>&nbsp;</th>
+                </tr>
+            [% ELSE %]
+                <tr>
+                    <td class="[% odd ? "odd" : "even" %]" colspan="4">
+                        [% 'PLUGIN_HUELIGHTNING_HUEBRIDGES_NONE_YET' | string %]
+                    </td>
+                </tr>
+            [% END %]

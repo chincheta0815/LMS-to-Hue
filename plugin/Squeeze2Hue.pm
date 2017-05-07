@@ -1,4 +1,4 @@
-package Plugins::HueBridge::Squeeze2hue;
+package Plugins::HueBridge::Squeeze2Hue;
 
 use strict;
 
@@ -17,7 +17,7 @@ my $log   = logger('plugin.huebridge');
 my $squeeze2hue;
 my $binary;
 
-sub binaries {
+sub getAvailableHelperBinaries {
 	my $os = Slim::Utils::OSDetect::details();
 	
 	if ($os->{'os'} eq 'Linux') {
@@ -66,7 +66,7 @@ sub binaries {
 	
 }
 
-sub bin {
+sub helperBinary {
 	my $class = shift;
 
 	my @binaries = $class->binaries;

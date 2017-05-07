@@ -1,0 +1,17 @@
+            [% FOREACH bridge IN huebridges %]
+                <tr>
+                    <td class="[% odd ? "odd" : "even" %]">
+                        [% bridge.name %]&nbsp;&nbsp;&nbsp;
+                    </td>
+                    <td class="[% odd ? "odd" : "even" %]">
+                        [% bridge.ipAddress %]&nbsp;
+                    </td>
+                    <td class="[% odd ? "odd" : "even" %]" align="center">
+                        <input type="checkbox" name="brigdePaired" value="0" class="stdclick" disabled readonly >&nbsp;
+                    </td>
+                    <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
+                        <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="1">
+                        <input type="submit" name="connectHueBridge[% loop.index %]" value="[% "PLUGIN_HUELIGHTNING_CONNECT_BUTTON" | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]/>
+                    </td>
+                </tr>
+            [% END %]
