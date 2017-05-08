@@ -62,10 +62,10 @@
                         }
                     })
                     Ext.Ajax.request({
-                        url: 'plugins/HueBridge/settings/tableBodyFoundHueBridges.html',
+                        url: 'plugins/HueBridge/settings/tableBodyHueBridges.html',
                         
                         success: function(response) {
-                            Ext.get('tableBodyFoundHueBridges').update(response.responseText);
+                            Ext.get('tableBodyHueBridges').update(response.responseText);
                         }
                     })
                     Ext.Ajax.request({

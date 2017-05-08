@@ -1,14 +1,12 @@
             [% IF huebridges.0 %]
                 <tr>
-                    <th>[% 'PLUGIN_HUELIGHTNING_HUEBRIDGENAME' | string %]&nbsp;&nbsp;&nbsp;</th>
-                    <th>[% 'PLUGIN_HUELIGHTNING_HUEBRIDGEIP' | string %]&nbsp;&nbsp;&nbsp;</th>
-                    <th align="center">[% 'PLUGIN_HUELIGHTNING_HUEBRIDGEPAIRED' | string %]</th>
+                    <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_NAME' | string %]&nbsp;&nbsp;&nbsp;</th>
+                    <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_IP' | string %]&nbsp;&nbsp;&nbsp;</th>
+                    <th align="center">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_CONNECTED' | string %]</th>
                     <th>&nbsp;</th>
                 </tr>
             [% ELSE %]
                 <tr>
-                    <td class="[% odd ? "odd" : "even" %]" colspan="4">
-                        [% 'PLUGIN_HUELIGHTNING_HUEBRIDGES_NONE_YET' | string %]
-                    </td>
+                    <th colspan="4">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGES_NONE_YET' | string %]</th>
                 </tr>
             [% END %]

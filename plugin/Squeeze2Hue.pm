@@ -66,18 +66,16 @@ sub getAvailableHelperBinaries {
 	
 }
 
-sub helperBinary {
-	my $class = shift;
+sub getHelperBinary {
+	my @availableHelperBinaries = getAvailableHelperBinaries();
 
-	my @binaries = $class->binaries;
-
-	if (scalar @binaries == 1) {
-		return $binaries[0];
+	if (scalar @availableHelperBinaries == 1) {
+		return $availableHelperBinaries[0];
 	}
 
 	if (my $b = $prefs->get("bin")) {
-		for my $bin (@binaries) {
-			if ($bin eq $b) {
+		for my $helperBinary (@availableHelperBinaries) {
+			if ($helperBinary eq $b) {
 				return $b;
 			}
 		}
@@ -87,10 +85,8 @@ sub helperBinary {
 }
 
 sub start {
-	my $class = shift;
-
-	my $bin = $class->bin || do {
-		$log->warn("no binary set");
+	my $helperBinary = Plugins::HueBridge::Squeeze2Hue->getHelperBinary() || do {
+		$log->warn("no helper binary set");
 		return;
 	};
 
@@ -104,7 +100,7 @@ sub start {
 	}
 	
 	if ($prefs->get('eraselog')) {
-		unlink $class->logFile;
+		unlink Plugins::HueBridge::Squeeze2Hue->logFile();
 	}
 	
 	if ($prefs->get('useLMSsocket')) {
@@ -112,7 +108,7 @@ sub start {
 	}
 
 	if ($prefs->get('logging')) {
-		push @params, ("-f", $class->logFile);
+		push @params, ("-f", Plugins::HueBridge::Squeeze2Hue->logFile() );
 		
 		if ($prefs->get('debugs') ne '') {
 			push @params, ("-d", $prefs->get('debugs') . "=debug");
@@ -120,8 +116,8 @@ sub start {
 		$logging = 1;
 	}
 	
-	if (-e $class->configFile || $prefs->get('autosave')) {
-		push @params, ("-x", $class->configFile);
+	if (-e Plugins::HueBridge::Squeeze2Hue->configFile() || $prefs->get('autosave')) {
+		push @params, ("-x", Plugins::HueBridge::Squeeze2Hue->configFile() );
 	}
 	
 	if ($prefs->get('opts') ne '') {
@@ -129,7 +125,7 @@ sub start {
 	}
 	
 	if (Slim::Utils::OSDetect::details()->{'os'} ne 'Windows') {
-		my $exec = catdir(Slim::Utils::PluginManager->allPlugins->{'HueBridge'}->{'basedir'}, 'Bin', $bin);
+		my $exec = catdir(Slim::Utils::PluginManager->allPlugins->{'HueBridge'}->{'basedir'}, 'Bin', $helperBinary);
 		$exec = Slim::Utils::OSDetect::getOS->decodeExternalHelperPath($exec);
 			
 		if (!((stat($exec))[2] & 0100)) {
@@ -138,22 +134,22 @@ sub start {
 		}	
 	}	
 	
-	my $path = Slim::Utils::Misc::findbin($bin) || do {
-		$log->warn("$bin not found");
+	my $path = Slim::Utils::Misc::findbin($helperBinary) || do {
+		$log->warn("$helperBinary not found");
 		return;
 	};
 
 	my $path = Slim::Utils::OSDetect::getOS->decodeExternalHelperPath($path);
 			
 	if (!-e $path) {
-		$log->warn("$bin not executable");
+		$log->warn("$helperBinary not executable");
 		return;
 	}
 	
 	push @params, @_;
 
 	if ($logging) {
-		open(my $fh, ">>", $class->logFile);
+		open(my $fh, ">>", Plugins::HueBridge::Squeeze2Hue->logFile() );
 		print $fh "\nStarting Squeeze2hue: $path @params\n";
 		close $fh;
 	}
@@ -165,17 +161,17 @@ sub start {
 		$log->warn($@);
 
 	} else {
-		Slim::Utils::Timers::setTimer($class, Time::HiRes::time() + 1, sub {
-			if ($squeeze2hue && $squeeze2hue->alive) {
-				$log->debug("$bin running");
-				$binary = $path;
+		Slim::Utils::Timers::setTimer(undef, Time::HiRes::time() + 1, sub {
+			if ($squeeze2hue && $squeeze2hue->alive() ) {
+				$log->debug("$helperBinary running");
+				$helperBinary = $path;
 			}
 			else {
-				$log->debug("$bin NOT running");
+				$log->debug("$helperBinary NOT running");
 			}
 		});
 		
-		Slim::Utils::Timers::setTimer($class, Time::HiRes::time() + 30, \&beat, $path, @params);
+		Slim::Utils::Timers::setTimer(undef, Time::HiRes::time() + 30, \&beat, $path, @params);
 	}
 }
 
