@@ -12,9 +12,9 @@ use Slim::Utils::Prefs;
 
 
 my $log = Slim::Utils::Log->addLogCategory({
-	'category'     => 'plugin.huebridge',
-	'defaultLevel' => 'WARN',
-	'description'  => Slim::Utils::Strings::string('PLUGIN_HUEBRIDGE'),
+    'category'     => 'plugin.huebridge',
+    'defaultLevel' => 'WARN',
+    'description'  => Slim::Utils::Strings::string('PLUGIN_HUEBRIDGE'),
 });
 
 my $prefs = preferences('plugin.huebridge');
@@ -35,11 +35,11 @@ $prefs->init({
 
 
 sub initPlugin {
-	my $class = shift;
+    my $class = shift;
 
     $log->debug( "Initialising HueBridge " . $class->_pluginDataFor( 'version' ) . " on " . $Config{'archname'} );
-	
-	if ( main::WEBUI ) {
+
+    if ( main::WEBUI ) {
         require Plugins::HueBridge::Settings;
         Plugins::HueBridge::Settings->new;
 
@@ -50,15 +50,15 @@ sub initPlugin {
         #Slim::Web::Pages->addPageFunction("^huebridge-log.log", \&Plugins::HueBridge::Squeeze2Hue::logHandler);
         #Slim::Web::Pages->addPageFunction("^huebridge-config.xml", \&Plugins::HueBridge::Squeeze2Hue::configHandler);
         #Slim::Web::Pages->addPageFunction("huebridge-guide.htm", \&Plugins::HueBridge::Squeeze2Hue::guideHandler);
-	}
+    }
 
     require Plugins::HueBridge::HueCom;
     Plugins::HueBridge::HueCom->initCLICommands;
 
-	require Plugins::HueBridge::Squeeze2Hue;
-	if ($prefs->get('autorun')) {
-		Plugins::HueBridge::Squeeze2Hue->start;
-	}
+    require Plugins::HueBridge::Squeeze2Hue;
+    if ($prefs->get('autorun')) {
+        Plugins::HueBridge::Squeeze2Hue->start;
+    }
 
     return 1;
 }
