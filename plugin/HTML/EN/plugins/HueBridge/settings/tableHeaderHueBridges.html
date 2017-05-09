@@ -1,12 +1,8 @@
             [% IF huebridges.0 %]
-                <tr>
-                    <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_NAME' | string %]&nbsp;&nbsp;&nbsp;</th>
-                    <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_IP' | string %]&nbsp;&nbsp;&nbsp;</th>
-                    <th align="center">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_CONNECTED' | string %]</th>
-                    <th>&nbsp;</th>
-                </tr>
+                <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_NAME' | string %]&nbsp;&nbsp;&nbsp;</th>
+                <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_IP' | string %]&nbsp;&nbsp;&nbsp;</th>
+                <th align="center">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_CONNECTED' | string %]</th>
+                <th>&nbsp;</th>
             [% ELSE %]
-                <tr>
-                    <th colspan="4">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGES_NONE_YET' | string %]</th>
-                </tr>
+                <th colspan="4">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGES_NONE_YET' | string %]</th>
             [% END %]
