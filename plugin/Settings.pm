@@ -72,7 +72,7 @@ sub handler_tableAdvancedHueBridgeOptions {
     }
 }
 
-sub handler_tableBodyHueBridges {
+sub handler_tableHueBridges {
     my ($client, $params) = @_;
     
     my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
@@ -80,19 +80,7 @@ sub handler_tableBodyHueBridges {
     if ( $XMLConfig->{'device'} ) {
 
         $params->{'huebridges'} = $XMLConfig->{'device'};
-        return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableBodyHueBridges.html", $params);
-    }
-}
-
-sub handler_tableHeaderHueBridges {
-    my ($client, $params) = @_;
-
-    my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
-
-    if ( $XMLConfig->{'device'} ) {
-
-        $params->{'huebridges'} = $XMLConfig->{'device'};
-        return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHeaderHueBridges.html", $params);
+        return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);
     }
 }
 
