@@ -91,12 +91,12 @@
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_NAME" desc="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_DESC" %]
         <table border="0" cellspacing="0">
             <tr>
-                <td class="[% odd ? "odd" : "even" %]" colspan="4">[% 'PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME' | string %]&nbsp;&nbsp;&nbsp;</td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="4"><input name="binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgePairing" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]></td>
+                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME' | string %]&nbsp;&nbsp;&nbsp;</td>
+                <td class="[% odd ? "odd" : "even" %]"><input name="binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgePairing" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]></td>
             </tr>
             <tr>
-                <td class="[% odd ? "odd" : "even" %]" colspan="4">[% 'PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME' | string %]&nbsp;&nbsp;&nbsp;</td>
-            	<td class="[% odd ? "odd" : "even" %]" colspan="4">
+                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME' | string %]&nbsp;&nbsp;&nbsp;</td>
+            	<td class="[% odd ? "odd" : "even" %]">
                     [% IF availableHelperBinaries.size > 1 %]
                     <select class="stdedit disableOnHueBridgePairing" name="pref_helperBinary" id="helperBinary">
                         [% FOREACH entry IN availableHelperBinaries %]
@@ -114,15 +114,15 @@
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_ADVANCED_OPTIONS_NAME" desc="PLUGIN_HUEBRIDGE_ADVANCED_OPTIONS_DESC" %]
         <table border="0" cellspacing="0">
             <tr>
-                <td class="[% odd ? "odd" : "even" %]" colspan="4">
+                <td class="[% odd ? "odd" : "even" %]">
                     [% 'PLUGIN_HUEBRIDGE_SHOW_ADVANCED_OPTIONS_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="4" align="center">
-                    <input type="checkbox" [% IF prefs.pref_showAdvancedHueBridgeOptions %] checked="1" [% END %] class="stdedit disableOnHueBridgePairing" [% IF status_hueBridgeConnect %]disabled[% END %] name="pref_showAdvancedHueBridgeOptions" id="showAdvancedHueBridgeOptions" value="1">
+                <td class="[% odd ? "odd" : "even" %]">
+                    <input type="checkbox" [% IF prefs.pref_showAdvancedHueBridgeOptions %] checked="1" [% END %] class="stdedit disableOnHueBridgePairing" [% IF status_hueBridgeConnect %]disabled[% END %] name="pref_showAdvancedHueBridgeOptions" id="pref_showAdvancedHueBridgeOptions" value="1">
                 </td>
             </tr>
-            <tr id="tableAdvancedHueBridgeOptions"></tr>
         </table>
+        <table id="tableAdvancedHueBridgeOptions"></table>
     [% END %]
 
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_LIST_NAME" desc="PLUGIN_HUEBRIDGE_LIST_DESC" %]

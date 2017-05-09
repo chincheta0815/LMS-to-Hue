@@ -55,19 +55,32 @@ sub handler {
 
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
-            $log->debug('Triggered \'connect\' for index: ' . $i);
-            Plugins::HueLightning::Hue->connect( $i );
+            
+            my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+            my $device = findUDN($params->{"connectHueBridgeButtonHelper$i"}, \@{$XMLConfig->{'device'}});
+            my $ip_address = $device->{'ip_address'};
+            
+            $log->debug('Triggered \'connect\' for index: ' . $ip_address);
+            Plugins::HueBridge::HueCom->connect( $ip_address );
+            
             delete $params->{saveSettings};
         }
     }
-    
+
+    #if ( Plugins::HueBridge::HueCom->getBridgeUserName() neq 'none' ) {
+    #   $log->debug('Got user_name:' . Plugins::HueBridge::HueCom->getBridgeUserName() );
+    #};
+
     return $class->SUPER::handler($client, $params, $callback, \@args);
 }
 
 sub handler_tableAdvancedHueBridgeOptions {
     my ($client, $params) = @_;
     
-    if ( $prefs->get('showAdvancedHueBridgeOptions') ) {
+    my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+    
+    if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
+    
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html", $params);
     }
 }
@@ -82,6 +95,20 @@ sub handler_tableHueBridges {
         $params->{'huebridges'} = $XMLConfig->{'device'};
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);
     }
+}
+
+sub findUDN {
+    my $udn = shift(@_);
+    my $listpar = shift(@_);
+    my @list = @{$listpar};
+
+    while (@list) {
+
+        my $p = pop @list;
+        if ($p->{ 'udn' } eq $udn) { return $p; }
+    }
+
+    return undef;
 }
 
 sub readXMLConfigFile {
