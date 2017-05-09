@@ -62,17 +62,10 @@
                         }
                     })
                     Ext.Ajax.request({
-                        url: 'plugins/HueBridge/settings/tableBodyHueBridges.html',
+                        url: 'plugins/HueBridge/settings/tableHueBridges.html',
                         
                         success: function(response) {
-                            Ext.get('tableBodyHueBridges').update(response.responseText);
-                        }
-                    })
-                    Ext.Ajax.request({
-                        url: 'plugins/HueBridge/settings/tableHeaderHueBridges.html',
-                        
-                        success: function(response) {
-                            Ext.get('tableHeaderHueBridges').update(response.responseText);
+                            Ext.get('tableHueBridges').update(response.responseText);
                         }
                     })
                 },
@@ -133,13 +126,7 @@
     [% END %]
 
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_LIST_NAME" desc="PLUGIN_HUEBRIDGE_LIST_DESC" %]
-        <table border="0" cellspacing="0">
-            <tr id="tableHeaderHueBridges"></tr>
-            <tr id="tableBodyHueBridges"></tr>
-            <tr style="height: 5px;">
-                <td class="[% odd ? "odd" : "even" %]" colspan="4"></td>
-            </tr>
-        </table>
+        <table id="tableHueBridges"></table>
     [% END %]
 
 [% PROCESS settings/footer.html %]
