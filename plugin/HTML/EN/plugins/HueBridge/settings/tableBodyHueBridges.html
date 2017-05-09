@@ -1,17 +1,15 @@
             [% FOREACH huebridge IN huebridges %]
-                <tr>
-                    <td class="[% odd ? "odd" : "even" %]">
-                        [% huebridge.name %]&nbsp;&nbsp;&nbsp;
-                    </td>
-                    <td class="[% odd ? "odd" : "even" %]">
-                        [% huebridge.ip_address %]&nbsp;&nbsp;&nbsp;
-                    </td>
-                    <td class="[% odd ? "odd" : "even" %]" align="center">
-                        <input type="checkbox" [% IF huebridge.user_valid %] checked="1" [% END %] name="huebridge.user_valid" value="1" class="stdclick disableOnHueBridgePairing" disabled readonly>
-                    </td>
-                    <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
-                        <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="1">
-                        <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>
-                    </td>
-                </tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% huebridge.name %]&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% huebridge.ip_address %]&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" align="center">
+                    <input type="checkbox" [% IF huebridge.user_valid %] checked="1" [% END %] name="huebridge.user_valid" value="1" class="stdclick disableOnHueBridgePairing" disabled readonly>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
+                    <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="1">
+                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>
+                </td>
             [% END %]
