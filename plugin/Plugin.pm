@@ -44,8 +44,7 @@ sub initPlugin {
         Plugins::HueBridge::Settings->new;
 
         Slim::Web::Pages->addPageFunction("tableAdvancedHueBridgeOptions.html" => \&Plugins::HueBridge::Settings::handler_tableAdvancedHueBridgeOptions);
-        Slim::Web::Pages->addPageFunction("tableBodyHueBridges.html" => \&Plugins::HueBridge::Settings::handler_tableBodyHueBridges);
-        Slim::Web::Pages->addPageFunction("tableHeaderHueBridges.html" => \&Plugins::HueBridge::Settings::handler_tableHeaderHueBridges);
+        Slim::Web::Pages->addPageFunction("tableHueBridges.html" => \&Plugins::HueBridge::Settings::handler_tableHueBridges);
 
         #Slim::Web::Pages->addPageFunction("^huebridge-log.log", \&Plugins::HueBridge::Squeeze2Hue::logHandler);
         #Slim::Web::Pages->addPageFunction("^huebridge-config.xml", \&Plugins::HueBridge::Squeeze2Hue::configHandler);
