@@ -11,7 +11,7 @@ use JSON::XS;
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
-my $bridgeUserName = 'huenone';
+my $deviceData;
 
 my $timeForConnect = 29.33;
 my $connectProgress = 0;
@@ -55,28 +55,25 @@ sub CLICommand_cancelHueBridgeConnect {
 }
 
 sub connect {
-    my ($self, $bridgeIpAddress) = @_;
+    my ($self, $deviceUDN, $XMLConfig) = @_;
     
     $connectProgress = 0;
-    $bridgeUserName = 'none';
+           
+    $log->debug('Initiating hue bridge connect.');
     
-    $log->debug('Initiating hue bridge connect (' . $bridgeIpAddress . ').');
-    
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceUDN, $XMLConfig );
     Slim::Utils::Timers::setTimer(undef, time() + $timeForConnect, \&unconnect);
     
     $connectDisconnectStatus = 1;
 }
 
 sub disconnect {
-    my ($self, $bridgeIpAddress) = @_;
+    my ($self, $deviceUDN, $XMLConfig) = @_;
     
     $connectDisconnectStatus = 1;
     
-    $log->debug('Disconnecting device (' . $bridgeIpAddress .').');
-    
-    $bridgeUserName = 'none';
-    
+    $log->debug('Disconnecting device (' . $deviceUDN .').');
+       
     $connectDisconnectStatus = 0;
 }
 
@@ -90,8 +87,8 @@ sub unconnect {
     $connectProgress = -1;
 }
 
-sub getBridgeUserName {
-    return $bridgeUserName;
+sub getConnectedHueBridge {
+    return $deviceData;
 }
 
 sub getConnectProgress {
@@ -107,7 +104,11 @@ sub getConnectDisconnectStatus {
 }
 
 sub _sendConnectRequest {
-    my ($self, $bridgeIpAddress) = @_;
+    my ($self, $deviceUDN, $XMLConfig) = @_;
+            
+    my $device = Plugins::HueBridge::Settings->findUDN( $deviceUDN, $XMLConfig->{'device'} );
+    
+    my $bridgeIpAddress = $device->{'ip_address'};
     
     my $uri = join('', 'http://', $bridgeIpAddress, '/api');
     my $contentType = "application/json";
@@ -118,13 +119,14 @@ sub _sendConnectRequest {
     $connectDisconnectStatus = 1;
     $connectProgress += 1;
     
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $bridgeIpAddress);
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceUDN, $XMLConfig);
     
     my $asyncHTTP = Slim::Networking::SimpleAsyncHTTP->new(
         \&_sendConnectRequestOK,
         \&_sendConnectReqeustERROR,
         {
-            bridgeIpAddress => $bridgeIpAddress,
+            deviceUDN => $deviceUDN,
+            XMLConfig => $XMLConfig,
             error       => "Can't get response.",
         },
     );
@@ -135,35 +137,39 @@ sub _sendConnectRequest {
 sub _sendConnectRequestOK{
 
     my $asyncHTTP = shift;
-    my $bridgeIpAddress = $asyncHTTP->params('bridgeIpAddress');
+    my $deviceUDN = $asyncHTTP->params('deviceUDN');
+    my $XMLConfig = $asyncHTTP->params('XMLConfig');
     
     my $content = $asyncHTTP->content();
     
-    $log->debug('Connect request sucessfully sent to hue bridge (' . $bridgeIpAddress . ').');
+    $log->debug('Connect request sucessfully sent to hue bridge (' . $deviceUDN . ').');
     my $bridgeResponse = decode_json($asyncHTTP->content);
  
     if(exists($bridgeResponse->[0]->{error})){
-        $log->info('Pairing with hue bridge (' . $bridgeIpAddress . ') failed.');
+        $log->info('Pairing with hue bridge (' . $deviceUDN . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
-        $log->debug('Pairing with hue bridge (' . $bridgeIpAddress . ' successful.');
-        $log->debug('Got username \'' . $bridgeResponse->[0]->{success}->{username} . '\' from hue bridge (' . $bridgeIpAddress . ').');
+        $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');
+        $log->debug('Got username \'' . $bridgeResponse->[0]->{success}->{username} . '\' from hue bridge (' . $deviceUDN . ').');
         
-        $bridgeUserName = $bridgeResponse->[0]->{success}->{username};
+        my $device = Plugins::HueBridge::Settings->findUDN( $deviceUDN, $XMLConfig->{'device'} );
+        $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
+        
+        $deviceData = $device;
         
         unconnect();
     }
     else{
-        $log->error('Got nothing useful at all from hue bridge (' . $bridgeIpAddress . ' ).');
+        $log->error('Got nothing useful at all from hue bridge (' . $deviceUDN . ' ).');
     }
 }
 
 sub _sendConnectRequestERROR {
     my $asyncHTTP = shift;
-    my $bridgeIpAddress = $asyncHTTP->params('bridgeIpAddress');
+    my $deviceUDN = $asyncHTTP->params('deviceUDN');
     
-    $log->error('Request to hue bridge (' . $bridgeIpAddress . ') could not be processed.');
+    $log->error('Request to hue bridge (' . $deviceUDN . ') could not be processed.');
     
     unconnect();
 }
