@@ -56,20 +56,15 @@ sub handler {
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
             
+            my $deviceUDN = $connectHueBridgeButtonHelper$i;
             my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
-            my $device = findUDN($params->{"connectHueBridgeButtonHelper$i"}, \@{$XMLConfig->{'device'}});
-            my $ip_address = $device->{'ip_address'};
             
-            $log->debug('Triggered \'connect\' for index: ' . $ip_address);
-            Plugins::HueBridge::HueCom->connect( $ip_address );
+            $log->debug('Triggered \'connect\' for device with udn: ' . $deviceUDN);
+            Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
             
             delete $params->{saveSettings};
         }
     }
-
-    #if ( Plugins::HueBridge::HueCom->getBridgeUserName() neq 'none' ) {
-    #   $log->debug('Got user_name:' . Plugins::HueBridge::HueCom->getBridgeUserName() );
-    #};
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
 }
