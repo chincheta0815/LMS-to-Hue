@@ -62,8 +62,14 @@ sub handler {
             $log->debug('Triggered \'connect\' for device with udn: ' . $deviceUDN);
             Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
             
-            delete $params->{saveSettings};
+            delete $params->{'saveSettings'};
         }
+    }
+
+    if ( $params->{'saveSettings'}) {
+    #   Plugins::HueBridge::HueCom->getConnectedHueBridge();
+    #   If something changed: Put it into the XMLConfig hash, stop the helper, write to file, start the helper.
+    #   Add await handler.
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
