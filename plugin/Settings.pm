@@ -17,6 +17,8 @@ use Plugins::HueBridge::HueCom;
 my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
+my $XMLConfig;
+
 sub name {
     return Slim::Web::HTTP::CSRF->protectName('PLUGIN_HUEBRIDGE_NAME');
 }
@@ -43,6 +45,8 @@ sub beforeRender {
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
 
+    $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+
     if ( $prefs->get('binaryAutorun') ) {
         $params->{'binaryRunning'} = Plugins::HueBridge::Squeeze2Hue->alive();
     }
@@ -57,7 +61,6 @@ sub handler {
         if( $params->{"connectHueBridge$i"} ){
             
             my $deviceUDN = $connectHueBridgeButtonHelper$i;
-            my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
             
             $log->debug('Triggered \'connect\' for device with udn: ' . $deviceUDN);
             Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
@@ -78,8 +81,6 @@ sub handler {
 sub handler_tableAdvancedHueBridgeOptions {
     my ($client, $params) = @_;
     
-    my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
-    
     if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
     
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html", $params);
@@ -88,8 +89,6 @@ sub handler_tableAdvancedHueBridgeOptions {
 
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
-    
-    my $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
     
     if ( $XMLConfig->{'device'} ) {
 
