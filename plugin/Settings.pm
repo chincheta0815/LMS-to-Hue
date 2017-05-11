@@ -51,6 +51,40 @@ sub handler {
 
     $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
 
+    if ( $params->{'startSqueeze2Hue'} ) {
+    
+        if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
+        
+            $log->debug('Squeeze2Hue helper already running.');
+        }
+        else {
+            Plugins::HueBridge::Squeeze2Hue->start();
+        }
+        
+        delete $params->{'saveSettings'};
+    }
+    
+    if ( $params->{'stopSqueeze2Hue'} ) {
+    
+        $log->debug('Stopping Squeeze2Hue.');
+        Plugins::HueBridge::Squeeze2Hue->stop();
+        
+        delete $params->{'saveSettings'};
+    }
+    
+    if ( $params->{'restartSqueeze2Hue'} ) {
+    
+        if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
+            $log->debug('Restarting Squeeze2Hue.');
+            $squeeze2HueRestartRequested = 1;
+        }
+        else {
+            $log->debug('Squeeze2Hue helper not running.');
+        }
+        
+        delete $params->{'saveSettings'};
+    }
+
     if ( $prefs->get('binaryAutorun') ) {
         $params->{'binaryRunning'} = Plugins::HueBridge::Squeeze2Hue->alive();
     }
@@ -64,7 +98,7 @@ sub handler {
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
             
-            my $deviceUDN = $connectHueBridgeButtonHelper$i;
+            my $deviceUDN = $params->{"connectHueBridgeButtonHelper$i"};
             
             $log->debug('Triggered \'connect\' for device with udn: ' . $deviceUDN);
             Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
@@ -109,17 +143,16 @@ sub handler_tableHueBridges {
     my ($client, $params) = @_;
     
     if ( $squeeze2HueRestartRequested ) {
-        $log->debug('Restarting squeeze2hue."');
+        $log->error('Restarting squeeze2hue.');
             
         Plugins::HueBridge::Squeeze2Hue->stop();
         
-        $squeeze2HueRestartRequested = 0;
         $squeeze2HueRestartCountdown = 30;
     }
     
-    if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
+    if ( !Plugins::HueBridge::Squeeze2Hue->alive() && $squeeze2HueRestartRequested ) {
 
-        $log->debug('Waiting for squeeze2hue to end.');
+        $log->error('Waiting for squeeze2hue to end.');
         $squeeze2HueRestartCountdown--;
 
         if ( $squeeze2HueRestartCountdown <= 0 ) {
@@ -128,6 +161,7 @@ sub handler_tableHueBridges {
                 Plugins::HueBridge::Squeeze2Hue->start
             }
 
+            $squeeze2HueRestartRequested = 0;
             $squeeze2HueRestartCountdown = 30;
         }	
     }
