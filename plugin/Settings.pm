@@ -18,6 +18,7 @@ my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
 my $XMLConfig;
+my @XMLConfigSaveDeviceOptions = qw(name user_name mac codecs enabled remove_count server);
 
 sub name {
     return Slim::Web::HTTP::CSRF->protectName('PLUGIN_HUEBRIDGE_NAME');
@@ -73,6 +74,18 @@ sub handler {
     #   Plugins::HueBridge::HueCom->getConnectedHueBridge();
     #   If something changed: Put it into the XMLConfig hash, stop the helper, write to file, start the helper.
     #   Add await handler.
+    #   Save player specific parameters       
+        foreach $huebridge ($XMLConfig->{'device'}) {
+
+            for my $deviceOption (@XMLConfigSaveDeviceOptions) {
+                if ($params->{ $deviceOption } eq '') {
+                    delete $huebridge->{ $deviceOption };
+                }
+                else {
+                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
+                }
+            }	
+        }
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
