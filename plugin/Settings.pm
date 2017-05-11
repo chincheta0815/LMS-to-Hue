@@ -17,6 +17,9 @@ use Plugins::HueBridge::HueCom;
 my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
+my $squeeze2HueRestartRequested = 0;
+my $squeeze2HueRestartCountdown;
+
 my $XMLConfig;
 my @XMLConfigSaveDeviceOptions = qw(name user_name mac codecs enabled remove_count server);
 
@@ -86,6 +89,8 @@ sub handler {
                 }
             }	
         }
+
+        $squeeze2HueRestartRequested = 1;
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
@@ -102,6 +107,30 @@ sub handler_tableAdvancedHueBridgeOptions {
 
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
+    
+    if ( $squeeze2HueRestartRequested ) {
+        $log->debug('Restarting squeeze2hue."');
+            
+        Plugins::HueBridge::Squeeze2Hue->stop();
+        
+        $squeeze2HueRestartCountdown = 30;
+    }
+    
+    if (Plugins::HueBridge::Squeeze2Hue->alive()) {
+
+        $log->debug('Waiting for squeeze2hue to end.');
+        $squeeze2HueRestartCountdown--;
+
+        if ( $squeeze2HueRestartCountdown <= 0 && $squeeze2HueRestartRequested ) {
+
+            if ($prefs->get('autorun')) {
+                Plugins::HueBridge::Squeeze2Hue->start
+            }
+
+            $squeeze2HueRestartRequested = 0;
+            $squeeze2HueRestartCountdown = 30;
+        }	
+    }
     
     if ( $XMLConfig->{'device'} ) {
 
