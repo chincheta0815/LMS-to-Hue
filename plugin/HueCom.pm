@@ -11,8 +11,6 @@ use JSON::XS;
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
-my $deviceData;
-
 my $timeForConnect = 29.33;
 my $connectProgress = 0;
 my $connectDisconnectStatus = 0;
@@ -87,10 +85,6 @@ sub unconnect {
     $connectProgress = -1;
 }
 
-sub getConnectedHueBridge {
-    return $deviceData;
-}
-
 sub getConnectProgress {
     my $ret;
     if ( $connectProgress >= 0.0 ) {
@@ -155,8 +149,6 @@ sub _sendConnectRequestOK{
         
         my $device = Plugins::HueBridge::Settings->findUDN( $deviceUDN, $XMLConfig->{'device'} );
         $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
-        
-        $deviceData = $device;
         
         unconnect();
     }
