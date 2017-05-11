@@ -113,21 +113,21 @@ sub handler_tableHueBridges {
             
         Plugins::HueBridge::Squeeze2Hue->stop();
         
+        $squeeze2HueRestartRequested = 0;
         $squeeze2HueRestartCountdown = 30;
     }
     
-    if (Plugins::HueBridge::Squeeze2Hue->alive()) {
+    if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
 
         $log->debug('Waiting for squeeze2hue to end.');
         $squeeze2HueRestartCountdown--;
 
-        if ( $squeeze2HueRestartCountdown <= 0 && $squeeze2HueRestartRequested ) {
+        if ( $squeeze2HueRestartCountdown <= 0 ) {
 
             if ($prefs->get('autorun')) {
                 Plugins::HueBridge::Squeeze2Hue->start
             }
 
-            $squeeze2HueRestartRequested = 0;
             $squeeze2HueRestartCountdown = 30;
         }	
     }
