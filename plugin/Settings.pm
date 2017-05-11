@@ -75,7 +75,7 @@ sub handler {
     #   If something changed: Put it into the XMLConfig hash, stop the helper, write to file, start the helper.
     #   Add await handler.
     #   Save player specific parameters       
-        foreach $huebridge ($XMLConfig->{'device'}) {
+        foreach my $huebridge ($XMLConfig->{'device'}) {
 
             for my $deviceOption (@XMLConfigSaveDeviceOptions) {
                 if ($params->{ $deviceOption } eq '') {
