@@ -176,13 +176,13 @@ sub start {
 }
 
 sub beat {
-	my ($class, $path, @args) = @_;
+	my ($path, @args) = @_;
 	
 	if ($prefs->get('autorun') && !($squeeze2hue && $squeeze2hue->alive)) {
 		$log->error('crashed ... restarting');
 		
 		if ($prefs->get('logging')) {
-			open(my $fh, ">>", $class->logFile);
+			open(my $fh, ">>", Plugins::HueBridge::Squeeze2Hue->logFile());
 			print $fh "\nRetarting Squeeze2hue after crash: $path @args\n";
 			close $fh;
 		}
@@ -190,11 +190,10 @@ sub beat {
 		eval { $squeeze2hue = Proc::Background->new({ 'die_upon_destroy' => 1 }, $path, @args); };
 	}	
 	
-	Slim::Utils::Timers::setTimer($class, Time::HiRes::time() + 30, \&beat, $path, @args);
+	Slim::Utils::Timers::setTimer(undef, Time::HiRes::time() + 30, \&beat, $path, @args);
 }
 
 sub stop {
-	my $class = shift;
 
 	if ($squeeze2hue && $squeeze2hue->alive) {
 		$log->info("killing squeeze2hue");
