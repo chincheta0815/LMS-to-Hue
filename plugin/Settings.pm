@@ -18,7 +18,7 @@ my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
 my $squeeze2HueRestartRequested = 0;
-my $squeeze2HueRestartCountdown;
+my $squeeze2HueRestartTimeWait = 30;
 
 my $XMLConfig;
 my @XMLConfigSaveDeviceOptions = qw(name user_name mac codecs enabled remove_count server);
@@ -147,22 +147,22 @@ sub handler_tableHueBridges {
             
         Plugins::HueBridge::Squeeze2Hue->stop();
         
-        $squeeze2HueRestartCountdown = 30;
+        $squeeze2HueRestartRequested = 0;
+        $squeeze2HueRestartProgress = 0;
     }
     
-    if ( !Plugins::HueBridge::Squeeze2Hue->alive() && $squeeze2HueRestartRequested ) {
+    if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
 
         $log->error('Waiting for squeeze2hue to end.');
-        $squeeze2HueRestartCountdown--;
+        $squeeze2HueRestartProgress++;
 
-        if ( $squeeze2HueRestartCountdown <= 0 ) {
+        if ( ($squeeze2HueRestartTimeWait - $squeeze2HueRestartProgress) <= 0 ) {
 
             if ($prefs->get('autorun')) {
                 Plugins::HueBridge::Squeeze2Hue->start
             }
 
-            $squeeze2HueRestartRequested = 0;
-            $squeeze2HueRestartCountdown = 30;
+            $squeeze2HueRestartProgress = 0;
         }	
     }
     
