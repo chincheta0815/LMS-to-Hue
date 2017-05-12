@@ -51,6 +51,34 @@ sub handler {
 
     $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
 
+    if ( $params->{'deleteXMLConfig'} ) {
+    
+        $log->debug('Deleting Squeeze2Hue XML configuration file ('. $conf .')');
+    
+        my $conf = Plugins::HueBridge::Squeeze2Hue->configFile();
+        unlink $conf;
+        
+        delete $params->{'saveSettings'};
+    }
+
+    if ( $params->{'generateXMLConfig'} ) {
+    
+        $log->debug('Generating Squeeze2Hue XML configuration file.');    
+        # put routine for generating XML config here.
+    }
+    
+    if ( $params->{'cleanSqueeze2HueLogFile'} ) {
+
+        my $logFile = Plugins::HueBridge::Squeeze2Hue->logFile();
+        $log->debug('Cleaning Squeeze2Hue helper log file ' . $logFile . ')');
+        
+        open my $fileHandle, ">", $logFile;
+        print $fileHandle;
+        close $fileHandle;
+
+        delete $params->{'saveSettings'};
+    }
+
     if ( $params->{'startSqueeze2Hue'} ) {
     
         if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
