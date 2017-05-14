@@ -18,6 +18,7 @@ my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
 my $squeeze2HueRestartRequested = 0;
+my $squeeze2HueRestartProgress;
 my $squeeze2HueRestartTimeWait = 30;
 
 my $XMLConfig;
@@ -51,20 +52,22 @@ sub handler {
 
     $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
 
-    if ( $params->{'deleteXMLConfig'} ) {
+    if ( $params->{'deleteSqueeze2HueXMLConfig'} ) {
+        
+        my $conf = Plugins::HueBridge::Squeeze2Hue->configFile();
+        unlink $conf;
     
         $log->debug('Deleting Squeeze2Hue XML configuration file ('. $conf .')');
     
-        my $conf = Plugins::HueBridge::Squeeze2Hue->configFile();
-        unlink $conf;
-        
         delete $params->{'saveSettings'};
     }
 
-    if ( $params->{'generateXMLConfig'} ) {
+    if ( $params->{'generateSqueeze2HueXMLConfig'} ) {
     
         $log->debug('Generating Squeeze2Hue XML configuration file.');    
         # put routine for generating XML config here.
+        
+        delete $params->{'saveSettings'};
     }
     
     if ( $params->{'cleanSqueeze2HueLogFile'} ) {
@@ -170,20 +173,20 @@ sub handler_tableAdvancedHueBridgeOptions {
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
     
-    if ( $squeeze2HueRestartRequested ) {
+    if ( ($squeeze2HueRestartRequested == 1) && ($squeeze2HueRestartProgress == 0) ) {
         $log->error('Restarting squeeze2hue.');
             
         Plugins::HueBridge::Squeeze2Hue->stop();
-        
-        $squeeze2HueRestartRequested = 0;
-        $squeeze2HueRestartProgress = 0;
+
     }
     
-    if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
+    if ( Plugins::HueBridge::Squeeze2Hue->alive() && ($squeeze2HueRestartRequested == 1) ) {
 
         $log->error('Waiting for squeeze2hue to end.');
         $squeeze2HueRestartProgress++;
 
+    }
+    elsif ( $squeeze2HueRestartRequested == 1 ) {
         if ( ($squeeze2HueRestartTimeWait - $squeeze2HueRestartProgress) <= 0 ) {
 
             if ($prefs->get('autorun')) {
@@ -191,7 +194,9 @@ sub handler_tableHueBridges {
             }
 
             $squeeze2HueRestartProgress = 0;
+            $squeeze2HueRestartRequested = 0;
         }	
+    
     }
     
     if ( $XMLConfig->{'device'} ) {

@@ -163,7 +163,7 @@ sub start {
 	} else {
 		Slim::Utils::Timers::setTimer(undef, Time::HiRes::time() + 1, sub {
 			if ($squeeze2hue && $squeeze2hue->alive() ) {
-				$log->debug("$helperBinary running");
+				$log->debug                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ("$helperBinary running");
 				$helperBinary = $path;
 			}
 			else {

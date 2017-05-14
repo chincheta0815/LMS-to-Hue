@@ -91,6 +91,16 @@
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_NAME" desc="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_DESC" %]
         <table border="0" cellspacing="0">
             <tr>
+                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="generateSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_GENERATE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="deleteSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_DELETE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" colspan="3">&nbsp;&nbsp;&nbsp;
+                </td>
+            </tr>
+            <tr>
                 <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_HELPER_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="startSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_START_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
