@@ -17,10 +17,6 @@ use Plugins::HueBridge::HueCom;
 my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
-my $squeeze2HueRestartRequested = 0;
-my $squeeze2HueRestartProgress;
-my $squeeze2HueRestartTimeWait = 30;
-
 my $XMLConfig;
 my @XMLConfigSaveDeviceOptions = qw(name user_name mac codecs enabled remove_count server);
 
@@ -84,20 +80,15 @@ sub handler {
 
     if ( $params->{'startSqueeze2Hue'} ) {
     
-        if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
-        
-            $log->debug('Squeeze2Hue helper already running.');
-        }
-        else {
-            Plugins::HueBridge::Squeeze2Hue->start();
-        }
+        $log->debug('Trigggered \'start\' of Squeeze2Hue binary.');
+        Plugins::HueBridge::Squeeze2Hue->start();
         
         delete $params->{'saveSettings'};
     }
     
     if ( $params->{'stopSqueeze2Hue'} ) {
     
-        $log->debug('Stopping Squeeze2Hue.');
+        $log->debug('Triggered \'stop\' of Squeeze2Hue binary.');
         Plugins::HueBridge::Squeeze2Hue->stop();
         
         delete $params->{'saveSettings'};
@@ -105,13 +96,8 @@ sub handler {
     
     if ( $params->{'restartSqueeze2Hue'} ) {
     
-        if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
-            $log->debug('Restarting Squeeze2Hue.');
-            $squeeze2HueRestartRequested = 1;
-        }
-        else {
-            $log->debug('Squeeze2Hue helper not running.');
-        }
+        $log->debug('Triggered \'restart\' of Squeeze2Hue binary.');
+        Plugins::HueBridge::Squeeze2Hue->restart();
         
         delete $params->{'saveSettings'};
     }
@@ -131,7 +117,7 @@ sub handler {
             
             my $deviceUDN = $params->{"connectHueBridgeButtonHelper$i"};
             
-            $log->debug('Triggered \'connect\' for device with udn: ' . $deviceUDN);
+            $log->debug('Triggered \'connect\' of device with udn: ' . $deviceUDN);
             Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
             
             delete $params->{'saveSettings'};
@@ -155,7 +141,7 @@ sub handler {
             }	
         }
 
-        $squeeze2HueRestartRequested = 1;
+        # Put some restart routine here for reloading the XMLConfig.
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
@@ -173,31 +159,7 @@ sub handler_tableAdvancedHueBridgeOptions {
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
     
-    if ( ($squeeze2HueRestartRequested == 1) && ($squeeze2HueRestartProgress == 0) ) {
-        $log->error('Restarting squeeze2hue.');
-            
-        Plugins::HueBridge::Squeeze2Hue->stop();
-
-    }
-    
-    if ( Plugins::HueBridge::Squeeze2Hue->alive() && ($squeeze2HueRestartRequested == 1) ) {
-
-        $log->error('Waiting for squeeze2hue to end.');
-        $squeeze2HueRestartProgress++;
-
-    }
-    elsif ( $squeeze2HueRestartRequested == 1 ) {
-        if ( ($squeeze2HueRestartTimeWait - $squeeze2HueRestartProgress) <= 0 ) {
-
-            if ($prefs->get('autorun')) {
-                Plugins::HueBridge::Squeeze2Hue->start
-            }
-
-            $squeeze2HueRestartProgress = 0;
-            $squeeze2HueRestartRequested = 0;
-        }	
-    
-    }
+    # Put in some progress/reload handler for updated XMLConfig.
     
     if ( $XMLConfig->{'device'} ) {
 
