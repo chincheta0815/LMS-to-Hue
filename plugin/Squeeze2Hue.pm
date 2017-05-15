@@ -177,9 +177,9 @@ sub start {
 
 	if ($logging) {
 	
-		open(my $fh, ">>", Plugins::HueBridge::Squeeze2Hue->logFile() );
-		print $fh "\nStarting Squeeze2hue: $path @params\n";
-		close $fh;
+		open(my $fileHandle, ">>", Plugins::HueBridge::Squeeze2Hue->logFile() );
+		print($fileHandle, '\nStarting Squeeze2Hue binary (' .$path. ' ' .@params. ')\n');
+		close($fileHandle);
 	}
 	
 	eval { $squeeze2hue = Proc::Background->new({ 'die_upon_destroy' => 1 }, $path, @params); };
@@ -214,9 +214,9 @@ sub beat {
 		
 		if ($prefs->get('logging')) {
 		
-			open(my $fh, ">>", Plugins::HueBridge::Squeeze2Hue->logFile());
-			print($fh, '\nSqueeze2Hue binary crashed (' .$path @args. '... restarting.\n)');
-			close($fh);
+			open(my $fileHandle, ">>", Plugins::HueBridge::Squeeze2Hue->logFile());
+			print($fileHandle, '\nSqueeze2Hue binary crashed (' .$path. ' ' .@args. ') ... restarting.\n');
+			close($fileHandle);
 		}
 		
 		eval { $squeeze2hue = Proc::Background->new({ 'die_upon_destroy' => 1 }, $path, @args); };
@@ -278,7 +278,7 @@ sub logHandler {
 
 		$body .= join('', @lines);
 
-		$file->close();			
+		close($file);
 	};
 
 	return \$body;
