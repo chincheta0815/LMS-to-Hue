@@ -146,14 +146,14 @@ sub handler {
      
         foreach my $huebridge ($XMLConfig->{'device'}) {
 
-            for my $deviceOption (@XMLConfigSaveDeviceOptions) {
-                if ($params->{ $deviceOption } eq '') {
-                    delete $huebridge->{ $deviceOption };
-                }
-                else {
-                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
-                }
-            }	
+#            for my $deviceOption (@XMLConfigSaveDeviceOptions) {
+#                if ($params->{ $deviceOption } eq '') {
+#                    delete $huebridge->{ $deviceOption };
+#                }
+#                else {
+#                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
+#                }
+#            }
         }
 
         $squeeze2HueXMLConfigReloadRequested = 1;
@@ -188,7 +188,7 @@ sub handler_tableHueBridges {
         if ( ($squeeze2HueXMLConfigReloadProgress >= 0) && ($squeeze2HueXMLConfigReloadProgress <= $squeeze2HueXMLConfigReloadTimeWait) ) {
         
             $log->debug('Squeeze2Hue XMLConfig waiting for clean writing.');
-            if ( floor($squeeze2HueXMLConfigReloadProgress / .5) == floor($squeeze2HueXMLConfigReloadTimeWait/ .5) ) {
+            if ( POSIX::floor($squeeze2HueXMLConfigReloadProgress / .5) == POSIX::floor($squeeze2HueXMLConfigReloadTimeWait/ .5) ) {
                 $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
                 writeXMLConfigFile($XMLConfig);
             }
