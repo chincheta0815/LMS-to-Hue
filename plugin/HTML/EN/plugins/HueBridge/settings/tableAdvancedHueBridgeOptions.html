@@ -1,10 +1,53 @@
         <table border="0" cellspacing="0">
             <tr>
                 <td class="[% odd ? "odd" : "even" %]">
-                    Advanced Options First Column&nbsp;&nbsp;&nbsp;
+                    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_DEBUG" desc="PLUGIN_HUEBRIDGE_DEBUG_DESC" %]
+                        <select class="stdedit disableOnHueBridgePairing" name="debugs" [% IF status_hueBridgeConnect %]disabled[% END %] id="debugs">
+                            [% FOREACH entry IN [ '', 'all', 'output', 'stream', 'slimproto', 'decode', 'slimmain', 'hue', 'util', 'main'] %]
+                                <option [% IF entry == debugs %]selected[% END %] value="[% entry %]">[% "PLUGIN_HUEBRIDGE_$entry" | string %]</option>
+                            [% END %]
+                        </select>
+                    [% END %]
                 </td>
+            </tr<
+            <tr>
                 <td class="[% odd ? "odd" : "even" %]">
-                    Advanced Options Second Row
+                    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_LOGGING" desc="PLUGIN_HUEBRIDGE_LOGGING_DESC" %]
+                        <input name="logging" class="stdedit disableOnHueBridgePairing" type="checkbox" [% IF logging %] checked [% END %]  [% IF status_hueBridgeConnect %]disabled[% END %]>&nbsp[% "PLUGIN_HUEBRIDGE_LOGENABLE" | string %]
+                        &nbsp<a href="[% webroot %]huebridge-log.log" target="log">[% "PLUGIN_HUEBRIDGE_LOGLINK" | string %]</a>
+                        &nbsp[% "PLUGIN_HUEBRIDGE_LOGSIZE" | string %]&nbsp<input type="text" class="stdedit disableOnHueBridgePairing" name="log_limit" id="log_limit" value="[% log_limit %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2">
+                        &nbsp<input name="eraselog" class="stdedit disableOnHueBridgePairing" type="checkbox" [% IF eraselog %] checked [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]>&nbsp[% "PLUGIN_HUEBRIDGE_ERASELOG" | string %]
+                        &nbsp<input name="cleanlog" class="stdedit disableOnHueBridgePairing" type="submit" value=[% "PLUGIN_HUEBRIDGE_CLEANLOG" | string %]>
+                    [% END %]
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_CONFIG" desc="PLUGIN_HUEBRIDGE_CONFIG_DESC" %]
+                        [% configpath %] <input type="text" class="stdedit disableOnHueBridgePairing" name="configfile" id="configfile" value="[% configfile %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="20">
+                        <a href="[% webroot %]huebridge-config.xml" target="config">[% "PLUGIN_HUEBRIDGE_CONFLINK" | string %]</a>
+                        &nbsp&nbsp<input name="autosave" class="stdedit disableOnHueBridgePairing" type="checkbox" [% IF autosave %] checked [% END %]>[% "PLUGIN_HUEBRIDGE_AUTOSAVECONFIG" | string %]
+                        [% IF binary %]
+                            &nbsp<input name="genconfig" type="submit" class="stdedit disableOnHueBridgePairing" onclick="alert('generating configuration will take ~30 seconds')" value=[% "PLUGIN_HUEBRIDGE_GENCONFIG" | string %]>
+                        [% END %]	
+                        &nbsp<input name="delconfig" class="stdedit disableOnHueBridgePairing" type="submit" [% IF status_hueBridgeConnect %]disabled[% END %] value=[% "PLUGIN_HUEBRIDGE_DELCONFIG" | string %]>
+                    [% END %]
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_SCAN" desc="PLUGIN_HUEBRIDGE_SCAN_DESC" %]
+                        [% "PLUGIN_HUEBRIDGE_SCANINTERVAL" | string %]</th>&nbsp<td><input type="text" class="stdedit disableOnHueBridgePairing" name="scan_interval" id="scan_interval" value="[% scan_interval %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2"> (s)
+                        [% "PLUGIN_HUEBRIDGE_SCANTIMEOUT" | string %]&nbsp<input type="text" class="stdedit disableOnHueBridgePairing" name="scan_timeout" id="scan_timeout" value="[% scan_timeout %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2"> (s)
+                    [% END %]
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_INTERFACE" desc="PLUGIN_HUEBRIDGE_INTERFACE_DESC" %]
+		                <input [% IF useLMSsocket %] disabled [% END %]  [% IF status_hueBridgeConnect %]disabled[% END %] type="text" class="stdedit" name="interface" id="interface" value="[% interface %]" size="20">
+		                &nbsp<input name="useLMSsocket" type="checkbox" [% IF useLMSsocket %] checked [% END %]>&nbsp[% "PLUGIN_HUEBRIDGE_USELMSSOCKET" | string %]
+	                [% END %]
                 </td>
             </tr>
             <tr style="height: 5px;">
