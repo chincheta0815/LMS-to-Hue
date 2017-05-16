@@ -59,7 +59,13 @@ sub connect {
            
     $log->debug('Initiating hue bridge connect.');
     
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceUDN, $XMLConfig );
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest,
+                                                        {
+                                                                deviceUDN => $deviceUDN,
+                                                                XMLConfig => $XMLConfig,
+                                                        },
+                                                    );
+
     Slim::Utils::Timers::setTimer(undef, time() + $timeForConnect, \&unconnect);
     
     $connectDisconnectStatus = 1;
@@ -98,7 +104,10 @@ sub getConnectDisconnectStatus {
 }
 
 sub _sendConnectRequest {
-    my ($self, $deviceUDN, $XMLConfig) = @_;
+    my ($self, $params) = @_;
+    
+    my $deviceUDN = $params->{'deviceUDN'};
+    my $XMLConfig = $params->{'XMLConfig'};
             
     my $device = Plugins::HueBridge::Settings->findUDN( $deviceUDN, $XMLConfig->{'device'} );
     
@@ -113,7 +122,11 @@ sub _sendConnectRequest {
     $connectDisconnectStatus = 1;
     $connectProgress += 1;
     
-    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, $deviceUDN, $XMLConfig);
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, {
+                                                                deviceUDN => $deviceUDN,
+                                                                XMLConfig => $XMLConfig,
+                                                        },
+                                                    );
     
     my $asyncHTTP = Slim::Networking::SimpleAsyncHTTP->new(
         \&_sendConnectRequestOK,
