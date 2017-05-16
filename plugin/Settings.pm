@@ -13,6 +13,7 @@ use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 
 use Plugins::HueBridge::HueCom;
+use Plugins::HueBridge::Squeeze2Hue;
 
 my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
@@ -40,16 +41,20 @@ sub beforeRender {
     my ($class, $params) = @_;
     
     if( Plugins::HueBridge::HueCom->getConnectProgress() || Plugins::HueBridge::HueCom->getConnectDisconnectStatus() ) {
+    
         $params->{'statusHueBridgeConnect'} = 1;
     }
     else {
+    
         $params->{'statusHueBridgeConnect'} = 0;
     }
     
     if ( $squeeze2HueXMLConfigReloadRequested ) {
+    
         $params->{'statusXMLConfigReloading'} = 1;
     }
     else {
+    
         $params->{'statusXMLConfigReloading'} = 0;
     }
 }
@@ -114,9 +119,11 @@ sub handler {
     }
 
     if ( $prefs->get('binaryAutorun') ) {
+    
         $params->{'binaryRunning'} = Plugins::HueBridge::Squeeze2Hue->alive();
     }
     else {
+    
         $params->{'binaryRunning'} = 0;
     }
     
@@ -135,11 +142,8 @@ sub handler {
         }
     }
 
-    if ( $params->{'saveSettings'}) {
-    #   Plugins::HueBridge::HueCom->getConnectedHueBridge();
-    #   If something changed: Put it into the XMLConfig hash, stop the helper, write to file, start the helper.
-    #   Add await handler.
-    #   Save player specific parameters       
+    if ( $params->{'saveSettings'} ) {
+     
         foreach my $huebridge ($XMLConfig->{'device'}) {
 
             for my $deviceOption (@XMLConfigSaveDeviceOptions) {
@@ -186,7 +190,7 @@ sub handler_tableHueBridges {
             $log->debug('Squeeze2Hue XMLConfig waiting for clean writing.');
             if ( floor($squeeze2HueXMLConfigReloadProgress / .5) == floor($squeeze2HueXMLConfigReloadTimeWait/ .5) ) {
                 $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
-                # XMLOut.
+                writeXMLConfigFile($XMLConfig);
             }
             $squeeze2HueXMLConfigReloadProgress++;
         }
@@ -226,7 +230,7 @@ sub initCLICommands {
 sub CLI_commandGetSqueeze2HueXMLConfigReloadProgress {
     my $request = shift;
     
-    $request->addResult('_hueBridgeXMLConfigReloadProgress', sprintf("%.2f", Plugins::HueBridge::Settings->getSqueeze2HueXMLConfigReloadProgress()));
+    $request->addResult('_hueBridgeXMLConfigReloadProgress', sprintf("%.2f", getSqueeze2HueXMLConfigReloadProgress()));
     
     $request->setStatusDone();
 }
@@ -264,6 +268,14 @@ sub readXMLConfigFile {
     }	
 
     return $ret;
+}
+
+sub writeXMLConfigFile {
+    my $configData = shift;
+    
+    my $configFile = Plugins::HueBridge::Squeeze2Hue->configFile();
+    
+    XMLout($configData, RootName => "squeeze2hue", NoSort => 1, NoAttr => 1, OutputFile => $configFile);
 }
 
 1;
