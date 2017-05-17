@@ -144,16 +144,16 @@ sub handler {
 
     if ( $params->{'saveSettings'} ) {
      
-        foreach my $huebridge ($XMLConfig->{'device'}) {
+        foreach my $huebridge (@{$XMLConfig->{'device'}}) {
 
-#            for my $deviceOption (@XMLConfigSaveDeviceOptions) {
-#                if ($params->{ $deviceOption } eq '') {
-#                    delete $huebridge->{ $deviceOption };
-#                }
-#                else {
-#                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
-#                }
-#            }
+            for my $deviceOption (@XMLConfigSaveDeviceOptions) {
+                if ($params->{ $deviceOption } eq '') {
+                    delete $huebridge->{ $deviceOption };
+                }
+                else {
+                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
+                }
+            }
         }
 
         $squeeze2HueXMLConfigReloadRequested = 1;
