@@ -91,43 +91,54 @@
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_NAME" desc="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_DESC" %]
         <table border="0" cellspacing="0">
             <tr>
-                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                <td class="[% odd ? "odd" : "even" %]">
+			[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
-                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="generateSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_GENERATE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                <td class="[% odd ? "odd" : "even" %]">
+			<input type="submit" name="generateSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_GENERATE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
-                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="deleteSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_DELETE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                <td class="[% odd ? "odd" : "even" %]">
+			<input type="submit" name="deleteSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_DELETE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="3">&nbsp;&nbsp;&nbsp;
-                </td>
-            </tr>
-            <tr>
-                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_HELPER_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="startSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_START_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="stopSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_STOP_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]"><input type="submit" name="restartSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_RESTART_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME' | string %]&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]"><input name="binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgePairing" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]>
+                <td class="[% odd ? "odd" : "even" %]" colspan="3">
+			&nbsp;&nbsp;&nbsp;
                 </td>
             </tr>
             <tr>
-                <td class="[% odd ? "odd" : "even" %]">[% 'PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                <td class="[% odd ? "odd" : "even" %]">
+			[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_HELPER_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+			<input type="submit" name="startSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_START_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+			<input type="submit" name="stopSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_STOP_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+			<input type="submit" name="restartSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_RESTART_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+			[% 'PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+			<input name="binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgePairing" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]>
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+			[% 'PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
             	<td class="[% odd ? "odd" : "even" %]" colspan="5">
                     [% IF availableHelperBinaries.size > 1 %]
-                    <select class="stdedit disableOnHueBridgePairing" name="pref_helperBinary" id="helperBinary">
-                        [% FOREACH entry IN availableHelperBinaries %]
-                            <option [% IF entry == helperBinary %]selected[% found = 1 %][% END %] [% IF status_hueBridgeConnect %]disabled[% END %] value="[% entry %]">[% entry %]</option>
-                        [% END %]
-                        [% IF not found %]
-                            <option selected value="">[% 'PLUGIN_HUEBRIDGE_BINARY_SELECT_MENU_NAME' | string %]</option>
-                        [% END %]
-                    </select>
-                [% END %]
+                        <select class="stdedit disableOnHueBridgePairing" name="pref_helperBinary" id="helperBinary">
+                                [% FOREACH entry IN availableHelperBinaries %]
+                                        <option [% IF entry == helperBinary %]selected[% found = 1 %][% END %] [% IF status_hueBridgeConnect %]disabled[% END %] value="[% entry %]">[% entry %]</option>
+                                [% END %]
+                                [% IF not found %]
+                                        <option selected value="">[% 'PLUGIN_HUEBRIDGE_BINARY_SELECT_MENU_NAME' | string %]</option>
+                                [% END %]
+                        </select>
+                    [% END %]
                 </td>
             </tr>
         </table>
