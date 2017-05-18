@@ -23,7 +23,7 @@ my $squeeze2HueXMLConfigReloadProgress = -1;
 my $squeeze2HueXMLConfigReloadTimeWait = 15;
 
 my $XMLConfig;
-my @XMLConfigSaveDeviceOptions = qw(name user_name mac codecs enabled remove_count server);
+my @XMLConfigSaveDeviceOptions = qw(user_name);
 
 sub name {
     return Slim::Web::HTTP::CSRF->protectName('PLUGIN_HUEBRIDGE_NAME');
@@ -146,13 +146,14 @@ sub handler {
      
         foreach my $huebridge (@{$XMLConfig->{'device'}}) {
 
-            for my $deviceOption (@XMLConfigSaveDeviceOptions) {
-                if ($params->{ $deviceOption } eq '') {
-                    delete $huebridge->{ $deviceOption };
-                }
-                else {
-                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
-                }
+            foreach my $deviceOption (@XMLConfigSaveDeviceOptions) {
+#                if ($params->{ $deviceOption } eq '') {
+#                    delete $huebridge->{ $deviceOption };
+#                }
+#                else {
+#                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
+#                }
+            $log->error('Value: ' .$huebridge->{'user_name'});
             }
         }
 
@@ -164,7 +165,7 @@ sub handler {
 
 sub handler_tableAdvancedHueBridgeOptions {
     my ($client, $params) = @_;
-    
+        
     if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
     
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html", $params);
@@ -243,9 +244,8 @@ sub getSqueeze2HueXMLConfigReloadProgress {
     return $ret;
 }
 
-sub findUDN {
-    my $udn = shift(@_);
-    my $listpar = shift(@_);
+sub getDeviceByUDN {
+    my ($udn, $listpar) = @_;
     my @list = @{$listpar};
 
     while (@list) {

@@ -6,6 +6,8 @@ use Slim::Networking::SimpleAsyncHTTP;
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 
+use Data::Dumper;
+
 use JSON::XS;
 
 my $prefs = preferences('plugin.huebridge');
@@ -108,9 +110,9 @@ sub _sendConnectRequest {
     
     my $deviceUDN = $params->{'deviceUDN'};
     my $XMLConfig = $params->{'XMLConfig'};
-            
-    my $device = Plugins::HueBridge::Settings->findUDN( $deviceUDN, $XMLConfig->{'device'} );
     
+    my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
+        
     my $bridgeIpAddress = $device->{'ip_address'};
     
     my $uri = join('', 'http://', $bridgeIpAddress, '/api');
@@ -155,12 +157,15 @@ sub _sendConnectRequestOK{
     if(exists($bridgeResponse->[0]->{error})){
         $log->info('Pairing with hue bridge (' . $deviceUDN . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
+        
+        my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
+        $device->{'user_name'} = 'error';
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');
         $log->debug('Got username \'' . $bridgeResponse->[0]->{success}->{username} . '\' from hue bridge (' . $deviceUDN . ').');
         
-        my $device = Plugins::HueBridge::Settings->findUDN( $deviceUDN, $XMLConfig->{'device'} );
+        my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
         $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
         
         unconnect();
