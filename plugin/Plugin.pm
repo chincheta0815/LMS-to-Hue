@@ -42,7 +42,6 @@ sub initPlugin {
     if ( main::WEBUI ) {
         require Plugins::HueBridge::Settings;
         Plugins::HueBridge::Settings->new;
-        Plugins::HueBridge::Settings->initCLICommands;
 
         Slim::Web::Pages->addPageFunction("tableAdvancedHueBridgeOptions.html" => \&Plugins::HueBridge::Settings::handler_tableAdvancedHueBridgeOptions);
         Slim::Web::Pages->addPageFunction("tableHueBridges.html" => \&Plugins::HueBridge::Settings::handler_tableHueBridges);
@@ -56,6 +55,7 @@ sub initPlugin {
     Plugins::HueBridge::HueCom->initCLICommands;
 
     require Plugins::HueBridge::Squeeze2Hue;
+    Plugins::HueBridge::Squeeze2Hue->initCLICommands;
     if ($prefs->get('binaryAutorun')) {
         Plugins::HueBridge::Squeeze2Hue->start;
     }

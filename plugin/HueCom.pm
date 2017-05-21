@@ -13,8 +13,8 @@ use JSON::XS;
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
-my $connectProgressTimeWait = 14.33;
-my $connectProgressCounter = -1;
+my $connectProgressTimeWait = 29.33;
+my $connectProgressCounter = 0;
 my $connectDisconnectStatus = 0;
 
 sub initCLICommands {
@@ -58,6 +58,7 @@ sub connect {
     my ($self, $deviceUDN, $XMLConfig) = @_;
     
     $connectProgressCounter = 0;
+    Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('block');
            
     $log->debug('Initiating hue bridge connect.');
     
@@ -90,7 +91,22 @@ sub unconnect {
     Slim::Utils::Timers::killTimers(undef, \&unconnect);
 
     $connectDisconnectStatus = 0;
-    $connectProgressCounter = -1;
+    Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('release');
+    $connectProgressCounter = 0;
+}
+
+sub blockProgressCounter {
+    my $self = shift;
+    my $connectCounterState = shift;
+    
+    if ( $connectCounterState == 'block' ) {
+    
+        $connectProgressCounter = -1;
+    }
+    elsif ( $connectCounterState == 'release' ) {
+    
+        $connectProgressCounter = 0;
+    }
 }
 
 sub getConnectProgress {
@@ -125,8 +141,7 @@ sub _sendConnectRequest {
     my $request = { 'devicetype' => 'squeeze2hue#lms' };
     my $requestBody = encode_json($request);
     
-    $connectDisconnectStatus = 1;
-    $connectProgressCounter += 1;
+    $connectProgressCounter++;
     
     Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, {
                                                                 deviceUDN => $deviceUDN,
@@ -164,6 +179,7 @@ sub _sendConnectRequestOK{
         
         my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
         $device->{'user_name'} = 'error';
+        $device->{'user_valid'} = 0;
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');
@@ -171,6 +187,7 @@ sub _sendConnectRequestOK{
         
         my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
         $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
+        $device->{'user_valid'} = 1;
         
         unconnect();
     }

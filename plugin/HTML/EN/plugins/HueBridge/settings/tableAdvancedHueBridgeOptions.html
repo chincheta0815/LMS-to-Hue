@@ -20,10 +20,11 @@
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                     [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_ENABLE_NAME' | string %]&nbsp;
-                    <input name="loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                    <input name="loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
 		        </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <a href="[% webroot %]huebridge.log" target="log"><input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" />
+                    <a href="[% webroot %]huebridge.log" target="log">
+                        <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                     </a>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">

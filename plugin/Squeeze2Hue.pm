@@ -15,6 +15,29 @@ my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
 
 my $squeeze2hue;
+my $squeeze2hueRestartStatus = 0;
+my $squeeze2hueRestartCounter = 0;
+my $squeeze2hueRestartCounterTimeWait = 15;
+
+sub initCLICommands {
+    # Command init
+    #    |requires client
+    #    |  |is a query
+    #    |  |  |has tags
+    #    |  |  |  |function to call
+    #    C  Q  T  F
+    
+    Slim::Control::Request::addDispatch(['hue', 'bridge', 'restart','?'],
+        [0, 1, 0, \&CLI_commandGetSqueeze2hueRestartProgress]);
+}
+
+sub CLI_commandGetSqueeze2hueRestartProgress {
+    my $request = shift;
+    
+    $request->addResult('_hueBridgeRestartProgress', sprintf("%.2f", getRestartProgress()));
+    
+    $request->setStatusDone();
+}
 
 sub getAvailableBinaries {
 	my $os = Slim::Utils::OSDetect::details();
@@ -243,10 +266,100 @@ sub wait {
 }
 
 sub restart {
-	$log->info("Restarting Squeeze2Hue binary.");
+    my ($self, $XMLConfig) = @_;
+    
+    $log->debug('Squeeze2Hue XMLConfig generation requested.');
+    
+    Plugins::HueBridge::HueCom->blockProgressCounter('block');
+    Plugins::HueBridge::Squeeze2Hue->stop();
+    $squeeze2hueRestartCounter = 0;
+        
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_performRestart,
+                                                    {
+                                                            XMLConfig => $XMLConfig,
+                                                    },
+                                                );
 
-	Plugins::HueBridge::Squeeze2Hue->stop();
-	Plugins::HueBridge::Squeeze2Hue->start();
+    Slim::Utils::Timers::setTimer(undef, time() + $squeeze2hueRestartCounterTimeWait, \&unrestart);
+
+    $squeeze2hueRestartStatus = 1;
+}
+
+sub _performRestart {
+    my ($self, $params) = @_;
+    my $XMLConfig = $params->{'XMLConfig'};
+
+    $squeeze2hueRestartCounter++;
+    
+    if ( $squeeze2hueRestartCounter == POSIX::floor($squeeze2hueRestartCounterTimeWait * .3) ) {
+    
+        if ( $XMLConfig ) {
+            $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
+            writeXMLConfigFile($XMLConfig);
+        }
+    }
+    elsif ( $squeeze2hueRestartCounter == POSIX::floor($squeeze2hueRestartCounterTimeWait * .7) ) {
+        
+        if ( $XMLConfig ) {
+            
+            $log->debug('Squeeze2Hue restarting after changed config file.');
+            Plugins::HueBridge::Squeeze2Hue->start();
+        }
+        elsif ( $XMLConfig == undef ) {
+            
+            $log->debug('Squeeze2Hue generating new config file.');
+            Plugins::HueBridge::Squeeze2Hue->start("-i", Plugins::HueBridge::Squeeze2Hue->configFile() );
+        }
+    }
+    Slim::Utils::Timers::setTimer(undef, time() + 1, \&_performRestart,
+                                                    {
+                                                            XMLConfig => $XMLConfig,
+                                                    },
+                                                );
+}
+
+sub unrestart{
+    $log->debug('Terminating Squeeze2Hue XMLConfig restart.');
+    
+    Slim::Utils::Timers::killTimers(undef, \&_performRestart);
+    Slim::Utils::Timers::killTimers(undef, \&unrestart);
+
+    $squeeze2hueRestartCounter = 0;
+    Plugins::HueBridge::HueCom->blockProgressCounter('release');
+    $squeeze2hueRestartStatus = 0;
+}
+
+sub getRestartProgress {
+    my $returnValue;
+
+    if ( $squeeze2hueRestartCounter >= 0.0 ) {
+
+        $returnValue =  $squeeze2hueRestartCounter / $squeeze2hueRestartCounterTimeWait;
+    }
+    else {
+
+        $returnValue = $squeeze2hueRestartCounter;
+    }
+
+    return $returnValue;
+}
+
+sub blockProgressCounter {
+    my $self = shift;
+    my $restartCounterState = shift;
+    
+    if ( $restartCounterState == 'block' ) {
+    
+        $squeeze2hueRestartCounter = -1;
+    }
+    elsif ( $restartCounterState == 'release' ) {
+    
+        $squeeze2hueRestartCounter = 0;
+    }
+}
+
+sub getRestartStatus {
+    return $squeeze2hueRestartStatus;
 }
 
 sub logFile {
