@@ -15,11 +15,11 @@
                     [% huebridge.ip_address %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center">
-                    <input type="checkbox" [% IF huebridge.user_valid %] checked="1" [% END %] name="huebridge.user_valid" value="1" class="stdclick disableOnHueBridgePairing" disabled readonly>
+                    <input type="checkbox" [% IF huebridge.user_valid %] checked="1" [% END %] name="huebridge.user_valid" value="1" class="stdclick disableOnHueBridgeBackgroundAction" disabled readonly>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
                     <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% huebridge.udn %]">
-                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>
+                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
             </tr>
             [% END %]

@@ -18,9 +18,9 @@ use Plugins::HueBridge::Squeeze2Hue;
 my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
-my $squeeze2HueXMLConfigReloadRequested = 0;
-my $squeeze2HueXMLConfigReloadProgress = -1;
-my $squeeze2HueXMLConfigReloadTimeWait = 15;
+my $squeeze2HueRestartReason = restartReason('none');
+my $squeeze2HueXMLConfigRestartCounter = -1;
+my $squeeze2HueXMLConfigRestartTimeWait = 8;
 
 my $XMLConfig;
 my @XMLConfigSaveDeviceOptions = qw(user_name);
@@ -34,7 +34,7 @@ sub page {
 }
 
 sub prefs {
-    return ( $prefs, qw(binaryAutorun showAdvancedHueBridgeOptions) );
+    return ( $prefs, qw(binary binaryAutorun loggingEnabled showAdvancedHueBridgeOptions) );
 }
 
 sub beforeRender {
@@ -42,27 +42,30 @@ sub beforeRender {
     
     if( Plugins::HueBridge::HueCom->getConnectProgress() || Plugins::HueBridge::HueCom->getConnectDisconnectStatus() ) {
     
-        $params->{'statusHueBridgeConnect'} = 1;
+        $params->{'statusHueBridgeBackgroundAction'} = 1;
     }
     else {
     
-        $params->{'statusHueBridgeConnect'} = 0;
+        $params->{'statusHueBridgeBackgroundAction'} = 0;
     }
     
-    if ( $squeeze2HueXMLConfigReloadRequested ) {
+    if ( $squeeze2HueRestartReason ) {
     
-        $params->{'statusXMLConfigReloading'} = 1;
+        $params->{'statusHueBridgeBackgroundAction'} = 1;
     }
     else {
     
-        $params->{'statusXMLConfigReloading'} = 0;
+        $params->{'statusHueBridgeBackgroundAction'} = 0;
     }
 }
 
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
 
-    $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+    if ( ! $XMLConfig ) {
+    
+        $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+    }
 
     if ( $params->{'deleteSqueeze2HueXMLConfig'} ) {
         
@@ -77,7 +80,7 @@ sub handler {
     if ( $params->{'generateSqueeze2HueXMLConfig'} ) {
     
         $log->debug('Generating Squeeze2Hue XML configuration file.');    
-        # put routine for generating XML config here.
+        $squeeze2HueRestartReason = restartReason('XMLConfigGenerate');
         
         delete $params->{'saveSettings'};
     }
@@ -87,9 +90,9 @@ sub handler {
         my $logFile = Plugins::HueBridge::Squeeze2Hue->logFile();
         $log->debug('Cleaning Squeeze2Hue helper log file ' . $logFile . ')');
         
-        open my $fileHandle, ">", $logFile;
-        print $fileHandle;
-        close $fileHandle;
+        open(my $fileHandle, ">", $logFile);
+        print($fileHandle);
+        close($fileHandle);
 
         delete $params->{'saveSettings'};
     }
@@ -127,8 +130,8 @@ sub handler {
         $params->{'binaryRunning'} = 0;
     }
     
-    $params->{'helperBinary'}   = Plugins::HueBridge::Squeeze2Hue->getHelperBinary();
-    $params->{'availableHelperBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableHelperBinaries() ];
+    $params->{'binary'}   = Plugins::HueBridge::Squeeze2Hue->getBinary();
+    $params->{'availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
 
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
@@ -155,9 +158,9 @@ sub handler {
 #                }
             $log->error('Value: ' .$huebridge->{'user_name'});
             }
-        }
 
-        $squeeze2HueXMLConfigReloadRequested = 1;
+        $squeeze2HueRestartReason = restartReason('XMLConfigReload');
+        }
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
@@ -165,8 +168,16 @@ sub handler {
 
 sub handler_tableAdvancedHueBridgeOptions {
     my ($client, $params) = @_;
+    
+    if ( ! $XMLConfig ) {
+    
+        $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+    }
         
     if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
+    
+        $params->{'configFilePath'} = Slim::Utils::OSDetect::dirsFor('prefs');
+        $params->{'arch'} = Slim::Utils::OSDetect::OS();
     
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html", $params);
     }
@@ -175,38 +186,58 @@ sub handler_tableAdvancedHueBridgeOptions {
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
     
-    if ( $squeeze2HueXMLConfigReloadRequested ) {
+    if ( ! $XMLConfig ) {
+    
+        $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+    }
+    
+    if ( $squeeze2HueRestartReason != restartReason('none') ) {
     
         $log->debug('Squeeze2Hue XMLConfig reload requested.');
         
-        if ( Plugins::HueBridge::Squeeze2Hue->alive() ) {
+        if ( Plugins::HueBridge::Squeeze2Hue->alive() && $squeeze2HueXMLConfigRestartCounter == -1 ) {
         
             $log->debug('Squeeze2Hue XMLConfig initiating stop of binary.');
-            $squeeze2HueXMLConfigReloadProgress = 0;
+            $squeeze2HueXMLConfigRestartCounter = 0;
             Plugins::HueBridge::Squeeze2Hue->stop();
         }
         
-        if ( ($squeeze2HueXMLConfigReloadProgress >= 0) && ($squeeze2HueXMLConfigReloadProgress <= $squeeze2HueXMLConfigReloadTimeWait) ) {
+        if ( ($squeeze2HueXMLConfigRestartCounter >= 0) && ($squeeze2HueXMLConfigRestartCounter <= $squeeze2HueXMLConfigRestartTimeWait) ) {
         
-            $log->debug('Squeeze2Hue XMLConfig waiting for clean writing.');
-            if ( POSIX::floor($squeeze2HueXMLConfigReloadProgress / .5) == POSIX::floor($squeeze2HueXMLConfigReloadTimeWait/ .5) ) {
-                $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
-                writeXMLConfigFile($XMLConfig);
+            if ( $squeeze2HueRestartReason == restartReason('XMLConfigReload') ) {
+            
+                $log->debug('Squeeze2Hue XMLConfig waiting for clean writing.');
+                if ( $squeeze2HueXMLConfigRestartCounter == POSIX::floor($squeeze2HueXMLConfigRestartTimeWait * .5) ) {
+
+                        $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
+                    writeXMLConfigFile($XMLConfig);
+                }
             }
-            $squeeze2HueXMLConfigReloadProgress++;
+            elsif ( $squeeze2HueRestartReason == restartReason('XMLConfigGenerate') ) {
+            
+                $log->debug('Squeeze2Hue XMLConfig waiting for binary generating new config file.');
+                if ( $squeeze2HueXMLConfigRestartCounter == POSIX::floor(($squeeze2HueXMLConfigRestartTimeWait * .5)) ) {
+
+                    $log->debug('Squeeze2Hue XMLConfig initiating start of binary generating new config file.');
+                    Plugins::HueBridge::Squeeze2Hue->start("-i", Plugins::HueBridge::Squeeze2Hue->configFile());
+                }
+            }
+
+            $squeeze2HueXMLConfigRestartCounter++;
         }
         else {
-        
-            $log->debug('Squeeze2Hue XMLConfig initiating start of binary.');
-            Plugins::HueBridge::Squeeze2Hue->start();
+
+            if ( $squeeze2HueRestartReason == restartReason('XMLConfigReload') ) {
+                $log->debug('Squeeze2Hue XMLConfig initiating start of binary after config update.');
+                Plugins::HueBridge::Squeeze2Hue->start();
+            }
             
             $log->debug('Squeeze2Hue XMLConfig reading new XMLConfig from file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
             $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
             
-            $squeeze2HueXMLConfigReloadRequested = 0;
-            $squeeze2HueXMLConfigReloadProgress = -1;
+            $squeeze2HueXMLConfigRestartCounter = -1;
+            $squeeze2HueRestartReason = restartReason('none');
         }
-    
     }
     
     if ( $XMLConfig->{'device'} ) {
@@ -214,6 +245,20 @@ sub handler_tableHueBridges {
         $params->{'huebridges'} = $XMLConfig->{'device'};
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);
     }
+}
+
+sub restartReason {
+    my $restartReason =shift;
+    
+    my %restartReasons = (
+        'none'  => 0,
+        'XMLConfigReload' => 1,
+        'XMLConfigGenerate' => 2,
+    );
+    
+    my $returnValue = $restartReasons{$restartReason};
+    
+    return $returnValue;
 }
 
 sub initCLICommands {
@@ -224,24 +269,31 @@ sub initCLICommands {
     #    |  |  |  |function to call
     #    C  Q  T  F
     
-    Slim::Control::Request::addDispatch(['hue','bridge','xmlconfig','reload','progress'],
-        [0, 1, 0, \&CLI_commandGetSqueeze2HueXMLConfigReloadProgress]);
+    Slim::Control::Request::addDispatch(['hue','bridge','xmlconfig','restart','?'],
+        [0, 1, 0, \&CLI_commandGetSqueeze2HueXMLConfigRestartProgress]);
 }
 
-sub CLI_commandGetSqueeze2HueXMLConfigReloadProgress {
+sub CLI_commandGetSqueeze2HueXMLConfigRestartProgress {
     my $request = shift;
     
-    $request->addResult('_hueBridgeXMLConfigReloadProgress', sprintf("%.2f", getSqueeze2HueXMLConfigReloadProgress()));
+    $request->addResult('_hueBridgeXMLConfigRestartProgress', sprintf("%.2f", getSqueeze2HueXMLConfigRestartProgress()));
     
     $request->setStatusDone();
 }
 
-sub getSqueeze2HueXMLConfigReloadProgress {
-    my $ret;
-    if ( $squeeze2HueXMLConfigReloadProgress >= 0.0 ) {
-        $ret =  $squeeze2HueXMLConfigReloadProgress / $squeeze2HueXMLConfigReloadTimeWait;
+sub getSqueeze2HueXMLConfigRestartProgress {
+    my $returnValue;
+
+    if ( $squeeze2HueXMLConfigRestartCounter >= 0.0 ) {
+
+        $returnValue =  $squeeze2HueXMLConfigRestartCounter / $squeeze2HueXMLConfigRestartTimeWait;
     }
-    return $ret;
+    else {
+
+        $returnValue = $squeeze2HueXMLConfigRestartCounter;
+    }
+
+    return $returnValue;
 }
 
 sub getDeviceByUDN {

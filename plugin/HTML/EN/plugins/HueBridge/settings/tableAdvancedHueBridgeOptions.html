@@ -3,12 +3,15 @@
                 <td class="[% odd ? "odd" : "even" %]">
                     [% 'PLUGIN_HUEBRIDGE_SECTION_DEBUGGING_OPTIONS_NAME' | string %]
                 </td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="7">
-                        <select class="stdedit disableOnHueBridgePairing" name="debugs" [% IF status_hueBridgeConnect %]disabled[% END %] id="debugs">
+                <td class="[% odd ? "odd" : "even" %]" colspan="3">
+                        <select class="stdedit disableOnHueBridgeBackgroundAction" name="debugs" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] id="debugs">
                             [% FOREACH entry IN [ '', 'all', 'output', 'stream', 'slimproto', 'decode', 'slimmain', 'hue', 'util', 'main'] %]
                                 <option [% IF entry == debugs %]selected[% END %] value="[% entry %]">[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_TARGET_$entry" | string %]</option>
                             [% END %]
                         </select>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    &nbsp;
                 </td>
             </tr>
             <tr>
@@ -16,43 +19,43 @@
                     [% 'PLUGIN_HUEBRIDGE_SECTION_LOGGING_OPTIONS_NAME' | string %]
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input name="logging" class="stdedit disableOnHueBridgePairing" type="checkbox" [% IF logging %] checked [% END %]  [% IF status_hueBridgeConnect %]disabled[% END %]>&nbsp[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_ENABLE_NAME' | string %]
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_ENABLE_NAME' | string %]&nbsp;
+                    <input name="loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
 		        </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <a href="[% webroot %]huebridge-log.log" target="log">[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]</a>
+                    <a href="[% webroot %]huebridge.log" target="log"><input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" />
+                    </a>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_LOGSIZE_NAME' | string %]
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_LOGSIZE_NAME' | string %]&nbsp;
+                    <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="log_limit" id="log_limit" value="[% log_limit %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input type="text" class="stdedit disableOnHueBridgePairing" name="log_limit" id="log_limit" value="[% log_limit %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2">
+                    [% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_ERASELOG_NAME" | string %]&nbsp;
+                    <input name="eraselog" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF eraselog %] checked [% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input name="eraselog" class="stdedit disableOnHueBridgePairing" type="checkbox" [% IF eraselog %] checked [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]>
-                </td>
-                <td class="[% odd ? "odd" : "even" %]">
-                    [% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_ERASELOG_NAME" | string %]
-                </td>
-                <td class="[% odd ? "odd" : "even" %]">
-                    <input name="cleanlog" class="stdedit disableOnHueBridgePairing" type="submit" value=[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_CLEANLOG_NAME" | string %]>
+                    <input name="cleanlog" class="stdedit disableOnHueBridgeBackgroundAction" type="submit" value=[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_CLEANLOG_NAME" | string %]>
                 </td>
             </tr>
             <tr>
                 <td class="[% odd ? "odd" : "even" %]">
                 	[% 'PLUGIN_HUEBRIDGE_SECTION_CONFIGURATION_OPTIONS_NAME' | string %]
                 </td>
-                <td class="[% odd ? "odd" : "even" %]">
-                        [% configpath %] <input type="text" class="stdedit disableOnHueBridgePairing" name="configfile" id="configfile" value="[% configfile %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="20">
+                <td class="[% odd ? "odd" : "even" %]" colspan="2">
+                        [% configFilePath %][% IF arch == Windows %]\[% ELSE %]/[% END %]
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="configfile" id="configfile" value="[% configfile %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                        <a href="[% webroot %]huebridge-config.xml" target="config">[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]</a>
+                        <a href="[% webroot %]huebridge.xml" target="config"><input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" /></a>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input name="autosave" class="stdedit disableOnHueBridgePairing" type="checkbox" [% IF autosave %] checked [% END %]>[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_AUTOSAVE_NAME' | string %]
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_AUTOSAVE_NAME' | string %]&nbsp;
+                    <input name="autosave" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF autosave %] checked [% END %]>
                 </td>
                 [% IF binary %]
                     <td class="[% odd ? "odd" : "even" %]">
-                            <input name="genconfig" type="submit" class="stdedit disableOnHueBridgePairing" onclick="alert('generating configuration will take ~30 seconds')" value=[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_GENERATE_NAME' | string %]>
+                            <input name="genconfig" type="submit" class="stdedit disableOnHueBridgeBackgroundAction" onclick="alert('generating configuration will take ~30 seconds')" value=[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_GENERATE_NAME' | string %]>
                     </td>
                 [% ELSE %]
                     <td class="[% odd ? "odd" : "even" %]">
@@ -60,10 +63,7 @@
                     </td>
                 [% END %]	
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input name="delconfig" class="stdedit disableOnHueBridgePairing" type="submit" [% IF status_hueBridgeConnect %]disabled[% END %] value=[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_DELETE_NAME' | string %]>
-                </td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="3">
-                    &nbsp;
+                    <input name="delconfig" class="stdedit disableOnHueBridgeBackgroundAction" type="submit" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] value=[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_DELETE_NAME' | string %]>
                 </td>
             </tr>
             <tr>
@@ -71,21 +71,24 @@
                     [% 'PLUGIN_HUEBRIDGE_SECTION_SCANNING_OPTIONS_NAME' | string %]
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                        [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_INTERVAL_NAME' | string %]&nbsp<input type="text" class="stdedit disableOnHueBridgePairing" name="scan_interval" id="scan_interval" value="[% scan_interval %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2"> (s)
+                        [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_INTERVAL_NAME' | string %]&nbsp;
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="scan_interval" id="scan_interval" value="[% scan_interval %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                        [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_TIMEOUT_NAME' | string %]&nbsp<input type="text" class="stdedit disableOnHueBridgePairing" name="scan_timeout" id="scan_timeout" value="[% scan_timeout %]" [% IF status_hueBridgeConnect %]disabled[% END %] size="2"> (s)
+                        [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_TIMEOUT_NAME' | string %]&nbsp;
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="scan_timeout" id="scan_timeout" value="[% scan_timeout %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
                 </td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="5">
+                <td class="[% odd ? "odd" : "even" %]" colspan="3">
                     &nbsp;
                 </td>
             </tr>
+<!--
             <tr>
                 <td class="[% odd ? "odd" : "even" %]">
                     [% 'PLUGIN_HUEBRIDGE_SECTION_INTERFACE_OPTIONS_NAME' | string %]
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-		                <input [% IF useLMSsocket %] disabled [% END %]  [% IF status_hueBridgeConnect %]disabled[% END %] type="text" class="stdedit" name="interface" id="interface" value="[% interface %]" size="20">
+		                <input [% IF useLMSsocket %] disabled [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] type="text" class="stdedit" name="interface" id="interface" value="[% interface %]" size="20">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
 		                <input name="useLMSsocket" type="checkbox" [% IF useLMSsocket %] checked [% END %]>&nbsp[% 'PLUGIN_HUEBRIDGE_OPTION_INTERFACE_USELMSSOCKET_NAME' | string %]
@@ -94,6 +97,7 @@
                     &nbsp;
                 </td>
             </tr>
+-->
             <tr style="height: 5px;">
                 <td class="[% odd ? "odd" : "even" %]" colspan="2"></td>
             </tr>

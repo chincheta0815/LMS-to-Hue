@@ -13,8 +13,8 @@ use JSON::XS;
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
-my $timeForConnect = 29.33;
-my $connectProgress = 0;
+my $connectProgressTimeWait = 14.33;
+my $connectProgressCounter = -1;
 my $connectDisconnectStatus = 0;
 
 sub initCLICommands {
@@ -25,7 +25,7 @@ sub initCLICommands {
     #    |  |  |  |function to call
     #    C  Q  T  F
     
-    Slim::Control::Request::addDispatch(['hue','bridge','connect','progress'],
+    Slim::Control::Request::addDispatch(['hue','bridge','connect','?'],
         [0, 1, 0, \&CLICommand_getHueBridgeConnectProgress]);
     
     Slim::Control::Request::addDispatch(['hue','bridge','connect','cancel'],
@@ -57,7 +57,7 @@ sub CLICommand_cancelHueBridgeConnect {
 sub connect {
     my ($self, $deviceUDN, $XMLConfig) = @_;
     
-    $connectProgress = 0;
+    $connectProgressCounter = 0;
            
     $log->debug('Initiating hue bridge connect.');
     
@@ -68,7 +68,7 @@ sub connect {
                                                         },
                                                     );
 
-    Slim::Utils::Timers::setTimer(undef, time() + $timeForConnect, \&unconnect);
+    Slim::Utils::Timers::setTimer(undef, time() + $connectProgressTimeWait, \&unconnect);
     
     $connectDisconnectStatus = 1;
 }
@@ -90,15 +90,19 @@ sub unconnect {
     Slim::Utils::Timers::killTimers(undef, \&unconnect);
 
     $connectDisconnectStatus = 0;
-    $connectProgress = -1;
+    $connectProgressCounter = -1;
 }
 
 sub getConnectProgress {
-    my $ret;
-    if ( $connectProgress >= 0.0 ) {
-        $ret =  $connectProgress / $timeForConnect;
+    my $returnValue;
+    if ( $connectProgressCounter >= 0.0 ) {
+        $returnValue =  $connectProgressCounter / $connectProgressTimeWait;
     }
-    return $ret;
+    else {
+        $returnValue = $connectProgressCounter;
+    }
+
+    return $returnValue;
 }
 
 sub getConnectDisconnectStatus {
@@ -122,7 +126,7 @@ sub _sendConnectRequest {
     my $requestBody = encode_json($request);
     
     $connectDisconnectStatus = 1;
-    $connectProgress += 1;
+    $connectProgressCounter += 1;
     
     Slim::Utils::Timers::setTimer(undef, time() + 1, \&_sendConnectRequest, {
                                                                 deviceUDN => $deviceUDN,

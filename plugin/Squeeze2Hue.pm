@@ -15,9 +15,8 @@ my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
 
 my $squeeze2hue;
-my $binary;
 
-sub getAvailableHelperBinaries {
+sub getAvailableBinaries {
 	my $os = Slim::Utils::OSDetect::details();
 	
 	if ($os->{'os'} eq 'Linux') {
@@ -79,19 +78,19 @@ sub getAvailableHelperBinaries {
 	
 }
 
-sub getHelperBinary {
-	my @availableHelperBinaries = getAvailableHelperBinaries();
+sub getBinary {
+	my @availableBinaries = getAvailableBinaries();
 
-	if (scalar @availableHelperBinaries == 1) {
+	if (scalar @availableBinaries == 1) {
 	
-		return $availableHelperBinaries[0];
+		return $availableBinaries[0];
 	}
 
-	if (my $b = $prefs->get("bin")) {
+	if (my $b = $prefs->get('binary')) {
 	
-		for my $helperBinary (@availableHelperBinaries) {
+		for my $binary (@availableBinaries) {
 		
-			if ($helperBinary eq $b) {
+			if ($binary eq $b) {
 			
 				return $b;
 			}
@@ -102,13 +101,13 @@ sub getHelperBinary {
 }
 
 sub start {
-	my $helperBinary = Plugins::HueBridge::Squeeze2Hue->getHelperBinary() || do {
-		$log->warn("Squeeze2Hue helper binary not set");
+	my $binary = Plugins::HueBridge::Squeeze2Hue->getBinary() || do {
+		$log->warn('Squeeze2Hue binary not set.');
 		return;
 	};
 
 	my @params;
-	my $logging;
+	my $loggingEnabled;
 
 	push @params, ("-Z");
 	
@@ -127,7 +126,7 @@ sub start {
 		push @params, ("-b", Slim::Utils::Network::serverAddr());
 	}
 
-	if ($prefs->get('logging')) {
+	if ($prefs->get('loggingEnabled')) {
 	
 		push @params, ("-f", Plugins::HueBridge::Squeeze2Hue->logFile() );
 		
@@ -135,7 +134,7 @@ sub start {
 		
 			push @params, ("-d", $prefs->get('debugs') . "=debug");
 		}
-		$logging = 1;
+		$loggingEnabled = 1;
 	}
 	
 	if (-e Plugins::HueBridge::Squeeze2Hue->configFile() || $prefs->get('autosave')) {
@@ -150,7 +149,7 @@ sub start {
 	
 	if (Slim::Utils::OSDetect::details()->{'os'} ne 'Windows') {
 	
-		my $exec = catdir(Slim::Utils::PluginManager->allPlugins->{'HueBridge'}->{'basedir'}, 'Bin', $helperBinary);
+		my $exec = catdir(Slim::Utils::PluginManager->allPlugins->{'HueBridge'}->{'basedir'}, 'Bin', $binary);
 		$exec = Slim::Utils::OSDetect::getOS->decodeExternalHelperPath($exec);
 			
 		if (!((stat($exec))[2] & 0100)) {
@@ -160,8 +159,8 @@ sub start {
 		}	
 	}	
 	
-	my $path = Slim::Utils::Misc::findbin($helperBinary) || do {
-		$log->warn("$helperBinary not found.");
+	my $path = Slim::Utils::Misc::findbin($binary) || do {
+		$log->warn($binary. ' not found.');
 		return;
 	};
 
@@ -169,13 +168,13 @@ sub start {
 			
 	if (!-e $path) {
 	
-		$log->warn("$helperBinary not executable.");
+		$log->warn($binary. ' not executable.');
 		return;
 	}
 	
 	push @params, @_;
 
-	if ($logging) {
+	if ($loggingEnabled) {
 	
 		open(my $fileHandle, ">>", Plugins::HueBridge::Squeeze2Hue->logFile() );
 		print($fileHandle, '\nStarting Squeeze2Hue binary (' .$path. ' ' .@params. ')\n');
@@ -193,11 +192,11 @@ sub start {
 	
 		Slim::Utils::Timers::setTimer(undef, Time::HiRes::time() + 1, sub {
 			if ($squeeze2hue && $squeeze2hue->alive() ) {
-				$log->debug                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         ("$helperBinary running");
-				$helperBinary = $path;
+				$log->debug($binary. ' running.');
+				$binary = $path;
 			}
 			else {
-				$log->debug("$helperBinary not running");
+				$log->debug($binary. ' not running.');
 			}
 		});
 		
@@ -212,7 +211,7 @@ sub beat {
 	
 		$log->error('crashed ... restarting');
 		
-		if ($prefs->get('logging')) {
+		if ($prefs->get('loggingEnabled')) {
 		
 			open(my $fileHandle, ">>", Plugins::HueBridge::Squeeze2Hue->logFile());
 			print($fileHandle, '\nSqueeze2Hue binary crashed (' .$path. ' ' .@args. ') ... restarting.\n');
@@ -227,7 +226,7 @@ sub beat {
 
 sub stop {
 
-	if ($squeeze2hue && $squeeze2hue->alive) {
+	if ($squeeze2hue && $squeeze2hue->alive()) {
 	
 		$log->info("Stopping Squeeze2Hue binary.");
 		$squeeze2hue->die;
@@ -255,7 +254,7 @@ sub logFile {
 }
 
 sub configFile {
-	return catdir(Slim::Utils::OSDetect::dirsFor('prefs'), $prefs->get('configfile'));
+	return catdir(Slim::Utils::OSDetect::dirsFor('prefs'), $prefs->get('configFileName'));
 }
 
 sub logHandler {

@@ -4,7 +4,7 @@
             new Ext.util.TaskRunner().start({
                 run: function(items){
                     SqueezeJS.Controller.request({
-                        params: [ '', [ "hue", "bridge", "connect", "progress" ] ],
+                        params: [ '', [ "hue", "bridge", "connect", "?" ] ],
                         
                         success: function(response) {
                             response = Ext.util.JSON.decode(response.responseText);
@@ -13,7 +13,7 @@
                                 
                                     var connectProgressValue = response.result['_hueBridgeConnectProgress'];
                                 
-                                    if ( connectProgressValue != -1.0 ) {
+                                    if ( connectProgressValue != -1.00 ) {
                                         if ( connectProgressValue > 0.00 ) {
                                             item.dom.disabled = true;
                                         
@@ -54,6 +54,42 @@
                             }
                         }
                     })
+                    SqueezeJS.Controller.request({
+                        params: [ '', [ "hue", "bridge", "xmlconfig", "restart", "?" ] ],
+                        
+                        success: function(response) {
+                            response = Ext.util.JSON.decode(response.responseText);
+                            if (response && response.result) {
+                                items.each(function(item) {
+                                
+                                    var restartProgressValue = response.result['_hueBridgeXMLConfigRestartProgress'];
+                                
+                                    if ( restartProgressValue != -1.00 ) {
+                                        if ( restartProgressValue > 0.00 ) {
+                                            item.dom.disabled = true;
+                                        
+                                            Ext.MessageBox.show({
+                                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_TITLE' | string %]",
+                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_MSG' | string %]</p>",
+                                                progressText: '',
+                                                width: 300,
+                                                progress: true,
+                                                closable: false,
+                                            });
+                                        
+                                            if ( restartProgressValue < 1.00 ) {
+                                                Ext.MessageBox.updateProgress(restartProgressValue, 'Waiting ...');
+                                            }
+                                        }
+                                        else {
+                                            item.dom.disabled = false;
+                                            Ext.MessageBox.hide()
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    })
                     Ext.Ajax.request({
                         url: 'plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html',
                         
@@ -69,7 +105,7 @@
                         }
                     })
                 },
-                args: [ Ext.select('.disableOnHueBridgePairing') ],
+                args: [ Ext.select('.disableOnHueBridgeBackgroundAction') ],
                 interval: 2000
             });
         });
@@ -95,10 +131,10 @@
 			[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-			<input type="submit" name="generateSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_GENERATE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="generateSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_GENERATE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-			<input type="submit" name="deleteSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_DELETE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="deleteSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_DELETE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" colspan="3">
 			&nbsp;&nbsp;&nbsp;
@@ -109,19 +145,19 @@
 			[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_HELPER_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-			<input type="submit" name="startSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_START_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="startSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_START_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-			<input type="submit" name="stopSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_STOP_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="stopSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_STOP_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-			<input type="submit" name="restartSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_RESTART_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgePairing" [% IF status_hueBridgePairing %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
+			<input type="submit" name="restartSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_RESTART_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
 			[% 'PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-			<input name="binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgePairing" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF status_hueBridgeConnect %]disabled[% END %]>
+			<input name="pref_binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgeBackgroundAction" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
             </tr>
             <tr>
@@ -129,10 +165,10 @@
 			[% 'PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
             	<td class="[% odd ? "odd" : "even" %]" colspan="5">
-                    [% IF availableHelperBinaries.size > 1 %]
-                        <select class="stdedit disableOnHueBridgePairing" name="pref_helperBinary" id="helperBinary">
-                                [% FOREACH entry IN availableHelperBinaries %]
-                                        <option [% IF entry == helperBinary %]selected[% found = 1 %][% END %] [% IF status_hueBridgeConnect %]disabled[% END %] value="[% entry %]">[% entry %]</option>
+                    [% IF availableBinaries.size > 1 %]
+                        <select class="stdedit disableOnHueBridgeBackgroundAction" name="pref_binary" id="helperBinary">
+                                [% FOREACH entry IN availableBinaries %]
+                                        <option [% IF entry == binary %]selected[% found = 1 %][% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %] value="[% entry %]">[% entry %]</option>
                                 [% END %]
                                 [% IF not found %]
                                         <option selected value="">[% 'PLUGIN_HUEBRIDGE_BINARY_SELECT_MENU_NAME' | string %]</option>
@@ -150,7 +186,7 @@
                     [% 'PLUGIN_HUEBRIDGE_SHOW_ADVANCED_OPTIONS_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input type="checkbox" [% IF prefs.pref_showAdvancedHueBridgeOptions %] checked="1" [% END %] class="stdedit disableOnHueBridgePairing" [% IF status_hueBridgeConnect %]disabled[% END %] name="pref_showAdvancedHueBridgeOptions" id="pref_showAdvancedHueBridgeOptions" value="1">
+                    <input type="checkbox" [% IF prefs.pref_showAdvancedHueBridgeOptions %] checked="1" [% END %] class="stdedit disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] name="pref_showAdvancedHueBridgeOptions" id="pref_showAdvancedHueBridgeOptions" value="1">
                 </td>
             </tr>
         </table>
