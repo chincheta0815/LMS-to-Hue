@@ -179,7 +179,7 @@ sub _sendConnectRequestOK{
         
         my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
         $device->{'user_name'} = 'error';
-        $device->{'user_valid'} = 0;
+        $device->{'user_valid'} = '0';
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');
@@ -187,7 +187,7 @@ sub _sendConnectRequestOK{
         
         my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
         $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
-        $device->{'user_valid'} = 1;
+        $device->{'user_valid'} = '1';
         
         unconnect();
     }

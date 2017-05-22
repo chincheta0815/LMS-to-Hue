@@ -5,8 +5,6 @@ use warnings;
 
 use base qw(Slim::Web::Settings);
 
-use XML::Simple;
-
 use Data::Dumper;
 
 use Slim::Utils::Log;
@@ -60,7 +58,7 @@ sub handler {
 
     if ( ! $XMLConfig ) {
     
-        $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+        $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
     }
 
     if ( $params->{'deleteSqueeze2HueXMLConfig'} ) {
@@ -76,7 +74,7 @@ sub handler {
     if ( $params->{'generateSqueeze2HueXMLConfig'} ) {
     
         $log->debug('Generating Squeeze2Hue XML configuration file.');    
-        Plugins::HueBridge::Squeeze2Hue->restart();
+        Plugins::HueBridge::Squeeze2Hue->restart('genXMLConfig');
         
         delete $params->{'saveSettings'};
     }
@@ -152,9 +150,12 @@ sub handler {
 #                else {
 #                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
 #                }
-            $log->error('Value: ' .$huebridge->{'user_name'});
+            $log->error('Value user_name: ' .$huebridge->{'user_name'});
+            $log->error('Value user_valid: ' .$huebridge->{'user_valid'});
             }
         }
+        $log->error("Dumper output:\n" .Dumper($XMLConfig));
+        Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
@@ -165,7 +166,7 @@ sub handler_tableAdvancedHueBridgeOptions {
     
     if ( ! $XMLConfig ) {
     
-        $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+        $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
     }
         
     if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
@@ -182,7 +183,7 @@ sub handler_tableHueBridges {
     
     if ( ! $XMLConfig ) {
     
-        $XMLConfig = readXMLConfigFile(KeyAttr => 'device');
+        $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
     }
     
     if ( $XMLConfig->{'device'} ) {
@@ -203,27 +204,6 @@ sub getDeviceByUDN {
     }
 
     return undef;
-}
-
-sub readXMLConfigFile {
-    my (@args) = @_;
-    my $ret;
-
-    my $file = Plugins::HueBridge::Squeeze2Hue->configFile();
-
-    if (-e $file) {
-        $ret = XMLin($file, ForceArray => ['device'], KeepRoot => 0, NoAttr => 1, @args);
-    }	
-
-    return $ret;
-}
-
-sub writeXMLConfigFile {
-    my $configData = shift;
-    
-    my $configFile = Plugins::HueBridge::Squeeze2Hue->configFile();
-    
-    XMLout($configData, RootName => "squeeze2hue", NoSort => 1, NoAttr => 1, OutputFile => $configFile);
 }
 
 1;

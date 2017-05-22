@@ -266,17 +266,24 @@ sub wait {
 }
 
 sub restart {
-    my ($self, $XMLConfig) = @_;
+    my ($self, $arg) = @_;
     
-    $log->debug('Squeeze2Hue XMLConfig generation requested.');
-    
+    if ( !$arg ) {
+        $log->debug('Squeeze2Hue plain restart requested.');
+    }
+    elsif ( $arg == 'genXMLConfig') {
+        $log->debug('Squeeze2Hue XMLConfig generation requested.');
+    }
+    elsif ( ref($arg) == 'HASH' ) {
+        $log->debug('Squeeze2Hue XMLConfig config file update requested.');
+    }
     Plugins::HueBridge::HueCom->blockProgressCounter('block');
     Plugins::HueBridge::Squeeze2Hue->stop();
     $squeeze2hueRestartCounter = 0;
         
     Slim::Utils::Timers::setTimer(undef, time() + 1, \&_performRestart,
                                                     {
-                                                            XMLConfig => $XMLConfig,
+                                                            arg => $arg,
                                                     },
                                                 );
 
@@ -287,33 +294,42 @@ sub restart {
 
 sub _performRestart {
     my ($self, $params) = @_;
-    my $XMLConfig = $params->{'XMLConfig'};
+    my $arg = $params->{'arg'};
 
     $squeeze2hueRestartCounter++;
     
     if ( $squeeze2hueRestartCounter == POSIX::floor($squeeze2hueRestartCounterTimeWait * .3) ) {
     
-        if ( $XMLConfig ) {
+        if ( !$arg ) {
+        }
+        elsif ( $arg == 'genXMLConfig' ) {
+        }
+        elsif ( ref($arg) == 'HASH' ) {
             $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
-            writeXMLConfigFile($XMLConfig);
+            writeXMLConfigFile($arg);
         }
     }
     elsif ( $squeeze2hueRestartCounter == POSIX::floor($squeeze2hueRestartCounterTimeWait * .7) ) {
         
-        if ( $XMLConfig ) {
+        if ( !$arg ) {
             
-            $log->debug('Squeeze2Hue restarting after changed config file.');
+            $log->debug('Squeeze2Hue restarting.');
             Plugins::HueBridge::Squeeze2Hue->start();
         }
-        elsif ( $XMLConfig == undef ) {
+        elsif ( $arg == 'genXMLConfig' ) {
             
-            $log->debug('Squeeze2Hue generating new config file.');
+            $log->debug('Squeeze2Hue restarting and generating new config file.');
             Plugins::HueBridge::Squeeze2Hue->start("-i", Plugins::HueBridge::Squeeze2Hue->configFile() );
+        }
+        elsif ( ref($arg) == 'HASH' ) {
+            
+            $log->debug('Squeeze2Hue restarting after config file update.');
+            Plugins::HueBridge::Squeeze2Hue->start();
         }
     }
     Slim::Utils::Timers::setTimer(undef, time() + 1, \&_performRestart,
                                                     {
-                                                            XMLConfig => $XMLConfig,
+                                                            arg => $arg,
                                                     },
                                                 );
 }
@@ -368,6 +384,28 @@ sub logFile {
 
 sub configFile {
 	return catdir(Slim::Utils::OSDetect::dirsFor('prefs'), $prefs->get('configFileName'));
+}
+
+sub readXMLConfigFile {
+    my ($self, @args) = @_;
+    my $ret;
+
+    my $file = Plugins::HueBridge::Squeeze2Hue->configFile();
+
+    if (-e $file) {
+        $ret = XMLin($file, ForceArray => ['device'], KeepRoot => 0, NoAttr => 1, @args);
+    }	
+
+    return $ret;
+}
+
+sub writeXMLConfigFile {
+    my $self = shift;
+    my $configData = shift;
+
+    my $configFile = Plugins::HueBridge::Squeeze2Hue->configFile();
+    
+    XMLout($configData, RootName => "squeeze2hue", NoSort => 1, NoAttr => 1, OutputFile => $configFile);
 }
 
 sub logHandler {
