@@ -1,4 +1,4 @@
-    [% IF huebridges.size > 0 %]
+    [% IF xml_device.size > 0 %]
         <table border="0" cellspacing="0">
             <tr>
                 <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_NAME' | string %]&nbsp;&nbsp;&nbsp;</th>
@@ -6,19 +6,19 @@
                 <th align="center">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_CONNECTED' | string %]</th>
                 <th>&nbsp;</th>
             </tr>
-            [% FOREACH huebridge IN huebridges %]
+            [% FOREACH item IN xml_device %]
             <tr>
                 <td class="[% odd ? "odd" : "even" %]">
-                    [% huebridge.name %]&nbsp;&nbsp;&nbsp;
+                    [% item.name %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    [% huebridge.ip_address %]&nbsp;&nbsp;&nbsp;
+                    [% item.ip_address %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center">
-                    <input type="checkbox" [% IF huebridge.user_valid %] checked="1" [% END %] name="huebridge.user_valid" value="1" class="stdclick disableOnHueBridgeBackgroundAction" disabled readonly>
+                    <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick disableOnHueBridgeBackgroundAction" disabled readonly>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
-                    <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% huebridge.udn %]">
+                    <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% item.udn %]">
                     <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
             </tr>
@@ -33,4 +33,4 @@
                 <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGES_NONE_YET' | string %]</th>
             </tr>
         </table>
-    [% END %]        
+    [% END %]

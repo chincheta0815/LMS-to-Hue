@@ -6,10 +6,10 @@ use Proc::Background;
 use File::ReadBackwards;
 use File::Spec::Functions;
 use Data::Dumper;
+use XML::Simple qw(:strict);
 
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
-use XML::Simple;
 
 my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
@@ -268,15 +268,19 @@ sub wait {
 sub restart {
     my ($self, $arg) = @_;
     
-    if ( !$arg ) {
+    if ( ! $arg ) {
+    
         $log->debug('Squeeze2Hue plain restart requested.');
     }
     elsif ( $arg == 'genXMLConfig') {
+    
         $log->debug('Squeeze2Hue XMLConfig generation requested.');
     }
     elsif ( ref($arg) == 'HASH' ) {
+    
         $log->debug('Squeeze2Hue XMLConfig config file update requested.');
     }
+    
     Plugins::HueBridge::HueCom->blockProgressCounter('block');
     Plugins::HueBridge::Squeeze2Hue->stop();
     $squeeze2hueRestartCounter = 0;
@@ -300,18 +304,19 @@ sub _performRestart {
     
     if ( $squeeze2hueRestartCounter == POSIX::floor($squeeze2hueRestartCounterTimeWait * .3) ) {
     
-        if ( !$arg ) {
+        if ( ! $arg ) {
         }
         elsif ( $arg == 'genXMLConfig' ) {
         }
         elsif ( ref($arg) == 'HASH' ) {
+
             $log->debug('Squeeze2Hue XMLConfig writing data to file (' . Plugins::HueBridge::Squeeze2Hue->configFile() . ').');
             writeXMLConfigFile($arg);
         }
     }
     elsif ( $squeeze2hueRestartCounter == POSIX::floor($squeeze2hueRestartCounterTimeWait * .7) ) {
         
-        if ( !$arg ) {
+        if ( ! $arg ) {
             
             $log->debug('Squeeze2Hue restarting.');
             Plugins::HueBridge::Squeeze2Hue->start();

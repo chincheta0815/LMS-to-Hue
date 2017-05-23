@@ -27,7 +27,7 @@ $prefs->init({
     debugs => '',
     loggingEnabled => 0,
     binary => undef,
-    configFileName => "huebridge.xml",
+    configFileName => 'huebridge.xml',
     profilesURL => initProfilesURL(),
     autosave => 1,
     eraselog => 0

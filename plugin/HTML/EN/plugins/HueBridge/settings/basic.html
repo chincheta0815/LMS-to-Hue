@@ -75,21 +75,6 @@
                                                 width: 300,
                                                 progress: true,
                                                 closable: false,
-                                                buttons: Ext.MessageBox.CANCEL,
-                                                fn: function(btn, text) {
-                                                    SqueezeJS.Controller.request({
-                                                        params: [ '', [ "hue", "bridge", "restart", "cancel" ] ],
-                        
-                                                        success: function(response) {
-                                                            response = Ext.util.JSON.decode(response.responseText);
-                                                            if ( response && response.result ) {
-                                                                if ( response.result['_hueBridgeRestartCancel'] == 1) {
-                                                                    Ext.MessageBox.hide();
-                                                                }
-                                                            }
-                                                        }
-                                                    })
-                                                }
                                             });
                                         
                                             if ( restartProgressValue < 1.00 ) {
@@ -152,7 +137,7 @@
                     <input type="submit" name="deleteSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_DELETE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" colspan="3">
-			&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;
                 </td>
             </tr>
             <tr>
@@ -180,9 +165,9 @@
 			[% 'PLUGIN_HUEBRIDGE_BINARY_SELECTED_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
             	<td class="[% odd ? "odd" : "even" %]" colspan="5">
-                    [% IF availableBinaries.size > 1 %]
+                    [% IF param_availableBinaries.size > 1 %]
                         <select class="stdedit disableOnHueBridgeBackgroundAction" name="pref_binary" id="helperBinary">
-                                [% FOREACH entry IN availableBinaries %]
+                                [% FOREACH entry IN param_availableBinaries %]
                                         <option [% IF entry == binary %]selected[% found = 1 %][% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %] value="[% entry %]">[% entry %]</option>
                                 [% END %]
                                 [% IF not found %]

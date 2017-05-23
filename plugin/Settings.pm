@@ -17,7 +17,10 @@ my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
 my $XMLConfig;
-my @XMLConfigSaveDeviceOptions = qw(user_name);
+my $XMLConfigRestartRequested;
+
+my @lmsPrefs = qw(autosave binary binaryAutorun configFileName debugs eraselog loggingEnabled showAdvancedHueBridgeOptions);
+my @XMLConfigPrefs = qw(device log_limit scan_interval scan_timeout user_name user_valid);
 
 sub name {
     return Slim::Web::HTTP::CSRF->protectName('PLUGIN_HUEBRIDGE_NAME');
@@ -28,22 +31,13 @@ sub page {
 }
 
 sub prefs {
-    return ( $prefs, qw(binary binaryAutorun loggingEnabled showAdvancedHueBridgeOptions) );
+    return ( $prefs, @lmsPrefs );
 }
 
 sub beforeRender {
     my ($class, $params) = @_;
     
-    if( Plugins::HueBridge::HueCom->getConnectDisconnectStatus() ) {
-    
-        $params->{'statusHueBridgeBackgroundAction'} = 1;
-    }
-    else {
-    
-        $params->{'statusHueBridgeBackgroundAction'} = 0;
-    }
-    
-    if ( Plugins::HueBridge::Squeeze2Hue->getRestartStatus() ) {
+    if( Plugins::HueBridge::HueCom->getConnectDisconnectStatus() || Plugins::HueBridge::Squeeze2Hue->getRestartStatus() ) {
     
         $params->{'statusHueBridgeBackgroundAction'} = 1;
     }
@@ -55,6 +49,8 @@ sub beforeRender {
 
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
+
+    $XMLConfigRestartRequested = 0;
 
     if ( ! $XMLConfig ) {
     
@@ -124,8 +120,8 @@ sub handler {
         $params->{'binaryRunning'} = 0;
     }
     
-    $params->{'binary'}   = Plugins::HueBridge::Squeeze2Hue->getBinary();
-    $params->{'availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
+    $params->{'param_binary'}   = Plugins::HueBridge::Squeeze2Hue->getBinary();
+    $params->{'param_availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
 
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
@@ -135,6 +131,7 @@ sub handler {
             $log->debug('Triggered \'connect\' of device with udn: ' . $deviceUDN);
             Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
             
+            $XMLConfigRestartRequested = 1;
             delete $params->{'saveSettings'};
         }
     }
@@ -143,19 +140,19 @@ sub handler {
      
         foreach my $huebridge (@{$XMLConfig->{'device'}}) {
 
-            foreach my $deviceOption (@XMLConfigSaveDeviceOptions) {
+            foreach my $deviceOption (@XMLConfigPrefs) {
 #                if ($params->{ $deviceOption } eq '') {
 #                    delete $huebridge->{ $deviceOption };
 #                }
 #                else {
 #                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
 #                }
-            $log->error('Value user_name: ' .$huebridge->{'user_name'});
-            $log->error('Value user_valid: ' .$huebridge->{'user_valid'});
             }
         }
-        $log->error("Dumper output:\n" .Dumper($XMLConfig));
-        Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
+        if ( $XMLConfigRestartRequested ) {
+
+            Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
+        }
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
@@ -163,13 +160,21 @@ sub handler {
 
 sub handler_tableAdvancedHueBridgeOptions {
     my ($client, $params) = @_;
-    
+
+    foreach my $prefName (@lmsPrefs) {
+        $params->{'pref_'.$prefName} = $prefs->get($prefName);
+    }
+
     if ( ! $XMLConfig ) {
     
         $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
     }
         
     if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
+
+        foreach my $prefName (@XMLConfigPrefs) {
+            $params->{'xml_'.$prefName} = $XMLConfig->{$prefName};
+        }
     
         $params->{'configFilePath'} = Slim::Utils::OSDetect::dirsFor('prefs');
         $params->{'arch'} = Slim::Utils::OSDetect::OS();
@@ -188,7 +193,9 @@ sub handler_tableHueBridges {
     
     if ( $XMLConfig->{'device'} ) {
 
-        $params->{'huebridges'} = $XMLConfig->{'device'};
+        foreach my $prefName (@XMLConfigPrefs) {
+            $params->{'xml_'.$prefName} = $XMLConfig->{$prefName};
+        }
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);
     }
 }
