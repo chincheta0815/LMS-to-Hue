@@ -40,6 +40,7 @@ sub initPlugin {
     $log->debug( "Initialising HueBridge " . $class->_pluginDataFor( 'version' ) . " on " . $Config{'archname'} );
 
     if ( main::WEBUI ) {
+
         require Plugins::HueBridge::Settings;
         Plugins::HueBridge::Settings->new;
 
@@ -57,6 +58,7 @@ sub initPlugin {
     require Plugins::HueBridge::Squeeze2Hue;
     Plugins::HueBridge::Squeeze2Hue->initCLICommands;
     if ($prefs->get('binaryAutorun')) {
+
         Plugins::HueBridge::Squeeze2Hue->start;
     }
 
@@ -65,11 +67,13 @@ sub initPlugin {
 
 sub initProfilesURL {
     my $file = catdir(Slim::Utils::PluginManager->allPlugins->{'HueBridge'}->{'basedir'}, 'install.xml');
+
     return XMLin($file, ForceArray => 0, KeepRoot => 0, NoAttr => 0)->{'profilesURL'};
 }
 
 sub shutdownPlugin {
     if ($prefs->get('autorun')) {
+
         Plugins::HueBridge::Squeeze2Hue->stop;
     }
 }
