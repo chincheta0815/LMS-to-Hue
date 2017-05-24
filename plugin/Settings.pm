@@ -137,20 +137,10 @@ sub handler {
     }
 
     if ( $params->{'saveSettings'} ) {
-     
-        foreach my $huebridge (@{$XMLConfig->{'device'}}) {
 
-            foreach my $deviceOption (@XMLConfigPrefs) {
-#                if ($params->{ $deviceOption } eq '') {
-#                    delete $huebridge->{ $deviceOption };
-#                }
-#                else {
-#                    $huebridge->{ $deviceOption } = $params->{ $deviceOption };
-#                }
-            }
-        }
         if ( $XMLConfigRestartRequested ) {
 
+            ### Okay, here we do the restart, ALWAYS. But a user warning would be awesome.
             Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
         }
     }
@@ -162,7 +152,12 @@ sub handler_tableAdvancedHueBridgeOptions {
     my ($client, $params) = @_;
 
     foreach my $prefName (@lmsPrefs) {
-        $params->{'pref_'.$prefName} = $prefs->get($prefName);
+    
+        if ( $params->{'saveSettings'} ) {
+            $prefs->set($prefName, 'pref_' . $prefName);
+        }
+        
+        $params->{'pref_' . $prefName} = $prefs->get($prefName);
     }
 
     if ( ! $XMLConfig ) {
@@ -173,7 +168,14 @@ sub handler_tableAdvancedHueBridgeOptions {
     if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
 
         foreach my $prefName (@XMLConfigPrefs) {
-            $params->{'xml_'.$prefName} = $XMLConfig->{$prefName};
+            
+            if ( $params->{'saveSettings'} ) {
+
+                $XMLConfig->{$prefName} = $params->{'xml_' . $prefName};
+                $XMLConfigRestartRequested = 1;
+            }
+
+            $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
         }
     
         $params->{'configFilePath'} = Slim::Utils::OSDetect::dirsFor('prefs');
@@ -194,7 +196,14 @@ sub handler_tableHueBridges {
     if ( $XMLConfig->{'device'} ) {
 
         foreach my $prefName (@XMLConfigPrefs) {
-            $params->{'xml_'.$prefName} = $XMLConfig->{$prefName};
+        
+            if ( $params->{'saveSettings'} ) {
+
+                $XMLConfig->{$prefName} = $params->{'xml_' . $prefName};
+                $XMLConfigRestartRequested = 1;
+            }
+
+            $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
         }
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);
     }
