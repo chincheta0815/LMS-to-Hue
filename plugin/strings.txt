@@ -157,6 +157,9 @@ PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_TITLE
 PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_MSG
 	EN	Squeeze2Hue helper binary is restarting due to configuration changes.
 
+PLUGIN_HUEBRIDGE_RESTART_BINARY_ON_XMLCONFIG_CHANGE_PROMPT
+	EN	XML configuration file has changed. <a href="%s">Click here to restart the binary.</a>
+
 PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_NAME
 	EN	Name
 

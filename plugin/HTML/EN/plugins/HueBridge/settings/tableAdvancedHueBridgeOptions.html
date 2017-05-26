@@ -4,7 +4,7 @@
                     [% 'PLUGIN_HUEBRIDGE_SECTION_DEBUGGING_OPTIONS_NAME' | string %]
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" colspan="3">
-                        <select class="stdedit disableOnHueBridgeBackgroundAction" name="pref_debugs" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] id="pref_debugs">
+                        <select class="stdedit disableOnHueBridgeBackgroundAction" name="pref_debugs" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] id="debugs">
                             [% FOREACH entry IN [ '', 'all', 'output', 'stream', 'slimproto', 'decode', 'slimmain', 'hue', 'util', 'main'] %]
                                 <option [% IF entry == pref_debugs %]selected[% END %] value="[% entry %]">[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_TARGET_$entry" | string %]</option>
                             [% END %]
@@ -45,7 +45,7 @@
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" colspan="2">
                         [% configFilePath %][% IF arch == Windows %]\[% ELSE %]/[% END %]
-                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_configFileName" id="pref_configFileName" value="[% pref_configFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_configFileName" id="configFileName" value="[% pref_configFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                         <a href="[% webroot %]huebridge.xml" target="config"><input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" /></a>

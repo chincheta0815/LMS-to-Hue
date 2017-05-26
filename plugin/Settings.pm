@@ -50,7 +50,12 @@ sub beforeRender {
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
 
-    $XMLConfigRestartRequested = 0;
+    if ( $params->{'doXMLConfigRestart'} ) {
+    
+        Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
+        Plugins::HueBridge::HueCom->blockProgressCounter('release');
+        Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('release');
+    }
 
     if ( ! $XMLConfig ) {
     
@@ -119,9 +124,8 @@ sub handler {
     
         $params->{'binaryRunning'} = 0;
     }
-    
-    $params->{'param_binary'}   = Plugins::HueBridge::Squeeze2Hue->getBinary();
-    $params->{'param_availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
+
+    $params->{'availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
 
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
@@ -141,7 +145,16 @@ sub handler {
         if ( $XMLConfigRestartRequested ) {
 
             ### Okay, here we do the restart, ALWAYS. But a user warning would be awesome.
-            Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
+            if ( ! Plugins::HueBridge::HueCom->getConnectDisconnectStatus() || ! Plugins::HueBridge::Squeeze2Hue->getRestartStatus && ! $params->{'warning'} ) {
+                $params->{'XMLConfigRestartUrl'} = $params->{webroot} . $params->{path} . '?doXMLConfigRestart=1';
+                $params->{'XMLConfigRestartUrl'} .= '&rand=' . $params->{'rand'} if $params->{'rand'};
+
+                Plugins::HueBridge::HueCom->blockProgressCounter('block');
+                Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('block');
+                $params->{'warning'} = '<span id="popupWarning">' .Slim::Utils::Strings::string('PLUGIN_HUEBRIDGE_RESTART_BINARY_ON_XMLCONFIG_CHANGE_PROMPT', $params->{'XMLConfigRestartUrl'}). '</span>';
+            }
+            
+            $XMLConfigRestartRequested = 0;
         }
     }
 
