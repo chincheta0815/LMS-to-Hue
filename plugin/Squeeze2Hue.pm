@@ -15,7 +15,7 @@ my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
 
 my $squeeze2hue;
-my $squeeze2hueRestartStatus = 0;
+my $squeeze2hueRestartStatus;
 my $squeeze2hueRestartCounter = 0;
 my $squeeze2hueRestartCounterTimeWait = 15;
 
@@ -280,8 +280,7 @@ sub restart {
     
         $log->debug('Squeeze2Hue XMLConfig config file update requested.');
     }
-    
-    Plugins::HueBridge::HueCom->blockProgressCounter('block');
+
     Plugins::HueBridge::Squeeze2Hue->stop();
     $squeeze2hueRestartCounter = 0;
         
@@ -346,7 +345,6 @@ sub unrestart{
     Slim::Utils::Timers::killTimers(undef, \&unrestart);
 
     $squeeze2hueRestartCounter = 0;
-    Plugins::HueBridge::HueCom->blockProgressCounter('release');
     $squeeze2hueRestartStatus = 0;
 }
 
@@ -363,20 +361,6 @@ sub getRestartProgress {
     }
 
     return $returnValue;
-}
-
-sub blockProgressCounter {
-    my $self = shift;
-    my $restartCounterState = shift;
-    
-    if ( $restartCounterState == 'block' ) {
-    
-        $squeeze2hueRestartCounter = -1;
-    }
-    elsif ( $restartCounterState == 'release' ) {
-    
-        $squeeze2hueRestartCounter = 0;
-    }
 }
 
 sub getRestartStatus {

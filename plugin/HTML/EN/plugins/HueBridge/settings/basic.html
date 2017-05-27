@@ -1,56 +1,59 @@
 [% extJsScripts = BLOCK %]
     <script TYPE="text/javascript">
-        Ext.onReady(function(){
+        Ext.onReady(function() {
             new Ext.util.TaskRunner().start({
-                run: function(items){
+                run: function(items) {
                     SqueezeJS.Controller.request({
                         params: [ '', [ "hue", "bridge", "connect", "?" ] ],
                         
                         success: function(response) {
                             response = Ext.util.JSON.decode(response.responseText);
-                            if (response && response.result) {
-                                items.each(function(item) {
+                            if ( response && response.result ) {
+                                items.each(
+                                    function(item) {
+
+                                        var connectProgressValue = response.result['_hueBridgeConnectProgress'];
+                                        var enableConnectProgressMessageBox = Ext.get('enableConnectProgressMessageBox');
                                 
-                                    var connectProgressValue = response.result['_hueBridgeConnectProgress'];
-                                
-                                    if ( connectProgressValue != -1.00 ) {
-                                        if ( connectProgressValue > 0.00 ) {
-                                            item.dom.disabled = true;
+                                        if ( enableConnectProgressMessageBox ) {
+                                            if ( connectProgressValue > 0.00 ) {
+                                                item.dom.disabled = true;
                                         
-                                            Ext.MessageBox.show({
-                                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_TITLE' | string %]",
-                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_MSG' | string %]</p><img src='/plugins/HueBridge/html/images/pushlink_bridgev2.png' style='display:block; margin-left:auto; margin-right:auto; width:150px; height:auto;'>",
-                                                progressText: '',
-                                                width: 300,
-                                                progress: true,
-                                                closable: false,
-                                                buttons: Ext.MessageBox.CANCEL,
-                                                fn: function(btn, text) {
-                                                    SqueezeJS.Controller.request({
-                                                        params: [ '', [ "hue", "bridge", "connect", "cancel" ] ],
+                                                Ext.MessageBox.show({
+                                                    title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_TITLE' | string %]",
+                                                    msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_MSG' | string %]</p><img src='/plugins/HueBridge/html/images/pushlink_bridgev2.png' style='display:block; margin-left:auto; margin-right:auto; width:150px; height:auto;'>",
+                                                    progressText: '',
+                                                    width: 300,
+                                                    progress: true,
+                                                    closable: false,
+                                                    buttons: Ext.MessageBox.CANCEL,
+                                                    fn: function(btn, text) {
+                                                        SqueezeJS.Controller.request({
+                                                            params: [ '', [ "hue", "bridge", "connect", "cancel" ] ],
                         
-                                                        success: function(response) {
-                                                            response = Ext.util.JSON.decode(response.responseText);
-                                                            if ( response && response.result ) {
-                                                                if ( response.result['_hueBridgeConnectCancel'] == 1) {
-                                                                    Ext.MessageBox.hide();
+                                                            success: function(response) {
+                                                                response = Ext.util.JSON.decode(response.responseText);
+                                                                if ( response && response.result ) {
+                                                                    if ( response.result['_hueBridgeConnectCancel'] == 1) {
+                                                                        Ext.MessageBox.hide();
+                                                                    }
                                                                 }
                                                             }
-                                                        }
-                                                    })
-                                                }
-                                            });
+                                                        })
+                                                    }
+                                                });
                                         
-                                            if ( connectProgressValue < 1.00 ) {
-                                                Ext.MessageBox.updateProgress(connectProgressValue, 'Waiting ...');
+                                                if ( connectProgressValue < 1.00 ) {
+                                                    Ext.MessageBox.updateProgress(connectProgressValue, 'Waiting ...');
+                                                }
+                                            }
+                                            else {
+                                                item.dom.disabled = false;
+                                                Ext.MessageBox.hide()
                                             }
                                         }
-                                        else {
-                                            item.dom.disabled = false;
-                                            Ext.MessageBox.hide()
-                                        }
                                     }
-                                });
+                                );
                             }
                         }
                     })
@@ -60,36 +63,67 @@
                         success: function(response) {
                             response = Ext.util.JSON.decode(response.responseText);
                             if (response && response.result) {
-                                items.each(function(item) {
-                                
-                                    var restartProgressValue = response.result['_hueBridgeRestartProgress'];
-                                
-                                    if ( restartProgressValue != -1.00 ) {
-                                        if ( restartProgressValue > 0.00 ) {
-                                            item.dom.disabled = true;
+                                items.each(
+                                    function(item) {
+
+                                        var restartProgressValue = response.result['_hueBridgeRestartProgress'];
+                                        var enableRestartProgressMessageBox = Ext.get('enableRestartProgressMessageBox');
+
+                                        if ( enableRestartProgressMessageBox ) {
+                                            if ( restartProgressValue > 0.00 ) {
+                                                item.dom.disabled = true;
+
+                                                Ext.MessageBox.show({
+                                                    title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_TITLE' | string %]",
+                                                    msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_MSG' | string %]</p>",
+                                                    progressText: '',
+                                                    width: 300,
+                                                    progress: true,
+                                                    closable: false,
+                                                });
                                         
-                                            Ext.MessageBox.show({
-                                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_TITLE' | string %]",
-                                                msg: "<p style='text-align:center;'>[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_MSG' | string %]</p>",
-                                                progressText: '',
-                                                width: 300,
-                                                progress: true,
-                                                closable: false,
-                                            });
-                                        
-                                            if ( restartProgressValue < 1.00 ) {
-                                                Ext.MessageBox.updateProgress(restartProgressValue, 'Waiting ...');
+                                                if ( restartProgressValue < 1.00 ) {
+                                                    Ext.MessageBox.updateProgress(restartProgressValue, 'Waiting ...');
+                                                }
+                                            }
+                                            else {
+                                                item.dom.disabled = false;
+                                                Ext.MessageBox.hide()
                                             }
                                         }
-                                        else {
-                                            item.dom.disabled = false;
-                                            Ext.MessageBox.hide()
-                                        }
                                     }
-                                });
+                                );
                             }
                         }
                     })
+                    var showXMLConfigRestartWarningMessageBox = function() {
+                        var showXMLConfigRestartWarning = Ext.get('showXMLConfigRestartWarning');
+                        
+                        if ( showXMLConfigRestartWarning ) {
+                            var XMLConfigRestartUrl = showXMLConfigRestartWarning.child('a').dom.href;
+                            
+                            item.dom.disabled = true;
+                            
+                            Ext.MessageBox.show({
+                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_TITLE' | string %]",
+                                msg: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_MSG' | string %]",
+                                buttons: {
+                                    ok: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_RESTART_NOW' | string %]",
+                                    cancel: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_DISCARD' | string %]"
+                                },
+                                fn: function(btn, text) {
+                                    if ( btn == 'ok' ) {
+                                        location = XMLConfigRestartUrl;
+                                        item.dom.disabled = false;
+                                    }
+                                    else {
+                                        item.dom.disabled = false;
+                                    }
+                                }
+                            });
+                            showXMLConfigRestartWarning.update('');
+                        }
+                    }
                     Ext.Ajax.request({
                         url: 'plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html',
                         
@@ -113,7 +147,7 @@
 [% END %]
 [% PROCESS settings/header.html %]
 
-    [% YESNOBOX = [['',''], ['yes','1'], ['no','0']] %]
+    [% squeeze2hueBackgroundActionMessageBox %]
 
 	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_NAME" desc="" %]
 		<div class="groupDesc">[% 'PLUGIN_HUEBRIDGE_DESC' | string %]</div>

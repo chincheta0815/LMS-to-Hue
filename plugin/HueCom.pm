@@ -14,8 +14,8 @@ my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
 my $connectProgressTimeWait = 29.33;
-my $connectProgressCounter = 0;
-my $connectDisconnectStatus = 0;
+my $connectProgressCounter;
+my $connectDisconnectStatus;
 
 sub initCLICommands {
     # Command init
@@ -58,7 +58,6 @@ sub connect {
     my ($self, $deviceUDN, $XMLConfig) = @_;
     
     $connectProgressCounter = 0;
-    Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('block');
            
     $log->debug('Initiating hue bridge connect.');
     
@@ -91,22 +90,7 @@ sub unconnect {
     Slim::Utils::Timers::killTimers(undef, \&unconnect);
 
     $connectDisconnectStatus = 0;
-    Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('release');
     $connectProgressCounter = 0;
-}
-
-sub blockProgressCounter {
-    my $self = shift;
-    my $connectCounterState = shift;
-    
-    if ( $connectCounterState == 'block' ) {
-    
-        $connectProgressCounter = -1;
-    }
-    elsif ( $connectCounterState == 'release' ) {
-    
-        $connectProgressCounter = 0;
-    }
 }
 
 sub getConnectProgress {

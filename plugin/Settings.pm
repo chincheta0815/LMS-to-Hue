@@ -50,16 +50,15 @@ sub beforeRender {
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
 
-    if ( $params->{'doXMLConfigRestart'} ) {
-    
-        Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
-        Plugins::HueBridge::HueCom->blockProgressCounter('release');
-        Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('release');
-    }
-
     if ( ! $XMLConfig ) {
     
         $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
+    }
+
+    if ( $params->{'doXMLConfigRestart'} ) {
+    
+        Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
+        $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="enableRestartProgressMessageBox"></span>';
     }
 
     if ( $params->{'deleteSqueeze2HueXMLConfig'} ) {
@@ -133,6 +132,8 @@ sub handler {
             my $deviceUDN = $params->{"connectHueBridgeButtonHelper$i"};
             
             $log->debug('Triggered \'connect\' of device with udn: ' . $deviceUDN);
+
+            $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="enableConnectProgressMessageBox"></span>';
             Plugins::HueBridge::HueCom->connect( $deviceUDN, $XMLConfig );
             
             $XMLConfigRestartRequested = 1;
@@ -145,13 +146,11 @@ sub handler {
         if ( $XMLConfigRestartRequested ) {
 
             ### Okay, here we do the restart, ALWAYS. But a user warning would be awesome.
-            if ( ! Plugins::HueBridge::HueCom->getConnectDisconnectStatus() || ! Plugins::HueBridge::Squeeze2Hue->getRestartStatus && ! $params->{'warning'} ) {
+            if ( ! $params->{'squeeze2hueBackgroundActionMessageBox'} ) {
                 $params->{'XMLConfigRestartUrl'} = $params->{webroot} . $params->{path} . '?doXMLConfigRestart=1';
                 $params->{'XMLConfigRestartUrl'} .= '&rand=' . $params->{'rand'} if $params->{'rand'};
 
-                Plugins::HueBridge::HueCom->blockProgressCounter('block');
-                Plugins::HueBridge::Squeeze2Hue->blockProgressCounter('block');
-                $params->{'warning'} = '<span id="popupWarning">' .Slim::Utils::Strings::string('PLUGIN_HUEBRIDGE_RESTART_BINARY_ON_XMLCONFIG_CHANGE_PROMPT', $params->{'XMLConfigRestartUrl'}). '</span>';
+                $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="showXMLConfigRestartWarning"><a href="' .$params->{'XMLConfigRestartUrl'}. '"></a></span>';
             }
             
             $XMLConfigRestartRequested = 0;

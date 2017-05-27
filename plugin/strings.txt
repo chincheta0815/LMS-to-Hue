@@ -152,13 +152,22 @@ PLUGIN_HUEBRIDGE_MESSAGEBOX_CONNECT_MSG
 	EN	Press the push-link button on the Hue Bridge you want to connect to.
 
 PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_TITLE
-	EN	Restarting Helper Binary
+	EN	Restarting Squeeze2Hue Binary
 
 PLUGIN_HUEBRIDGE_MESSAGEBOX_RESTART_PROGRESS_MSG
 	EN	Squeeze2Hue helper binary is restarting due to configuration changes.
 
-PLUGIN_HUEBRIDGE_RESTART_BINARY_ON_XMLCONFIG_CHANGE_PROMPT
-	EN	XML configuration file has changed. <a href="%s">Click here to restart the binary.</a>
+PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_TITLE
+	EN	Squeeze2Hue Configuration Update
+
+PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_MSG
+	EN	A restart of the Squeeze2Hue binary is needed to take the XML configuration changes into effect. Restart now or discard the changes?
+
+PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_RESTART_NOW
+	EN	Restart now
+
+PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_DISCARD
+	EN	Discard
 
 PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_NAME
 	EN	Name
