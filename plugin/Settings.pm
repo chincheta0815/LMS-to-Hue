@@ -19,7 +19,6 @@ my $prefs = preferences('plugin.huebridge');
 my $XMLConfig;
 my $XMLConfigRestartRequested;
 
-my @lmsPrefs = qw(autosave binary binaryAutorun configFileName debugs eraselog loggingEnabled showAdvancedHueBridgeOptions);
 my @XMLConfigPrefs = qw(device log_limit scan_interval scan_timeout user_name user_valid);
 
 sub name {
@@ -31,12 +30,14 @@ sub page {
 }
 
 sub prefs {
-    return ( $prefs, @lmsPrefs );
+    return ( $prefs, qw(autosave binary binaryAutorun configFileName debugs eraselog loggingEnabled showAdvancedHueBridgeOptions) );
 }
 
 sub beforeRender {
     my ($class, $params) = @_;
     
+    # Before rendering the html page check if there are background actions running.
+    # In case, disable html input items in the GUI.
     if( Plugins::HueBridge::HueCom->getConnectDisconnectStatus() || Plugins::HueBridge::Squeeze2Hue->getRestartStatus() ) {
     
         $params->{'statusHueBridgeBackgroundAction'} = 1;
@@ -50,15 +51,45 @@ sub beforeRender {
 sub handler {
     my ($class, $client, $params, $callback, @args) = @_;
 
-    if ( ! $XMLConfig ) {
-    
-        $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
+    # Set params needed for some GUI cosmetics.
+    $params->{'arch'} = Slim::Utils::OSDetect::details->{'os'};
+    $params->{'availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
+    $params->{'configFilePath'} = Slim::Utils::OSDetect::dirsFor('prefs');
+
+    # Read in XMLConfig data from the binary config file.
+    $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
+
+    # Handle the XMLConfig prefs.
+    # Only work with those needed and listed in @XMLConfigPrefs.
+    foreach my $prefName (@XMLConfigPrefs) {
+        
+        if ( $params->{'saveSettings'} ) {
+
+            # Push the 'xml_' prefixed params to the XMLConfig for saving.
+            $XMLConfig->{$prefName} = $params->{'xml_' . $prefName};
+            
+            # Request a binary restart for taking the changes into effect.
+            $XMLConfigRestartRequested = 1;
+        }
+
+        # Push the XMLConfig into params for the html hanlder.
+        # For better recognition in the template use 'xml_' as a prefix.
+        $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
     }
 
+    # When there is a doXMLConfigRestart sent via the web url restart and read the new xml config.
+    # For showing a GUI message box to the user set a span in the html template.
     if ( $params->{'doXMLConfigRestart'} ) {
     
         Plugins::HueBridge::Squeeze2Hue->restart($XMLConfig);
         $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="enableRestartProgressMessageBox"></span>';
+        delete $params->{'saveSettings'};
+    }
+
+    if ( $params->{'generateSqueeze2HueXMLConfig'} ) {
+
+        Plugins::HueBridge::Squeeze2Hue->restart('genXMLConfig');
+        delete $params->{'saveSettings'};
     }
 
     if ( $params->{'deleteSqueeze2HueXMLConfig'} ) {
@@ -68,14 +99,6 @@ sub handler {
     
         $log->debug('Deleting Squeeze2Hue XML configuration file ('. $conf .')');
     
-        delete $params->{'saveSettings'};
-    }
-
-    if ( $params->{'generateSqueeze2HueXMLConfig'} ) {
-    
-        $log->debug('Generating Squeeze2Hue XML configuration file.');    
-        Plugins::HueBridge::Squeeze2Hue->restart('genXMLConfig');
-        
         delete $params->{'saveSettings'};
     }
     
@@ -91,6 +114,7 @@ sub handler {
         delete $params->{'saveSettings'};
     }
 
+    # Start the binary.
     if ( $params->{'startSqueeze2Hue'} ) {
     
         $log->debug('Trigggered \'start\' of Squeeze2Hue binary.');
@@ -99,6 +123,7 @@ sub handler {
         delete $params->{'saveSettings'};
     }
     
+    # Stop the binary.
     if ( $params->{'stopSqueeze2Hue'} ) {
     
         $log->debug('Triggered \'stop\' of Squeeze2Hue binary.');
@@ -107,6 +132,7 @@ sub handler {
         delete $params->{'saveSettings'};
     }
     
+    # Restart the binary without any special actions.
     if ( $params->{'restartSqueeze2Hue'} ) {
     
         $log->debug('Triggered \'restart\' of Squeeze2Hue binary.');
@@ -115,17 +141,8 @@ sub handler {
         delete $params->{'saveSettings'};
     }
 
-    if ( $prefs->get('binaryAutorun') ) {
-    
-        $params->{'binaryRunning'} = Plugins::HueBridge::Squeeze2Hue->alive();
-    }
-    else {
-    
-        $params->{'binaryRunning'} = 0;
-    }
-
-    $params->{'availableBinaries'} = [ Plugins::HueBridge::Squeeze2Hue->getAvailableBinaries() ];
-
+    # Get a connect trigger from the GUI and assign it with the right device.
+    # For showing a GUI message box to the user set a span in the html template.
     for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
         if( $params->{"connectHueBridge$i"} ){
             
@@ -141,17 +158,15 @@ sub handler {
         }
     }
 
+    # In case we have to save settings and there is a XMLConfig change, restart.
     if ( $params->{'saveSettings'} ) {
 
-        if ( $XMLConfigRestartRequested ) {
+        if ( $XMLConfigRestartRequested && ! $params->{'squeeze2hueBackgroundActionMessageBox'} ) {
 
-            ### Okay, here we do the restart, ALWAYS. But a user warning would be awesome.
-            if ( ! $params->{'squeeze2hueBackgroundActionMessageBox'} ) {
-                $params->{'XMLConfigRestartUrl'} = $params->{webroot} . $params->{path} . '?doXMLConfigRestart=1';
-                $params->{'XMLConfigRestartUrl'} .= '&rand=' . $params->{'rand'} if $params->{'rand'};
+            $params->{'XMLConfigRestartUrl'} = $params->{webroot} . $params->{path} . '?doXMLConfigRestart=1';
+            $params->{'XMLConfigRestartUrl'} .= '&rand=' . $params->{'rand'} if $params->{'rand'};
 
-                $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="showXMLConfigRestartWarning"><a href="' .$params->{'XMLConfigRestartUrl'}. '"></a></span>';
-            }
+            $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="showXMLConfigRestartWarning"><a href="' .$params->{'XMLConfigRestartUrl'}. '"></a></span>';
             
             $XMLConfigRestartRequested = 0;
         }
@@ -160,50 +175,10 @@ sub handler {
     return $class->SUPER::handler($client, $params, $callback, \@args);
 }
 
-sub handler_tableAdvancedHueBridgeOptions {
-    my ($client, $params) = @_;
-
-    foreach my $prefName (@lmsPrefs) {
-    
-        if ( $params->{'saveSettings'} ) {
-            $prefs->set($prefName, 'pref_' . $prefName);
-        }
-        
-        $params->{'pref_' . $prefName} = $prefs->get($prefName);
-    }
-
-    if ( ! $XMLConfig ) {
-    
-        $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
-    }
-        
-    if ( $XMLConfig && $prefs->get('showAdvancedHueBridgeOptions') ) {
-
-        foreach my $prefName (@XMLConfigPrefs) {
-            
-            if ( $params->{'saveSettings'} ) {
-
-                $XMLConfig->{$prefName} = $params->{'xml_' . $prefName};
-                $XMLConfigRestartRequested = 1;
-            }
-
-            $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
-        }
-    
-        $params->{'configFilePath'} = Slim::Utils::OSDetect::dirsFor('prefs');
-        $params->{'arch'} = Slim::Utils::OSDetect::OS();
-    
-        return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html", $params);
-    }
-}
-
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
-    
-    if ( ! $XMLConfig ) {
-    
-        $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
-    }
+
+    $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
     
     if ( $XMLConfig->{'device'} ) {
 
@@ -217,6 +192,7 @@ sub handler_tableHueBridges {
 
             $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
         }
+
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);
     }
 }

@@ -394,7 +394,7 @@ sub writeXMLConfigFile {
 
     my $configFile = Plugins::HueBridge::Squeeze2Hue->configFile();
     
-    XMLout($configData, RootName => "squeeze2hue", NoSort => 1, NoAttr => 1, OutputFile => $configFile);
+    XMLout($configData, RootName => "squeeze2hue", KeyAttr => [], NoSort => 1, NoAttr => 1, OutputFile => $configFile);
 }
 
 sub logHandler {

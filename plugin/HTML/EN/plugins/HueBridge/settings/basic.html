@@ -3,6 +3,13 @@
         Ext.onReady(function() {
             new Ext.util.TaskRunner().start({
                 run: function(items) {
+                    Ext.Ajax.request({
+                        url: 'plugins/HueBridge/settings/tableHueBridges.html',
+                        
+                        success: function(response) {
+                            Ext.get('tableHueBridges').update(response.responseText);
+                        }
+                    });
                     SqueezeJS.Controller.request({
                         params: [ '', [ "hue", "bridge", "connect", "?" ] ],
                         
@@ -39,7 +46,7 @@
                                                                     }
                                                                 }
                                                             }
-                                                        })
+                                                        });
                                                     }
                                                 });
                                         
@@ -49,14 +56,14 @@
                                             }
                                             else {
                                                 item.dom.disabled = false;
-                                                Ext.MessageBox.hide()
+                                                Ext.MessageBox.hide();
                                             }
                                         }
                                     }
                                 );
                             }
                         }
-                    })
+                    });
                     SqueezeJS.Controller.request({
                         params: [ '', [ "hue", "bridge", "restart", "?" ] ],
                         
@@ -88,56 +95,46 @@
                                             }
                                             else {
                                                 item.dom.disabled = false;
-                                                Ext.MessageBox.hide()
+                                                Ext.MessageBox.hide();
                                             }
                                         }
                                     }
                                 );
                             }
                         }
-                    })
-                    var showXMLConfigRestartWarningMessageBox = function() {
-                        var showXMLConfigRestartWarning = Ext.get('showXMLConfigRestartWarning');
+                    });
+                    (function(items) {
+                        items.each(
+                            function(item) {
+                                var showXMLConfigRestartWarning = Ext.get('showXMLConfigRestartWarning');
                         
-                        if ( showXMLConfigRestartWarning ) {
-                            var XMLConfigRestartUrl = showXMLConfigRestartWarning.child('a').dom.href;
+                                if ( showXMLConfigRestartWarning ) {
+                                    var XMLConfigRestartUrl = showXMLConfigRestartWarning.child('a').dom.href;
                             
-                            item.dom.disabled = true;
+                                    item.dom.disabled = true;
                             
-                            Ext.MessageBox.show({
-                                title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_TITLE' | string %]",
-                                msg: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_MSG' | string %]",
-                                buttons: {
-                                    ok: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_RESTART_NOW' | string %]",
-                                    cancel: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_DISCARD' | string %]"
-                                },
-                                fn: function(btn, text) {
-                                    if ( btn == 'ok' ) {
-                                        location = XMLConfigRestartUrl;
-                                        item.dom.disabled = false;
-                                    }
-                                    else {
-                                        item.dom.disabled = false;
-                                    }
+                                    Ext.MessageBox.show({
+                                        title: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_TITLE' | string %]",
+                                        msg: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_MSG' | string %]",
+                                        buttons: {
+                                            ok: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_RESTART_NOW' | string %]",
+                                            cancel: "[% 'PLUGIN_HUEBRIDGE_MESSAGEBOX_BINARY_RESTART_WARNING_DISCARD' | string %]"
+                                        },
+                                        fn: function(btn, text) {
+                                            if ( btn == 'ok' ) {
+                                                location = XMLConfigRestartUrl;
+                                                item.dom.disabled = false;
+                                            }
+                                            else {
+                                                item.dom.disabled = false;
+                                            }
+                                        }
+                                    });
+                                    showXMLConfigRestartWarning.update('');
                                 }
-                            });
-                            showXMLConfigRestartWarning.update('');
-                        }
-                    }
-                    Ext.Ajax.request({
-                        url: 'plugins/HueBridge/settings/tableAdvancedHueBridgeOptions.html',
-                        
-                        success: function(response) {
-                            Ext.get('tableAdvancedHueBridgeOptions').update(response.responseText);
-                        }
-                    })
-                    Ext.Ajax.request({
-                        url: 'plugins/HueBridge/settings/tableHueBridges.html',
-                        
-                        success: function(response) {
-                            Ext.get('tableHueBridges').update(response.responseText);
-                        }
-                    })
+                            }
+                        );
+                    })(items);
                 },
                 args: [ Ext.select('.disableOnHueBridgeBackgroundAction') ],
                 interval: 2000
@@ -162,7 +159,7 @@
         <table border="0" cellspacing="0">
             <tr>
                 <td class="[% odd ? "odd" : "even" %]">
-			[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                    [% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                     <input type="submit" name="generateSqueeze2HueXMLConfig" value="[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_CONFIGURATION_GENERATE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
@@ -176,7 +173,7 @@
             </tr>
             <tr>
                 <td class="[% odd ? "odd" : "even" %]">
-			[% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_HELPER_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
+                    [% 'PLUGIN_HUEBRIDGE_SQUEEZE2HUE_HELPER_SECTION_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                     <input type="submit" name="startSqueeze2Hue" value="[% 'PLUGIN_HUEBRIDGE_START_SQUEEZE2HUE_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>&nbsp;&nbsp;&nbsp;
@@ -228,7 +225,87 @@
                 </td>
             </tr>
         </table>
-        <table id="tableAdvancedHueBridgeOptions"></table>
+        [% IF prefs.pref_showAdvancedHueBridgeOptions %]
+            <table border="0" cellspacing="0">
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% 'PLUGIN_HUEBRIDGE_SECTION_DEBUGGING_OPTIONS_NAME' | string %]
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" colspan="3">
+                        <select class="stdedit disableOnHueBridgeBackgroundAction" name="pref_debugs" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] id="debugs">
+                            [% FOREACH entry IN [ '', 'all', 'output', 'stream', 'slimproto', 'decode', 'slimmain', 'hue', 'util', 'main'] %]
+                                <option [% IF entry == prefs.pref_debugs %]selected[% END %] value="[% entry %]">[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_TARGET_$entry" | string %]</option>
+                            [% END %]
+                        </select>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    &nbsp;
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% 'PLUGIN_HUEBRIDGE_SECTION_LOGGING_OPTIONS_NAME' | string %]
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_ENABLE_NAME' | string %]&nbsp;
+                    <input name="pref_loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF prefs.pref_loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+		        </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    <a href="[% webroot %]huebridge.log" target="log">
+                        <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                    </a>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_LOGSIZE_NAME' | string %]&nbsp;
+                    <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_log_limit" id="xml_log_limit" value="[% xml_log_limit %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2">
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_ERASELOG_NAME" | string %]&nbsp;
+                    <input name="pref_eraselog" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF pref_eraselog %] checked [% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    <input name="cleanlog" class="stdedit disableOnHueBridgeBackgroundAction" type="submit" value=[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_CLEANLOG_NAME" | string %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                	[% 'PLUGIN_HUEBRIDGE_SECTION_CONFIGURATION_OPTIONS_NAME' | string %]&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" colspan="2">
+                        [% configFilePath %][% IF arch == Windows %]\[% ELSE %]/[% END %]
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_configFileName" id="configFileName" value="[% prefs.pref_configFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                        <a href="[% webroot %]huebridge.xml" target="config">
+                        <input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                        </a>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_AUTOSAVE_NAME' | string %]&nbsp;
+                    <input name="pref_autosave" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF prefs.pref_autosave %] checked [% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                </td>
+            </tr>
+            <tr>
+                <td class="[% odd ? "odd" : "even" %]">
+                    [% 'PLUGIN_HUEBRIDGE_SECTION_SCANNING_OPTIONS_NAME' | string %]
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                        [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_INTERVAL_NAME' | string %]&nbsp;
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_scan_interval" id="xml_scan_interval" value="[% xml_scan_interval %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
+                </td>
+                <td class="[% odd ? "odd" : "even" %]">
+                        [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_TIMEOUT_NAME' | string %]&nbsp;
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_scan_timeout" id="xml_scan_timeout" value="[% xml_scan_timeout %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" colspan="3">
+                    &nbsp;
+                </td>
+            </tr>
+            <tr style="height: 5px;">
+                <td class="[% odd ? "odd" : "even" %]" colspan="2"></td>
+            </tr>
+        </table>
+        [% END %]
     [% END %]
 
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_LIST_NAME" desc="PLUGIN_HUEBRIDGE_LIST_DESC" %]
