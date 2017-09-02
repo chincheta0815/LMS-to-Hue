@@ -422,9 +422,9 @@ frames_t _output_frames(frames_t avail, struct thread_ctx_s *ctx);
 void _checkfade(bool, struct thread_ctx_s *ctx);
 void wake_output(struct thread_ctx_s *ctx);
 
-// output_raop.c
+// output_hue.c
 void output_init_common(unsigned output_buf_size, u32_t sample_rate, struct thread_ctx_s *ctx);
-void output_raop_thread_init(struct raopcl_s *raopcl, unsigned output_buf_size, struct thread_ctx_s *ctx);
+void output_hue_thread_init(unsigned output_buf_size, struct thread_ctx_s *ctx);
 void output_close_common(struct thread_ctx_s *ctx);
 
 // output_pack.c
