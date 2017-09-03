@@ -91,7 +91,8 @@ void sq_delete_device(sq_dev_handle_t handle) {
 
 /*---------------------------------------------------------------------------*/
 static char from_hex(char ch) {
-  return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
+
+  return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -140,10 +141,14 @@ static char *cli_decode(char *str) {
   return buf;
 }
 
-/*---------------------------------------------------------------------------*/
-/* IMPORTANT: be sure to free() the returned string after use */
-static char *cli_find_tag(char *str, char *tag)
-{
+
+/*---------------------------------------------------------------------------*/
+
+/* IMPORTANT: be sure to free() the returned string after use */
+
+static char *cli_find_tag(char *str, char *tag)
+
+{
 	char *p, *res = NULL;
 	char *buf = malloc(max(strlen(str), strlen(tag)) + 4);
 
@@ -197,29 +202,48 @@ bool cli_open_socket(struct thread_ctx_s *ctx) {
 
 /*---------------------------------------------------------------------------*/
 char *cli_send_cmd(char *cmd, bool req, bool decode, struct thread_ctx_s *ctx)
-{
-#define CLI_LEN 2048
-	char packet[CLI_LEN];
-	int wait = 100;
-	size_t len;
-	char *rsp = NULL;
 
-	mutex_lock(ctx->cli_mutex);
-	if (!cli_open_socket(ctx)) {
-		mutex_unlock(ctx->cli_mutex);
-		return NULL;
-	}
-	ctx->cli_timestamp = gettime_ms();
+{
 
-	cmd = cli_encode(cmd);
-	if (req) len = sprintf(packet, "%s ?\n", cmd);
-	else len = sprintf(packet, "%s\n", cmd);
-	send_packet((u8_t*) packet, len, ctx->cli_sock);
+#define CLI_LEN 2048
 
-	LOG_SDEBUG("[%p]: cmd %s", ctx, packet);
+	char packet[CLI_LEN];
 
-	// first receive the tag and then point to the last '\n'
-	len = 0;
+	int wait = 100;
+
+	size_t len;
+
+	char *rsp = NULL;
+
+
+	mutex_lock(ctx->cli_mutex);
+
+	if (!cli_open_socket(ctx)) {
+
+		mutex_unlock(ctx->cli_mutex);
+
+		return NULL;
+
+	}
+
+	ctx->cli_timestamp = gettime_ms();
+
+
+	cmd = cli_encode(cmd);
+
+	if (req) len = sprintf(packet, "%s ?\n", cmd);
+
+	else len = sprintf(packet, "%s\n", cmd);
+
+	send_packet((u8_t*) packet, len, ctx->cli_sock);
+
+
+	LOG_SDEBUG("[%p]: cmd %s", ctx, packet);
+
+
+	// first receive the tag and then point to the last '\n'
+
+	len = 0;
 	while (wait--)	{
 		int k;
 		usleep(10000);
@@ -561,7 +585,8 @@ void sq_notify(sq_dev_handle_t handle, void *caller_id, sq_event_t event, u8_t *
 
 
 /*---------------------------------------------------------------------------*/
-void sq_init(void)
+
+void sq_init(void)
 {
 #if WIN
 	winsock_init();
@@ -605,18 +630,19 @@ sq_dev_handle_t sq_reserve_device(void *MR, sq_callback_t callback)
 
 
 /*---------------------------------------------------------------------------*/
-bool sq_run_device(sq_dev_handle_t handle, sq_dev_param_t *param)
+bool sq_run_device(sq_dev_handle_t handle, hue_bridge_t *hue, sq_dev_param_t *param)
 {
 	struct thread_ctx_s *ctx = &thread_ctx[handle - 1];
 
-	memcpy(&ctx->config, param, sizeof(sq_dev_param_t));
+
+	memcpy(&ctx->config, param, sizeof(sq_dev_param_t));
 
 	sprintf(ctx->cli_id, "%02x:%02x:%02x:%02x:%02x:%02x",
 										  ctx->config.mac[0], ctx->config.mac[1], ctx->config.mac[2],
 										  ctx->config.mac[3], ctx->config.mac[4], ctx->config.mac[5]);
 
 	stream_thread_init(ctx->config.stream_buf_size, ctx);
-	output_hue_thread_init(ctx->config.output_buf_size, ctx);
+	output_hue_thread_init(hue, ctx->config.output_buf_size, ctx);
 	decode_thread_init(ctx);
 
 #if RESAMPLE

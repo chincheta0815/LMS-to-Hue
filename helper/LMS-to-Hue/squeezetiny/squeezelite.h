@@ -378,6 +378,7 @@ typedef enum { FADE_NONE = 0, FADE_CROSSFADE, FADE_IN, FADE_OUT, FADE_INOUT } fa
 
 struct outputstate {
 	output_state state;
+    void *device;
 	bool  track_started;
 	int (* write_cb)(struct thread_ctx_s *ctx, frames_t out_frames, bool silence, s32_t gainL, s32_t gainR, s32_t cross_gain_in, s32_t cross_gain_out, s16_t **cross_ptr);
 	unsigned start_frames;
@@ -414,7 +415,6 @@ struct outputstate {
 	u8_t *buf;
 };
 
-void output_init(const char *device, unsigned output_buf_size, unsigned rates[], struct thread_ctx_s *ctx);
 void output_close(struct thread_ctx_s *ctx);
 void output_flush(struct thread_ctx_s *ctx);
 // _* called with mutex locked
@@ -423,8 +423,8 @@ void _checkfade(bool, struct thread_ctx_s *ctx);
 void wake_output(struct thread_ctx_s *ctx);
 
 // output_hue.c
-void output_init_common(unsigned output_buf_size, u32_t sample_rate, struct thread_ctx_s *ctx);
-void output_hue_thread_init(unsigned output_buf_size, struct thread_ctx_s *ctx);
+void output_init_common(void *device, unsigned output_buf_size, u32_t sample_rate, struct thread_ctx_s *ctx);
+void output_hue_thread_init(hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx);
 void output_close_common(struct thread_ctx_s *ctx);
 
 // output_pack.c

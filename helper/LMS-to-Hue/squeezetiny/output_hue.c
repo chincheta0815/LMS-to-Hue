@@ -22,6 +22,7 @@
 // raop output
 
 #include "squeezelite.h"
+#include "libhuec.h"
 
 extern log_level	output_loglevel;
 static log_level 	*loglevel = &output_loglevel;
@@ -31,6 +32,8 @@ static log_level 	*loglevel = &output_loglevel;
 #define LOCK_S   mutex_lock(ctx->streambuf->mutex)
 #define UNLOCK_S mutex_unlock(ctx->streambuf->mutex)
 
+__u8 *disco_buf;
+int disco_frames;
 
 /*---------------------------------------------------------------------------*/
 void wake_output(struct thread_ctx_s *ctx) {
@@ -70,8 +73,52 @@ void output_close(struct thread_ctx_s *ctx)
 {
 	output_close_common(ctx);
 	free(ctx->output.buf);
+    free(disco_buf);
 }
 
+/*---------------------------------------------------------------------------*/
+int disco_send_chunk(void *device, __u8 *frame_buf, int number_frames){
+    LOG_SDEBUG("[%p]: analyzing chunk with %d frames for disco", device, number_frames);
+    
+    hue_bridge_t *bridge;
+    bridge = device;
+    
+    float sum = 0.0;
+    float average_sum = 0.0;
+    
+    for (int i = 0; i < number_frames; i++){
+        sum += pow( (float)frame_buf[i] / pow(2, (sizeof(frame_buf[i])*8 - 1)), 2);
+    }
+    
+    average_sum = sum / number_frames;
+
+    LOG_SDEBUG("[%p]: got volume of %f", device, average_sum);
+    
+    if (average_sum > 0.4) {
+        LOG_INFO("HIT");
+        
+        hue_light_t hueLight;
+
+			hueLight.attribute.id = 2;
+			strcpy(hueLight.attribute.name, "Dieter");
+
+			hue_set_light_state(bridge, &hueLight, SWITCH, "ON");
+
+    }
+    else {
+        LOG_INFO("NO HIT.");
+        
+        hue_light_t hueLight;
+
+			hueLight.attribute.id = 2;
+			strcpy(hueLight.attribute.name, "Dieter");
+
+			hue_set_light_state(bridge, &hueLight, SWITCH, "OFF");
+        
+    }
+    
+    return 0;
+}
 
 /*---------------------------------------------------------------------------*/
 static void *output_hue_thread(struct thread_ctx_s *ctx) {
@@ -88,8 +135,17 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 			// nothing to do, sleep
 			if (ctx->output.buf_frames) {
-				usleep((FRAMES_PER_BLOCK * 1000000) / 44100);
-
+				usleep(FRAMES_PER_BLOCK * 1000000/ 44100);
+                
+                memcpy((disco_buf + ctx->output.buf_frames * BYTES_PER_FRAME), ctx->output.buf, (ctx->output.buf_frames * BYTES_PER_FRAME));
+                disco_frames += ctx->output.buf_frames;
+                
+                if( (FRAMES_PER_BLOCK * 16) == disco_frames ){
+                    LOG_SDEBUG("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
+                    disco_send_chunk(ctx->output.device, disco_buf, disco_frames);
+                    disco_frames = 0;
+                }
+                
 				// current block is a track start, set the value
 				if (ctx->output.detect_start_time) {
 					ctx->output.detect_start_time = false;
@@ -120,7 +176,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 
 /*---------------------------------------------------------------------------*/
-void output_hue_thread_init(unsigned output_buf_size, struct thread_ctx_s *ctx) {
+void output_hue_thread_init(hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
 	pthread_attr_t attr;
 
 	LOG_INFO("[%p]: init output hue", ctx);
@@ -133,12 +189,14 @@ void output_hue_thread_init(unsigned output_buf_size, struct thread_ctx_s *ctx) 
 		return;
 	}
 
+    disco_buf = malloc(16 * FRAMES_PER_BLOCK * BYTES_PER_FRAME);
+
 	ctx->output_running = true;
 	ctx->output.buf_frames = 0;
 	ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
 	ctx->output.write_cb = &_hue_write_frames;
 
-	output_init_common(output_buf_size, 44100, ctx);
+	output_init_common(hue, output_buf_size, 44100, ctx);
 
 	pthread_attr_init(&attr);
 	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);

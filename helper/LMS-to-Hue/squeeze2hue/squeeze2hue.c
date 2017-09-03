@@ -486,24 +486,12 @@ static void *PlayerThread(void *args)
 		LOG_INFO("[%p]: request %s", Device, req->Type);
 
 		if (!strcasecmp(req->Type, "CONNECT")) {
-			hue_light_t hueLight;
-
-			hueLight.attribute.id = 2;
-			strcpy(hueLight.attribute.name, "Dieter");
-
-			hue_set_light_state(&Device->Hue, &hueLight, SWITCH, "ON");
 		}
 
 		if (!strcasecmp(req->Type, "PAUSE")) {
 		}
 
 		if (!strcasecmp(req->Type, "STOP")) {
-			hue_light_t hueLight;
-
-			hueLight.attribute.id = 2;
-			strcpy(hueLight.attribute.name, "Dieter");
-
-			hue_set_light_state(&Device->Hue, &hueLight, SWITCH, "OFF");
 
 		}
 
@@ -600,7 +588,7 @@ static void *UpdateHueThread(void *args)
                 // create a new slimdevice
                 Device->SqueezeHandle = sq_reserve_device(Device, &sq_callback);
                 if (!*(Device->sq_config.name)) strcpy(Device->sq_config.name, Device->Hue.name);
-                if (!Device->SqueezeHandle || !sq_run_device(Device->SqueezeHandle, &Device->sq_config)) {
+                if (!Device->SqueezeHandle || !sq_run_device(Device->SqueezeHandle, &Device->Hue, &Device->sq_config)) {
                     sq_release_device(Device->SqueezeHandle);
                     Device->SqueezeHandle = 0;
                     LOG_ERROR("[%p]: cannot create squeezelite instance (%s)", Device, Device->FriendlyName);
