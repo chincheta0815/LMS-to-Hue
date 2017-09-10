@@ -123,6 +123,8 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
+                usleep(FRAMES_PER_BLOCK * 1000000 / 44100);
+                
                 LOG_INFO("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
                 disco_process_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames);
 
