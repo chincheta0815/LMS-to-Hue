@@ -22,6 +22,7 @@
 // hue output
 
 #include "squeezelite.h"
+#include "aubio.h"
 #include "libhuec.h"
 
 extern log_level	output_loglevel;
@@ -32,8 +33,9 @@ static log_level 	*loglevel = &output_loglevel;
 #define LOCK_S   mutex_lock(ctx->streambuf->mutex)
 #define UNLOCK_S mutex_unlock(ctx->streambuf->mutex)
 
-__u8 *disco_buf;
-int disco_frames;
+aubio_tempo_t *aubio_tempo;
+fvec_t *aubio_tempo_in;
+fvec_t *aubio_tempo_out;
 
 /*---------------------------------------------------------------------------*/
 void wake_output(struct thread_ctx_s *ctx) {
@@ -74,48 +76,33 @@ void output_close(struct thread_ctx_s *ctx)
 {
     output_close_common(ctx);
     free(ctx->output.buf);
-    free(disco_buf);
+    del_aubio_tempo(aubio_tempo);
+    del_fvec(aubio_tempo_in);
+    del_fvec(aubio_tempo_out);
 }
 
 /*---------------------------------------------------------------------------*/
-int disco_send_chunk(void *device, __u8 *frame_buf, int number_frames){
-    LOG_SDEBUG("[%p]: analyzing chunk with %d frames for disco", device, number_frames);
+int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
+    LOG_INFO("[%p]: analyzing chunk with %d frames for disco", device, num_frames);
 
     hue_bridge_t *bridge;
     bridge = device;
 
-    float sum = 0.0;
-    float average_sum = 0.0;
-
-    for (int i = 0; i < number_frames; i++){
-        sum += pow( (float)frame_buf[i] / pow(2, (sizeof(frame_buf[i])*8 - 1)), 2);
+    for (int i = 0; i < num_frames; i++) {
+        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i];
     }
 
-    average_sum = sum / number_frames;
+    aubio_tempo_do(aubio_tempo, aubio_tempo_in, aubio_tempo_out);
 
-    LOG_SDEBUG("[%p]: got volume of %f", device, average_sum);
-
-    if (average_sum > 0.4) {
-        LOG_INFO("HIT");
-
+    if(aubio_tempo_out->data[0] != 0) {
         hue_light_t hueLight;
-
-            hueLight.attribute.id = 2;
-            strcpy(hueLight.attribute.name, "Dieter");
-
-            hue_set_light_state(bridge, &hueLight, SWITCH, "ON");
-
+        hueLight.attribute.id = 2;
+        hue_set_light_state(bridge, &hueLight, BRI, "255");
     }
     else {
-        LOG_INFO("NO HIT.");
-
         hue_light_t hueLight;
-
-            hueLight.attribute.id = 2;
-            strcpy(hueLight.attribute.name, "Dieter");
-
-            hue_set_light_state(bridge, &hueLight, SWITCH, "OFF");
-
+        hueLight.attribute.id = 2;
+        hue_set_light_state(bridge, &hueLight, BRI, "0");
     }
 
     return 0;
@@ -136,16 +123,8 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
-                usleep(FRAMES_PER_BLOCK * 1000000/ 44100);
-
-                memcpy((disco_buf + disco_frames * BYTES_PER_FRAME), ctx->output.buf, (ctx->output.buf_frames * BYTES_PER_FRAME));
-                disco_frames += ctx->output.buf_frames;
-
-                if( (FRAMES_PER_BLOCK * 16) == disco_frames ){
-                    LOG_SDEBUG("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
-                    disco_send_chunk(ctx->output.device, disco_buf, disco_frames);
-                    disco_frames = 0;
-                }
+                LOG_INFO("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
+                disco_process_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames);
 
                 // current block is a track start, set the value
                 if (ctx->output.detect_start_time) {
@@ -189,9 +168,12 @@ void output_hue_thread_init(hue_bridge_t *hue, unsigned output_buf_size, struct 
         LOG_ERROR("[%p]: unable to malloc buf", ctx);
         return;
     }
-
-    disco_buf = malloc(16 * FRAMES_PER_BLOCK * BYTES_PER_FRAME);
-    disco_frames = 0;
+    
+    int buf_size = 1024;
+    int hop_size = buf_size / 2;
+    aubio_tempo = new_aubio_tempo("default", buf_size, hop_size, 44100);
+    aubio_tempo_in = new_fvec(buf_size);
+    aubio_tempo_out = new_fvec(1);
     
     ctx->output_running = true;
     ctx->output.buf_frames = 0;

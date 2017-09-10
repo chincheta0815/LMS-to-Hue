@@ -10,7 +10,7 @@ LINKSTATIC 	= -static
 endif
 
 TOOLS		= ./tools
-SRC		= ./squeeze2hue
+SRC			= ./squeeze2hue
 SQUEEZETINY	= ./squeezetiny
 
 LIBHUEC		= ./libhuec
@@ -18,13 +18,15 @@ LIBHUEC		= ./libhuec
 VALGRIND	= $(BASE)/valgrind
 UPNP 		= $(BASE)/libupnp/1.6.19
 JANSSON		= $(BASE)/jansson/2.10
+AUBIO		= $(BASE)/aubio/0.4.5
+FFTW		= $(BASE)/fftw/3.3.6
 
 DEFINES 	+= -DHAVE_STDINT_H -DRESAMPLE -DNDEBUG -D_FILE_OFFSET_BITS=64 
 
 vpath %.c $(TOOLS):$(SRC):$(LIBHUEC):$(SQUEEZETINY)
 
-LIBRARY 	= $(OBJ)/libupnp.a $(OBJ)/libthreadutil.a $(OBJ)/libixml.a $(OBJ)/libsoxr.a $(OBJ)/libmad.a $(OBJ)/libjansson.a
-LIBRARY_STATIC 	= $(LIBRARY) $(OBJ)/libfaad.a $(OBJ)/libsoxr.a $(OBJ)/libFLAC.a $(OBJ)/libmad.a $(OBJ)/libjansson.a
+LIBRARY 	= $(OBJ)/libupnp.a $(OBJ)/libthreadutil.a $(OBJ)/libixml.a $(OBJ)/libsoxr.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a $(OBJ)/libfftw3f.a
+LIBRARY_STATIC 	= $(LIBRARY) $(OBJ)/libfaad.a $(OBJ)/libsoxr.a $(OBJ)/libFLAC.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a $(OBJ)/libfftw3f.a
 
 INCLUDE = -I. \
 	  -I$(SQUEEZETINY) \
@@ -39,6 +41,8 @@ INCLUDE = -I. \
 	  -I$(BASE)/soxr/src\
 	  -I$(UPNP)/ixml/inc -I$(UPNP)/upnp/inc -I$(UPNP)/build/inc -I$(UPNP)/threadutil/inc \
 	  -I$(JANSSON)/include \
+	  -I$(AUBIO)/include \
+	  -I$(FFTW)/include \
 	  -I$(LIBHUEC)/include
 
 DEPS	= $(SQUEEZETINY)/squeezedefs.h

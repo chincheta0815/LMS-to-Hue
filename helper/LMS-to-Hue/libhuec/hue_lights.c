@@ -60,7 +60,7 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
     
 	hue_request_t request;
 	hue_response_t response;
-	json_t *json = NULL;
+	json_t *json = json_object();
 
 	if (hue_connect(bridge)) {
 		return 1;
@@ -76,10 +76,10 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
 	switch(command) {
 		case(SWITCH):
 			if( strcmp(command_arg, "ON") == 0 ){
-				json = json_pack("{sb}", "on", true);
+				json_object_set_new(json, "on", json_true());
 			}
 			else if( strcmp(command_arg, "OFF") == 0 ){
-				json = json_pack("{sb}", "on", false);
+				json_object_set_new(json, "on", json_false());
 			}
 			else{
 				hue_disconnect(bridge);
@@ -89,11 +89,11 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
 
 		case(BRI):
 			light->state.bri = atoi(command_arg);
-			json = json_pack("{si}", "bri", light->state.bri);
+			json_object_set_new(json, "bri", json_integer(light->state.bri));
 			break;
 
 		case(HUE):
-			json = json_pack("{si}", "hue", atoi(command_arg));
+			//json = json_pack("{si}", "hue", atoi(command_arg));
 			break;
 
 		case(SAT):
@@ -114,8 +114,8 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
 			break;
 
 		case(TRANSITIONTIME):
-			light->state.transitiontime = atoi(command_arg);
-			json = json_pack("{si}", "transitiontime", light->state.transitiontime);
+			//light->state.transitiontime = atoi(command_arg);
+			//json = json_pack("{si}", "transitiontime", light->state.transitiontime);
 			break;
 
 		case(BRI_INC):
@@ -134,6 +134,9 @@ int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, c
 			break;
 
 	}
+
+    light->state.transitiontime = atoi(command_arg);
+    json_object_set_new(json, "transitiontime", json_integer(0));
 
 	request.body = json_dumps(json, JSON_ENCODE_ANY | JSON_INDENT(1));
 	json_decref(json);
