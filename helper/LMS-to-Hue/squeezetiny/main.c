@@ -605,7 +605,7 @@ sq_dev_handle_t sq_reserve_device(void *MR, sq_callback_t callback)
 
 
 /*---------------------------------------------------------------------------*/
-bool sq_run_device(sq_dev_handle_t handle, sq_dev_param_t *param)
+bool sq_run_device(void *vplayer, sq_dev_handle_t handle, sq_dev_param_t *param)
 {
 	struct thread_ctx_s *ctx = &thread_ctx[handle - 1];
 
@@ -616,7 +616,7 @@ bool sq_run_device(sq_dev_handle_t handle, sq_dev_param_t *param)
 										  ctx->config.mac[3], ctx->config.mac[4], ctx->config.mac[5]);
 
 	stream_thread_init(ctx->config.stream_buf_size, ctx);
-	output_hue_thread_init(ctx->config.output_buf_size, ctx);
+	output_hue_thread_init(vplayer, ctx->config.output_buf_size, ctx);
 	decode_thread_init(ctx);
 
 #if RESAMPLE

@@ -94,7 +94,7 @@ typedef bool (*sq_callback_t)(sq_dev_handle_t handle, void *caller_id, sq_action
 void				sq_init(void);
 void				sq_end(void);
 
-bool			 	sq_run_device(sq_dev_handle_t handle, sq_dev_param_t *param);
+bool			 	sq_run_device(void *vplayer, sq_dev_handle_t handle, sq_dev_param_t *param);
 void				sq_delete_device(sq_dev_handle_t);
 sq_dev_handle_t		sq_reserve_device(void *caller_id, sq_callback_t callback);
 void				sq_release_device(sq_dev_handle_t);

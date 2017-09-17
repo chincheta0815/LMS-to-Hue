@@ -22,6 +22,7 @@
 // raop output
 
 #include "squeezelite.h"
+#include "virtual.h"
 
 extern log_level	output_loglevel;
 static log_level 	*loglevel = &output_loglevel;
@@ -79,7 +80,8 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 		bool ran = false;
 
 		// proceed only if room in queue *and* running
-		if (ctx->output.state >= OUTPUT_BUFFER) {
+		if (ctx->output.state >= OUTPUT_BUFFER && virtual_accept_frames(ctx->output.device)) {
+			u64_t playtime;
 
 			LOCK;
 			// this will internally loop till we have exactly 352 frames
@@ -88,7 +90,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 			// nothing to do, sleep
 			if (ctx->output.buf_frames) {
-				usleep((FRAMES_PER_BLOCK * 1000000) / 44100);
+				virtual_send_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames, &playtime);
 
 				// current block is a track start, set the value
 				if (ctx->output.detect_start_time) {
@@ -120,7 +122,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 
 /*---------------------------------------------------------------------------*/
-void output_hue_thread_init(unsigned output_buf_size, struct thread_ctx_s *ctx) {
+void output_hue_thread_init(void *vplayer, unsigned output_buf_size, struct thread_ctx_s *ctx) {
 	pthread_attr_t attr;
 
 	LOG_INFO("[%p]: init output hue", ctx);
@@ -138,7 +140,7 @@ void output_hue_thread_init(unsigned output_buf_size, struct thread_ctx_s *ctx) 
 	ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
 	ctx->output.write_cb = &_hue_write_frames;
 
-	output_init_common(output_buf_size, 44100, ctx);
+	output_init_common(vplayer, output_buf_size, 44100, ctx);
 
 	pthread_attr_init(&attr);
 	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);
