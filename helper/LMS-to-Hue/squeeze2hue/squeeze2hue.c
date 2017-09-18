@@ -43,6 +43,7 @@
 #include "util.h"
 
 #include "libhuec.h"
+#include "virtual.h"
 
 /*----------------------------------------------------------------------------*/
 /* globals initialized */
@@ -66,6 +67,7 @@ log_level	output_loglevel = lINFO;
 log_level	main_loglevel = lINFO;
 log_level	slimmain_loglevel = lINFO;
 log_level	util_loglevel = lINFO;
+log_level	virtual_loglevel = lINFO;
 
 tHBConfig			glHBConfig = {
 							true,   // enabled
@@ -228,6 +230,8 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
 		if (!device->on) {
 			tHueReq *Req = malloc(sizeof(tHueReq));
 
+			virtual_disconnect(device->vPlayer);
+
 			pthread_mutex_lock(&device->Mutex);
 			QueueFlush(&device->Queue);
 			strcpy(Req->Type, "OFF");
@@ -258,6 +262,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
 			device->TrackRunning = false;
 			device->TrackDuration = 0;
 			device->sqState = SQ_STOP;
+			virtual_stop(device->vPlayer);
 
 			strcpy(Req->Type, "STOP");
 			QueueInsert(&device->Queue, Req);
@@ -269,6 +274,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
 
 			device->TrackRunning = false;
 			device->sqState = SQ_PAUSE;
+			virtual_pause(device->vPlayer);
 
 			Req = malloc(sizeof(tHueReq));
 			strcpy(Req->Type, "PAUSE");
@@ -281,6 +287,8 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
 
 			device->TrackRunning = true;
 			device->sqState = SQ_PLAY;
+
+			if (*((unsigned*) param)) virtual_start_at(device->vPlayer, TIME_MS2NTP(*((unsigned*) param)));
 
 			strcpy(Req->Type, "UNPAUSE");
 			QueueInsert(&device->Queue, Req);
@@ -307,6 +315,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
 			tHueReq *Req = malloc(sizeof(tHueReq));
 
 			device->sqState = SQ_PLAY;
+			virtual_connect(device->vPlayer);
 
 			strcpy(Req->Type, "CONNECT");
 			QueueInsert(&device->Queue, Req);
@@ -588,7 +597,7 @@ static void *UpdateHueThread(void *args)
                 // create a new slimdevice
                 Device->SqueezeHandle = sq_reserve_device(Device, &sq_callback);
                 if (!*(Device->sq_config.name)) strcpy(Device->sq_config.name, Device->Hue.name);
-                if (!Device->SqueezeHandle || !sq_run_device(Device->SqueezeHandle, &Device->Hue, &Device->sq_config)) {
+                if (!Device->SqueezeHandle || !sq_run_device(Device->vPlayer, Device->SqueezeHandle, &Device->Hue, &Device->sq_config)) {
                     sq_release_device(Device->SqueezeHandle);
                     Device->SqueezeHandle = 0;
                     LOG_ERROR("[%p]: cannot create squeezelite instance (%s)", Device, Device->FriendlyName);
@@ -743,6 +752,7 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	strcpy(Device->Manufacturer, manufacturer);
 
 	Device->Hue.ipAddress.s_addr = ExtractIP(location);
+	Device->vPlayer = virtual_create(FRAMES_PER_BLOCK);
 
 	strcpy(Device->Hue.userName, Device->Config.UserName);
 
@@ -804,6 +814,8 @@ void DelHueDevice(struct sHB *Device)
 
 	pthread_cond_destroy(&Device->Cond);
 	pthread_mutex_destroy(&Device->Mutex);
+
+	virtual_destroy(Device->vPlayer);
 
 	LOG_INFO("[%p]: Hue device stopped", Device);
 

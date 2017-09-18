@@ -31,6 +31,7 @@
 #include "squeezedefs.h"
 #include "squeezeitf.h"
 #include "util.h"
+#include "virtual.h"
 
 #include "libhuec.h"
 
@@ -62,7 +63,8 @@ typedef struct sHBConfig {
 
 struct sHB {
     bool InUse;
-    tHBConfig Config;
+	tHBConfig Config;
+	struct virtualcl_s *vPlayer;
     sq_dev_param_t sq_config;
     bool on;
     hue_bridge_t    Hue;

@@ -281,7 +281,7 @@ void _checkfade(bool start, struct thread_ctx_s *ctx) {
 
 
 /*---------------------------------------------------------------------------*/
-void output_init_common(void *device, unsigned outputbuf_size, u32_t sample_rate, struct thread_ctx_s *ctx) {
+void output_init_common(void *device, void *hue, unsigned outputbuf_size, u32_t sample_rate, struct thread_ctx_s *ctx) {
 	outputbuf_size = outputbuf_size - (outputbuf_size % BYTES_PER_FRAME);
 	LOG_DEBUG("[%p]: outputbuf size: %u", outputbuf_size);
 
@@ -304,8 +304,10 @@ void output_init_common(void *device, unsigned outputbuf_size, u32_t sample_rate
 	ctx->output.state = OUTPUT_STOPPED;
 	ctx->output.fade = FADE_INACTIVE;
     ctx->output.device = device;
+    ctx->output.light_device = hue;
 	ctx->output.error_opening = false;
 	ctx->output.detect_start_time = false;
+	ctx->output.device = device;
 
 	ctx->output.current_sample_rate = ctx->output.default_sample_rate = sample_rate;
 	ctx->output.supported_rates[0] = sample_rate;

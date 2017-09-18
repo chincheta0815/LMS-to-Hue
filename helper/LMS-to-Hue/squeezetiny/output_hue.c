@@ -22,8 +22,10 @@
 // hue output
 
 #include "squeezelite.h"
+
 #include "aubio.h"
 #include "libhuec.h"
+#include "virtual.h"
 
 extern log_level	output_loglevel;
 static log_level 	*loglevel = &output_loglevel;
@@ -110,11 +112,13 @@ int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
 
 /*---------------------------------------------------------------------------*/
 static void *output_hue_thread(struct thread_ctx_s *ctx) {
+<<<<<<< HEAD
     while (ctx->output_running) {
         bool ran = false;
 
         // proceed only if room in queue *and* running
-        if (ctx->output.state >= OUTPUT_BUFFER) {
+        if (ctx->output.state >= OUTPUT_BUFFER && virtual_accept_frames(ctx->output.device)) {
+            u64_t playtime;
 
             LOCK;
             // this will internally loop till we have exactly 352 frames
@@ -126,7 +130,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
                 usleep(FRAMES_PER_BLOCK * 1000000 / 44100);
                 
                 LOG_INFO("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
-                disco_process_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames);
+                virtual_send_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames, &playtime);
 
                 // current block is a track start, set the value
                 if (ctx->output.detect_start_time) {
@@ -158,36 +162,30 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 
 /*---------------------------------------------------------------------------*/
-void output_hue_thread_init(hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
-    pthread_attr_t attr;
+void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
+	pthread_attr_t attr;
 
 	LOG_INFO("[%p]: init output hue", ctx);
 
-    memset(&ctx->output, 0, sizeof(ctx->output));
+	memset(&ctx->output, 0, sizeof(ctx->output));
 
-    ctx->output.buf = malloc(FRAMES_PER_BLOCK * BYTES_PER_FRAME);
-    if (!ctx->output.buf) {
-        LOG_ERROR("[%p]: unable to malloc buf", ctx);
-        return;
-    }
-    
-    int buf_size = 1024;
-    int hop_size = buf_size / 2;
-    aubio_tempo = new_aubio_tempo("default", buf_size, hop_size, 44100);
-    aubio_tempo_in = new_fvec(buf_size);
-    aubio_tempo_out = new_fvec(1);
-    
-    ctx->output_running = true;
-    ctx->output.buf_frames = 0;
-    ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
-    ctx->output.write_cb = &_hue_write_frames;
+	ctx->output.buf = malloc(FRAMES_PER_BLOCK * BYTES_PER_FRAME);
+	if (!ctx->output.buf) {
+		LOG_ERROR("[%p]: unable to malloc buf", ctx);
+		return;
+	}
 
-    output_init_common(hue, output_buf_size, 44100, ctx);
+	ctx->output_running = true;
+	ctx->output.buf_frames = 0;
+	ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
+	ctx->output.write_cb = &_hue_write_frames;
 
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);
-    pthread_create(&ctx->output_thread, &attr, (void *(*)(void*)) &output_hue_thread, ctx);
-    pthread_attr_destroy(&attr);
+	output_init_common(vplayer, hue, output_buf_size, 44100, ctx);
+
+	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);
+	pthread_create(&ctx->output_thread, &attr, (void *(*)(void*)) &output_hue_thread, ctx);
+	pthread_attr_destroy(&attr);
 }
 
 
