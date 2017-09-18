@@ -23,9 +23,9 @@
 
 #include "squeezelite.h"
 
-#include "aubio.h"
-#include "libhuec.h"
 #include "virtual.h"
+#include "libhuec.h"
+#include "aubio.h"
 
 extern log_level	output_loglevel;
 static log_level 	*loglevel = &output_loglevel;
@@ -83,41 +83,14 @@ void output_close(struct thread_ctx_s *ctx)
     del_fvec(aubio_tempo_out);
 }
 
-/*---------------------------------------------------------------------------*/
-int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
-    LOG_INFO("[%p]: analyzing chunk with %d frames for disco", device, num_frames);
-
-    hue_bridge_t *bridge;
-    bridge = device;
-
-    for (int i = 0; i < num_frames; i++) {
-        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i];
-    }
-
-    aubio_tempo_do(aubio_tempo, aubio_tempo_in, aubio_tempo_out);
-
-    if(aubio_tempo_out->data[0] != 0) {
-        hue_light_t hueLight;
-        hueLight.attribute.id = 2;
-        hue_set_light_state(bridge, &hueLight, BRI, "255");
-    }
-    else {
-        hue_light_t hueLight;
-        hueLight.attribute.id = 2;
-        hue_set_light_state(bridge, &hueLight, BRI, "0");
-    }
-
-    return 0;
-}
 
 /*---------------------------------------------------------------------------*/
 static void *output_hue_thread(struct thread_ctx_s *ctx) {
-<<<<<<< HEAD
     while (ctx->output_running) {
         bool ran = false;
 
         // proceed only if room in queue *and* running
-        if (ctx->output.state >= OUTPUT_BUFFER && virtual_accept_frames(ctx->output.device)) {
+        if (ctx->output.state >= OUTPUT_BUFFER && virtual_accept_frames(ctx->output.vplayer_device)) {
             u64_t playtime;
 
             LOCK;
@@ -127,10 +100,8 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
-                usleep(FRAMES_PER_BLOCK * 1000000 / 44100);
-                
-                LOG_INFO("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
-                virtual_send_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames, &playtime);
+                LOG_INFO("[%p]: sending chunk to %s", ctx->output.vplayer_device, ((hue_bridge_t *)ctx->output.light_device)->name);
+                virtual_send_chunk(ctx->output.vplayer_device, ctx->output.light_device, ctx->output.buf, ctx->output.buf_frames, &playtime);
 
                 // current block is a track start, set the value
                 if (ctx->output.detect_start_time) {

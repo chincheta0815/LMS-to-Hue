@@ -23,6 +23,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <string.h>
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -30,7 +31,10 @@
 #include "log_util.h"
 #include "virtual.h"
 
+#include "aubio.h"
+#include "libhuec.h"
 
+#undef SEC
 #define SEC(ntp) ((__u32) ((ntp) >> 32))
 #define FRAC(ntp) ((__u32) (ntp))
 #define SECNTP(ntp) SEC(ntp),FRAC(ntp)
@@ -47,6 +51,9 @@ typedef struct virtualcl_s {
 extern log_level	virtual_loglevel;
 static log_level 	*loglevel = &virtual_loglevel;
 
+aubio_tempo_t *aubio_tempo;
+fvec_t *aubio_tempo_in;
+fvec_t *aubio_tempo_out;
 
 /*----------------------------------------------------------------------------*/
 __u64 virtual_time32_to_ntp(__u32 time)
@@ -170,8 +177,36 @@ bool virtual_accept_frames(struct virtualcl_s *p)
 }
 
 
+/*---------------------------------------------------------------------------*/
+int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
+    LOG_INFO("[%p]: analyzing chunk with %d frames for disco", device, num_frames);
+
+    hue_bridge_t *bridge;
+    bridge = device;
+
+    for (int i = 0; i < num_frames; i++) {
+        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i];
+    }
+
+    aubio_tempo_do(aubio_tempo, aubio_tempo_in, aubio_tempo_out);
+
+    if(aubio_tempo_out->data[0] != 0) {
+        hue_light_t hueLight;
+        hueLight.attribute.id = 2;
+        hue_set_light_state(bridge, &hueLight, BRI, "255");
+    }
+    else {
+        hue_light_t hueLight;
+        hueLight.attribute.id = 2;
+        hue_set_light_state(bridge, &hueLight, BRI, "0");
+    }
+
+    return 0;
+}
+
+
 /*----------------------------------------------------------------------------*/
-bool virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int frames, __u64 *playtime)
+bool virtual_send_chunk(struct virtualcl_s *p, void *device, __u8 *sample, int frames, __u64 *playtime)
 {
 	if (!p || !sample) {
 		LOG_ERROR("[%p]: something went wrong (s:%p)", p, sample);
@@ -188,8 +223,11 @@ bool virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int frames, __u64 *
 		LOG_INFO("[%p]: check n:%u p:%u ts:%Lu", p, MSEC(now), MSEC(*playtime), p->head_ts);
 	}
 
-	return true;
-}
+    disco_process_chunk(device, sample, frames);
+
+	return true;
+
+}
 
 /*----------------------------------------------------------------------------*/
 struct virtualcl_s *virtual_create(int chunk_len)
@@ -226,7 +264,8 @@ bool virtual_connect(struct virtualcl_s *p)
 	pthread_mutex_unlock(&p->mutex);
 
 	return true;
-}
+
+}
 
 
 

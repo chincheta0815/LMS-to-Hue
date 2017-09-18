@@ -754,7 +754,7 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
 	Device->Hue.ipAddress.s_addr = ExtractIP(location);
 	Device->vPlayer = virtual_create(FRAMES_PER_BLOCK);
 
-	strcpy(Device->Hue.userName, Device->Config.UserName);
+    strcpy(Device->Hue.userName, Device->Config.UserName);
 
     hue_get_bridge_config(&Device->Hue);
     if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {

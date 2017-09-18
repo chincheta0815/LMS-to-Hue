@@ -10,23 +10,22 @@ LINKSTATIC 	= -static
 endif
 
 TOOLS		= ./tools
-SRC			= ./squeeze2hue
+SRC		= ./squeeze2hue
 SQUEEZETINY	= ./squeezetiny
-
+VIRTUAL		= ./virtual
 LIBHUEC		= ./libhuec
 
 VALGRIND	= $(BASE)/valgrind
 UPNP 		= $(BASE)/libupnp/1.6.19
 JANSSON		= $(BASE)/jansson/2.10
 AUBIO		= $(BASE)/aubio/0.4.5
-FFTW		= $(BASE)/fftw/3.3.6
 
 DEFINES 	+= -DHAVE_STDINT_H -DRESAMPLE -DNDEBUG -D_FILE_OFFSET_BITS=64 
 
-vpath %.c $(TOOLS):$(SRC):$(LIBHUEC):$(SQUEEZETINY)
+vpath %.c $(TOOLS):$(SRC):$(LIBHUEC):$(SQUEEZETINY):$(VIRTUAL)
 
-LIBRARY 	= $(OBJ)/libupnp.a $(OBJ)/libthreadutil.a $(OBJ)/libixml.a $(OBJ)/libsoxr.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a $(OBJ)/libfftw3f.a
-LIBRARY_STATIC 	= $(LIBRARY) $(OBJ)/libfaad.a $(OBJ)/libsoxr.a $(OBJ)/libFLAC.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a $(OBJ)/libfftw3f.a
+LIBRARY 	= $(OBJ)/libupnp.a $(OBJ)/libthreadutil.a $(OBJ)/libixml.a $(OBJ)/libsoxr.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a 
+LIBRARY_STATIC 	= $(LIBRARY) $(OBJ)/libfaad.a $(OBJ)/libsoxr.a $(OBJ)/libFLAC.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a 
 
 INCLUDE = -I. \
 	  -I$(SQUEEZETINY) \
@@ -42,14 +41,14 @@ INCLUDE = -I. \
 	  -I$(UPNP)/ixml/inc -I$(UPNP)/upnp/inc -I$(UPNP)/build/inc -I$(UPNP)/threadutil/inc \
 	  -I$(JANSSON)/include \
 	  -I$(AUBIO)/include \
-	  -I$(FFTW)/include \
+	  -I$(VIRTUAL) \
 	  -I$(LIBHUEC)/include
 
 DEPS	= $(SQUEEZETINY)/squeezedefs.h
 		  
 SOURCES = slimproto.c buffer.c stream.c utils.c pcm.c process.c resample.c \
 	output.c decode.c output_pack.c output_hue.c  main.c util_common.c \
-      	squeeze2hue.c util.c conf_util.c log_util.c \
+      	squeeze2hue.c util.c conf_util.c log_util.c virtual.c \
 	hue_capabilities.c hue_configuration.c hue_interface.c hue_lights.c
 		
 SOURCES_LIBS = mpg.c flac.c mad.c faad.c
