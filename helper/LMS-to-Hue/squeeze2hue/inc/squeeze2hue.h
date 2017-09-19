@@ -46,25 +46,25 @@
 #define SCAN_INTERVAL           30
 
 typedef struct sHueReq {
-                char Type[20];
-                union {
-                    u8_t Volume;
-                } Data;
+    char Type[20];
+    union {
+        u8_t Volume;
+    } Data;
 } tHueReq;
 
 typedef struct sHBConfig {
-                bool Enabled;
-                bool UserValid;
-				char Name[SQ_STR_LENGTH];
-				char UserName[SQ_STR_LENGTH];
-                int	RemoveCount;
+    bool Enabled;
+    bool UserValid;
+    char Name[SQ_STR_LENGTH];
+    char UserName[SQ_STR_LENGTH];
+    int	RemoveCount;
 } tHBConfig;
 
 
 struct sHB {
     bool InUse;
-	tHBConfig Config;
-	struct virtualcl_s *vPlayer;
+    tHBConfig Config;
+    struct virtualcl_s *vPlayer;
     sq_dev_param_t sq_config;
     bool on;
     hue_bridge_t    Hue;
