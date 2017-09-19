@@ -46,7 +46,7 @@ bool	virtual_connect(struct virtualcl_s *p);
 bool 	virtual_disconnect(struct virtualcl_s *p);
 
 bool 	virtual_accept_frames(struct virtualcl_s *p);
-bool	virtual_send_chunk(struct virtualcl_s *p, void *device, __u8 *sample, int size, __u64 *playtime);
+bool	virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int size, __u64 *playtime);
 
 bool 	virtual_start_at(struct virtualcl_s *p, __u64 start_time);
 void 	virtual_pause(struct virtualcl_s *p);
