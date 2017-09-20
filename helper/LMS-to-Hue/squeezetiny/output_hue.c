@@ -96,7 +96,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
                 LOG_INFO("[%p]: sending chunk to %s", ctx->output.vplayer_device, ((hue_bridge_t *)ctx->output.light_device)->name);
-                virtual_send_chunk(ctx->output.vplayer_device, ctx->output.light_device, ctx->output.buf, ctx->output.buf_frames, &playtime);
+                virtual_send_chunk(ctx->output.vplayer_device, ctx->output.buf, ctx->output.buf_frames, &playtime);
 
                 // current block is a track start, set the value
                 if (ctx->output.detect_start_time) {

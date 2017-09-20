@@ -324,7 +324,7 @@ void output_init_common(void *device, void *hue, unsigned outputbuf_size, u32_t 
 
     ctx->output.state = OUTPUT_STOPPED;
     ctx->output.fade = FADE_INACTIVE;
-    ctx->output.device = device;
+    ctx->output.vplayer_device = device;
     ctx->output.light_device = hue;
     ctx->output.error_opening = false;
     ctx->output.detect_start_time = false;
