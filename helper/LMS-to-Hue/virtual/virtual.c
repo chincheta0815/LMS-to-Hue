@@ -18,6 +18,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
+
+
 #include <stdio.h>
 #include "platform.h"
 #include <time.h>
@@ -31,14 +33,16 @@
 #include "log_util.h"
 #include "virtual.h"
 
+#ifdef SEC
 #undef SEC
+#endif
 #define SEC(ntp) ((__u32) ((ntp) >> 32))
 #define FRAC(ntp) ((__u32) (ntp))
 #define SECNTP(ntp) SEC(ntp),FRAC(ntp)
 #define MSEC(ntp)  ((__u32) ((((ntp) >> 16)*1000) >> 16))
 
 typedef struct virtualcl_s {
-virtual_state_t state;
+    virtual_state_t state;
     __u64 head_ts, pause_ts, start_ts, first_ts;
     bool waiting;
     int chunk_len;
@@ -48,13 +52,9 @@ virtual_state_t state;
 extern log_level    virtual_loglevel;
 static log_level    *loglevel = &virtual_loglevel;
 
-aubio_tempo_t *aubio_tempo;
-fvec_t *aubio_tempo_in;
-fvec_t *aubio_tempo_out;
 
 /*----------------------------------------------------------------------------*/
-__u64 virtual_time32_to_ntp(__u32 time)
-{
+__u64 virtual_time32_to_ntp(__u32 time) {
     __u64 ntp_ms = ((get_ntp(NULL) >> 16) * 1000) >> 16;
     __u32 ms = (__u32) ntp_ms;
     __u64 res;
@@ -72,9 +72,9 @@ __u64 virtual_time32_to_ntp(__u32 time)
     return res;
 }
 
+
 /*----------------------------------------------------------------------------*/
-void virtual_pause(struct virtualcl_s *p)
-{
+void virtual_pause(struct virtualcl_s *p) {
     if (!p || p->state != STREAMING) return;
 
     pthread_mutex_lock(&p->mutex);
@@ -88,8 +88,7 @@ void virtual_pause(struct virtualcl_s *p)
 
 
 /*----------------------------------------------------------------------------*/
-bool virtual_start_at(struct virtualcl_s *p, __u64 start_time)
-{
+bool virtual_start_at(struct virtualcl_s *p, __u64 start_time) {
     if (!p) return false;
 
     pthread_mutex_lock(&p->mutex);
@@ -103,8 +102,7 @@ bool virtual_start_at(struct virtualcl_s *p, __u64 start_time)
 
 
 /*----------------------------------------------------------------------------*/
-void virtual_stop(struct virtualcl_s *p)
-{
+void virtual_stop(struct virtualcl_s *p) {
     if (!p) return;
 
     pthread_mutex_lock(&p->mutex);
@@ -116,8 +114,7 @@ void virtual_stop(struct virtualcl_s *p)
 
 
 /*----------------------------------------------------------------------------*/
-bool virtual_accept_frames(struct virtualcl_s *p)
-{
+bool virtual_accept_frames(struct virtualcl_s *p) {
     bool accept = false;
     __u64 now_ts;
 
@@ -134,6 +131,7 @@ bool virtual_accept_frames(struct virtualcl_s *p)
         // Not flushed yet, but we have time to wait, so pretend we are full
         if (p->state != FLUSHED && (!p->start_ts || p->start_ts > now_ts)) {
             pthread_mutex_unlock(&p->mutex);
+
             return false;
         }
 
@@ -147,6 +145,7 @@ bool virtual_accept_frames(struct virtualcl_s *p)
         if (!p->pause_ts) {
             p->head_ts = p->first_ts = p->start_ts ? p->start_ts : now_ts;
             LOG_INFO("[%p]: restarting w/o pause n:%u.%u, hts:%Lu", p, SECNTP(now), p->head_ts);
+
         }
         else {
             // if un-pausing w/o start_time, can anticipate as we have buffer
@@ -175,10 +174,10 @@ bool virtual_accept_frames(struct virtualcl_s *p)
 
 
 /*----------------------------------------------------------------------------*/
-bool virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int frames, __u64 *playtime)
-{
+bool virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int frames, __u64 *playtime) {
     if (!p || !sample) {
         LOG_ERROR("[%p]: something went wrong (s:%p)", p, sample);
+
         return false;
     }
 
@@ -196,12 +195,12 @@ bool virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int frames, __u64 *
 }
 
 /*----------------------------------------------------------------------------*/
-struct virtualcl_s *virtual_create(int chunk_len)
-{
+struct virtualcl_s *virtual_create(int chunk_len) {
     virtualcl_data_t *virtualcld;
 
     if (chunk_len > MAX_SAMPLES_PER_CHUNK) {
         LOG_ERROR("Chunk length must below %d", MAX_SAMPLES_PER_CHUNK);
+
         return NULL;
     }
 
@@ -220,8 +219,7 @@ struct virtualcl_s *virtual_create(int chunk_len)
 
 
 /*----------------------------------------------------------------------------*/
-bool virtual_connect(struct virtualcl_s *p)
-{
+bool virtual_connect(struct virtualcl_s *p) {
     if (!p) return false;
 
     if (p->state >= FLUSHED) return true;
@@ -233,10 +231,8 @@ bool virtual_connect(struct virtualcl_s *p)
 }
 
 
-
 /*----------------------------------------------------------------------------*/
-bool virtual_disconnect(struct virtualcl_s *p)
-{
+bool virtual_disconnect(struct virtualcl_s *p) {
     if (!p || p->state == DOWN) return true;
 
     pthread_mutex_lock(&p->mutex);
@@ -248,8 +244,7 @@ bool virtual_disconnect(struct virtualcl_s *p)
 
 
 /*----------------------------------------------------------------------------*/
-bool virtual_destroy(struct virtualcl_s *p)
-{
+bool virtual_destroy(struct virtualcl_s *p) {
     if (!p) return false;
 
     pthread_mutex_destroy(&p->mutex);
@@ -258,4 +253,3 @@ bool virtual_destroy(struct virtualcl_s *p)
 
     return true;
 }
-
