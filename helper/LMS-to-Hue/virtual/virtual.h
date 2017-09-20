@@ -19,9 +19,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111, USA.
  *****************************************************************************/
 
+
 #ifndef __VIRTUAL_H_
 #define __VIRTUAL_H_
-
 
 #include "platform.h"
 
@@ -38,20 +38,24 @@
 
 struct virtualcl_s;
 
-typedef enum virtual_states_s { DOWN = 0, FLUSHED, STREAMING } virtual_state_t;
+typedef enum virtual_states_s {
+        DOWN = 0,
+        FLUSHED,
+        STREAMING
+} virtual_state_t;
 
 struct  virtualcl_s *virtual_create(int chunk_len);
-bool	virtual_destroy(struct virtualcl_s *p);
-bool	virtual_connect(struct virtualcl_s *p);
-bool 	virtual_disconnect(struct virtualcl_s *p);
+bool    virtual_destroy(struct virtualcl_s *p);
+bool    virtual_connect(struct virtualcl_s *p);
+bool    virtual_disconnect(struct virtualcl_s *p);
 
-bool 	virtual_accept_frames(struct virtualcl_s *p);
-bool	virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int size, __u64 *playtime);
+bool    virtual_accept_frames(struct virtualcl_s *p);
+bool    virtual_send_chunk(struct virtualcl_s *p, __u8 *sample, int size, __u64 *playtime);
 
-bool 	virtual_start_at(struct virtualcl_s *p, __u64 start_time);
-void 	virtual_pause(struct virtualcl_s *p);
-void 	virtual_stop(struct virtualcl_s *p);
+bool    virtual_start_at(struct virtualcl_s *p, __u64 start_time);
+void    virtual_pause(struct virtualcl_s *p);
+void    virtual_stop(struct virtualcl_s *p);
 
-__u64 	virtual_time32_to_ntp(__u32 time);
+__u64   virtual_time32_to_ntp(__u32 time);
 
 #endif
