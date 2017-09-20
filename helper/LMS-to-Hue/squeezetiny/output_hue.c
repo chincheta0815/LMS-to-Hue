@@ -19,11 +19,10 @@
  *
  */
 
-// hue output
 
 #include "squeezelite.h"
-
 #include "virtual.h"
+
 #include "libhuec.h"
 #include "aubio.h"
 
@@ -47,21 +46,18 @@ void wake_output(struct thread_ctx_s *ctx) {
 
 /*---------------------------------------------------------------------------*/
 static int _hue_write_frames(struct thread_ctx_s *ctx, frames_t out_frames, bool silence, s32_t gainL, s32_t gainR,
-                                s32_t cross_gain_in, s32_t cross_gain_out, s16_t **cross_ptr) {
+                             s32_t cross_gain_in, s32_t cross_gain_out, s16_t **cross_ptr) {
 
     s16_t *obuf;
 
     if (!silence) {
-
         if (ctx->output.fade == FADE_ACTIVE && ctx->output.fade_dir == FADE_CROSS && *cross_ptr) {
             _apply_cross(ctx->outputbuf, out_frames, cross_gain_in, cross_gain_out, cross_ptr);
         }
 
         obuf = (s16_t*) ctx->outputbuf->readp;
-
     }
     else {
-
         obuf = (s16_t*) ctx->silencebuf;
     }
 
@@ -74,8 +70,7 @@ static int _hue_write_frames(struct thread_ctx_s *ctx, frames_t out_frames, bool
 
 
 /*---------------------------------------------------------------------------*/
-void output_close(struct thread_ctx_s *ctx)
-{
+void output_close(struct thread_ctx_s *ctx) {
     output_close_common(ctx);
     free(ctx->output.buf);
     del_aubio_tempo(aubio_tempo);
@@ -108,7 +103,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
                     ctx->output.detect_start_time = false;
                     ctx->output.track_start_time = gettime_ms();
                     LOG_INFO("[%p]: track actual start time:%u (gap:%d)", ctx, ctx->output.track_start_time,
-                                    (s32_t) (ctx->output.track_start_time - ctx->output.start_at));
+                             (s32_t) (ctx->output.track_start_time - ctx->output.start_at));
                 }
 
                 ctx->output.buf_frames = 0;
@@ -134,31 +129,28 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 /*---------------------------------------------------------------------------*/
 void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
-	pthread_attr_t attr;
+    pthread_attr_t attr;
 
-	LOG_INFO("[%p]: init output hue", ctx);
+    LOG_INFO("[%p]: init output hue", ctx);
 
-	memset(&ctx->output, 0, sizeof(ctx->output));
+    memset(&ctx->output, 0, sizeof(ctx->output));
 
-	ctx->output.buf = malloc(FRAMES_PER_BLOCK * BYTES_PER_FRAME);
-	if (!ctx->output.buf) {
-		LOG_ERROR("[%p]: unable to malloc buf", ctx);
-		return;
-	}
+    ctx->output.buf = malloc(FRAMES_PER_BLOCK * BYTES_PER_FRAME);
+    if (!ctx->output.buf) {
+        LOG_ERROR("[%p]: unable to malloc buf", ctx);
 
-	ctx->output_running = true;
-	ctx->output.buf_frames = 0;
-	ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
-	ctx->output.write_cb = &_hue_write_frames;
+        return;
+    }
 
-	output_init_common(vplayer, hue, output_buf_size, 44100, ctx);
+    ctx->output_running = true;
+    ctx->output.buf_frames = 0;
+    ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
+    ctx->output.write_cb = &_hue_write_frames;
 
-	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);
-	pthread_create(&ctx->output_thread, &attr, (void *(*)(void*)) &output_hue_thread, ctx);
-	pthread_attr_destroy(&attr);
+    output_init_common(vplayer, hue, output_buf_size, 44100, ctx);
+
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);
+    pthread_create(&ctx->output_thread, &attr, (void *(*)(void*)) &output_hue_thread, ctx);
+    pthread_attr_destroy(&attr);
 }
-
-
-
-
