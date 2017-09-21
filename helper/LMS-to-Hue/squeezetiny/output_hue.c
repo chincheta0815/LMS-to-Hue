@@ -19,11 +19,12 @@
  *
  */
 
-// hue output
 
 #include "squeezelite.h"
-#include "aubio.h"
+#include "virtual.h"
+
 #include "libhuec.h"
+#include "aubio.h"
 
 extern log_level	output_loglevel;
 static log_level 	*loglevel = &output_loglevel;
@@ -45,21 +46,18 @@ void wake_output(struct thread_ctx_s *ctx) {
 
 /*---------------------------------------------------------------------------*/
 static int _hue_write_frames(struct thread_ctx_s *ctx, frames_t out_frames, bool silence, s32_t gainL, s32_t gainR,
-                                s32_t cross_gain_in, s32_t cross_gain_out, s16_t **cross_ptr) {
+                             s32_t cross_gain_in, s32_t cross_gain_out, s16_t **cross_ptr) {
 
     s16_t *obuf;
 
     if (!silence) {
-
         if (ctx->output.fade == FADE_ACTIVE && ctx->output.fade_dir == FADE_CROSS && *cross_ptr) {
             _apply_cross(ctx->outputbuf, out_frames, cross_gain_in, cross_gain_out, cross_ptr);
         }
 
         obuf = (s16_t*) ctx->outputbuf->readp;
-
     }
     else {
-
         obuf = (s16_t*) ctx->silencebuf;
     }
 
@@ -72,8 +70,7 @@ static int _hue_write_frames(struct thread_ctx_s *ctx, frames_t out_frames, bool
 
 
 /*---------------------------------------------------------------------------*/
-void output_close(struct thread_ctx_s *ctx)
-{
+void output_close(struct thread_ctx_s *ctx) {
     output_close_common(ctx);
     free(ctx->output.buf);
     del_aubio_tempo(aubio_tempo);
@@ -81,32 +78,6 @@ void output_close(struct thread_ctx_s *ctx)
     del_fvec(aubio_tempo_out);
 }
 
-/*---------------------------------------------------------------------------*/
-int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
-    LOG_INFO("[%p]: analyzing chunk with %d frames for disco", device, num_frames);
-
-    hue_bridge_t *bridge;
-    bridge = device;
-
-    for (int i = 0; i < num_frames; i++) {
-        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i];
-    }
-
-    aubio_tempo_do(aubio_tempo, aubio_tempo_in, aubio_tempo_out);
-
-    if(aubio_tempo_out->data[0] != 0) {
-        hue_light_t hueLight;
-        hueLight.attribute.id = 2;
-        hue_set_light_state(bridge, &hueLight, BRI, "255");
-    }
-    else {
-        hue_light_t hueLight;
-        hueLight.attribute.id = 2;
-        hue_set_light_state(bridge, &hueLight, BRI, "0");
-    }
-
-    return 0;
-}
 
 /*---------------------------------------------------------------------------*/
 static void *output_hue_thread(struct thread_ctx_s *ctx) {
@@ -114,7 +85,8 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
         bool ran = false;
 
         // proceed only if room in queue *and* running
-        if (ctx->output.state >= OUTPUT_BUFFER) {
+        if (ctx->output.state >= OUTPUT_BUFFER && virtual_accept_frames(ctx->output.vplayer_device)) {
+            u64_t playtime;
 
             LOCK;
             // this will internally loop till we have exactly 352 frames
@@ -123,17 +95,15 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
-                usleep(FRAMES_PER_BLOCK * 1000000 / 44100);
-                
-                LOG_INFO("[%p]: sending chunk to %s", ctx->output.device, ((hue_bridge_t *)ctx->output.device)->name);
-                disco_process_chunk(ctx->output.device, ctx->output.buf, ctx->output.buf_frames);
+                LOG_INFO("[%p]: sending chunk to %s", ctx->output.vplayer_device, ((hue_bridge_t *)ctx->output.light_device)->name);
+                virtual_send_chunk(ctx->output.vplayer_device, ctx->output.buf, ctx->output.buf_frames, &playtime);
 
                 // current block is a track start, set the value
                 if (ctx->output.detect_start_time) {
                     ctx->output.detect_start_time = false;
                     ctx->output.track_start_time = gettime_ms();
                     LOG_INFO("[%p]: track actual start time:%u (gap:%d)", ctx, ctx->output.track_start_time,
-                                    (s32_t) (ctx->output.track_start_time - ctx->output.start_at));
+                             (s32_t) (ctx->output.track_start_time - ctx->output.start_at));
                 }
 
                 ctx->output.buf_frames = 0;
@@ -158,38 +128,29 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 
 /*---------------------------------------------------------------------------*/
-void output_hue_thread_init(hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
+void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
     pthread_attr_t attr;
 
-	LOG_INFO("[%p]: init output hue", ctx);
+    LOG_INFO("[%p]: init output hue", ctx);
 
     memset(&ctx->output, 0, sizeof(ctx->output));
 
     ctx->output.buf = malloc(FRAMES_PER_BLOCK * BYTES_PER_FRAME);
     if (!ctx->output.buf) {
         LOG_ERROR("[%p]: unable to malloc buf", ctx);
+
         return;
     }
-    
-    int buf_size = 1024;
-    int hop_size = buf_size / 2;
-    aubio_tempo = new_aubio_tempo("default", buf_size, hop_size, 44100);
-    aubio_tempo_in = new_fvec(buf_size);
-    aubio_tempo_out = new_fvec(1);
-    
+
     ctx->output_running = true;
     ctx->output.buf_frames = 0;
     ctx->output.start_frames = FRAMES_PER_BLOCK * 2;
     ctx->output.write_cb = &_hue_write_frames;
 
-    output_init_common(hue, output_buf_size, 44100, ctx);
+    output_init_common(vplayer, hue, output_buf_size, 44100, ctx);
 
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + OUTPUT_THREAD_STACK_SIZE);
     pthread_create(&ctx->output_thread, &attr, (void *(*)(void*)) &output_hue_thread, ctx);
     pthread_attr_destroy(&attr);
 }
-
-
-
-
