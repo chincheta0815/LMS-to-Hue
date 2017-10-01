@@ -50,7 +50,7 @@ extern int hue_get_new_lights(hue_bridge_t *hue_bridge);
 extern int hue_search_for_new_lights(hue_bridge_t *hue_bridge);
 extern int hue_get_light_attributes_and_state(hue_bridge_t *hue_bridge, hue_light_t *hue_light);
 extern int hue_light_attributes_rename(hue_bridge_t *hue_bridge, hue_light_t *hue_light);
-extern int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int command, char *command_arg);
+extern int hue_set_light_state(hue_bridge_t *bridge, hue_light_t *light, int arg_count, ... );
 extern int hue_delete_light(hue_bridge_t *hue_bridge);
 
 #endif

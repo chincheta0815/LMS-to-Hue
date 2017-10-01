@@ -25,7 +25,6 @@
 
 #include "libhuec.h"
 #include "aubio.h"
-#include "biquad.h"
 
 extern log_level	output_loglevel;
 static log_level 	*loglevel = &output_loglevel;
@@ -103,7 +102,7 @@ int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
         hue_light_t hueLight;
         hueLight.attribute.id = 2;
         if ( !lampActive ) {
-            hue_set_light_state(bridge, &hueLight, BRI, "255");
+            hue_set_light_state(bridge, &hueLight, 2, "BRI", "255", "TRANSITIONTIME", "0");
             lampActive = true;
         }
     }
@@ -111,7 +110,7 @@ int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
         hue_light_t hueLight;
         hueLight.attribute.id = 2;
         if ( lampActive ) {
-            hue_set_light_state(bridge, &hueLight, BRI, "0");
+            hue_set_light_state(bridge, &hueLight, 2, "BRI", "0", "TRANSITIONTIME", "0");
             lampActive = false;
         }
     }

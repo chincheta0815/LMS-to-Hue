@@ -26,12 +26,16 @@
 
 #define HUE_MSG_CHUNK 1024
 
+#include "log_util.h"
+
 #include "hue_interface.h"
 
 #if SUNOS
 #include <sys/ddi.h>
 #endif
 
+extern log_level    hue_loglevel;
+static log_level    *loglevel = &hue_loglevel;
 
 /*----------------------------------------------------------------------------*/
 char *hue_request_method2string(int method_value) {
@@ -114,11 +118,11 @@ extern int hue_connect(hue_bridge_t *bridge) {
 
 	if (err) {
 		hue_disconnect(bridge);
-		printf("Cannot open socket connection (%d)", err);
-		return -1;
+		LOG_DEBUG("Cannot open socket connection (%d)", err);
+		return 1;
 	}
 
-	//printf("Socket opened!\n");
+	LOG_SDEBUG("Socket opened!\n");
 
 	return 0;
 }
@@ -158,7 +162,7 @@ extern int hue_send_request(hue_bridge_t *bridge, hue_request_t *request) {
 	asprintf(&complete_message,"%s\r\n\r\n%s", message_header, request->body);
     free(message_header);
 
-	//printf("Sending to Hue:\n%s\n", complete_message);
+	LOG_SDEBUG("Sending to Hue:\n%s\n", complete_message);
 	send(bridge->sock, complete_message, strlen(complete_message), 0);
 	free(complete_message);
 
@@ -250,7 +254,7 @@ extern int hue_receive_response(hue_bridge_t *bridge, hue_response_t *response) 
 	if (!wait) {
 		// timeout occured
 		// I would rather log a warning here as timeout does not mean failure
-		printf("Timeout occured!");
+		LOG_WARN("Timeout occured!");
 		ret = 0;
 	}
 

@@ -70,6 +70,7 @@ log_level   main_loglevel = lINFO;
 log_level   slimmain_loglevel = lINFO;
 log_level   util_loglevel = lINFO;
 log_level   virtual_loglevel = lINFO;
+log_level   hue_loglevel = lERROR;
 
 tHBConfig   glHBConfig = {
                 true,   // enabled
