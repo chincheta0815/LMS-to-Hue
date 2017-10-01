@@ -82,7 +82,7 @@ extern int hue_get_all_capabilities(hue_bridge_t *bridge) {
 		available = json_object_get(lights, "available");
 		bridge->capabilities.lights = json_integer_value(available);
 
-		printf("Available lights: %d\n", bridge->capabilities.lights);
+		//printf("Available lights: %d\n", bridge->capabilities.lights);
 
 	}
 

@@ -60,6 +60,7 @@ typedef struct hue_light_state_s {
 
 typedef struct hue_light_attribute_s {
 	int id;
+	bool active;
 	char name[HB_STR_LEN+1];
 } hue_light_attribute_t;
 

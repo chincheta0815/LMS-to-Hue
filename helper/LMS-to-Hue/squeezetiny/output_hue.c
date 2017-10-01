@@ -38,10 +38,9 @@ static log_level 	*loglevel = &output_loglevel;
 aubio_tempo_t *aubio_tempo;
 fvec_t *aubio_tempo_in;
 fvec_t *aubio_tempo_out;
-
-biquad *bandpass;
-biquad *lowpass;
-smp_type old_env;
+smpl_t isBeat;
+__u8 isSilence;
+bool lampActive;
 
 /*---------------------------------------------------------------------------*/
 void wake_output(struct thread_ctx_s *ctx) {
@@ -78,12 +77,10 @@ static int _hue_write_frames(struct thread_ctx_s *ctx, frames_t out_frames, bool
 void output_close(struct thread_ctx_s *ctx) {
     output_close_common(ctx);
     free(ctx->output.buf);
-    /*
+
     del_aubio_tempo(aubio_tempo);
     del_fvec(aubio_tempo_in);
     del_fvec(aubio_tempo_out);
-     */
-     free(bandpass);
 }
 
 
@@ -93,33 +90,30 @@ int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
 
     hue_bridge_t *bridge;
     bridge = device;
-    
-    /*
+
     for (int i = 0; i < num_frames; i++) {
-        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i];
+        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i] - pow(2, sizeof(__u8)*8) / pow(2, (sizeof(__u8)*8 - 1) );
     }
 
     aubio_tempo_do(aubio_tempo, aubio_tempo_in, aubio_tempo_out);
-     */
- 
-    smp_type sample[num_frames];
-    for (int i = 0; i < num_frames; i++) {
-        sample[i] = BiQuad(((smp_type)frame_buf[i]-128)/128, lowpass);
-        if (sample[i] < 0) sample[i] = -sample[i];
-        if (sample[i] <= old_env) sample[i] = old_env * 0.99;
-        old_env = sample[i];
-    }
- 
-    LOG_INFO("Value: %f", sample[num_frames-1]);
-    if(sample[num_frames-1] > 0.2) {
+    isBeat = fvec_get_sample(aubio_tempo_out, 0);
+    isSilence = aubio_silence_detection( aubio_tempo_in, -90);
+
+    if ( isBeat && !isSilence) {
         hue_light_t hueLight;
         hueLight.attribute.id = 2;
-        hue_set_light_state(bridge, &hueLight, BRI, "255");
+        if ( !lampActive ) {
+            hue_set_light_state(bridge, &hueLight, BRI, "255");
+            lampActive = true;
+        }
     }
     else {
         hue_light_t hueLight;
         hueLight.attribute.id = 2;
-        hue_set_light_state(bridge, &hueLight, BRI, "0");
+        if ( lampActive ) {
+            hue_set_light_state(bridge, &hueLight, BRI, "0");
+            lampActive = false;
+        }
     }
 
     return 0;
@@ -143,6 +137,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
                 LOG_INFO("[%p]: sending chunk to %s", ctx->output.vplayer_device, ((hue_bridge_t *)ctx->output.light_device)->name);
+
                 // Start virtual player for simple time sample consumption (real time).
                 virtual_send_chunk(ctx->output.vplayer_device, ctx->output.buf, ctx->output.buf_frames, &playtime);
 
@@ -193,23 +188,15 @@ void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_bu
         return;
     }
 
-    /*
-    int buf_size = 1024;
-    int hop_size = buf_size / 2;
+    int buf_size = 2048;
+    int hop_size = FRAMES_PER_BLOCK;
+    isBeat = 0;
+    isSilence = 0;
+    lampActive = true;
     aubio_tempo = new_aubio_tempo("default", buf_size, hop_size, 44100);
-    aubio_tempo_in = new_fvec(buf_size);
+    aubio_tempo_set_threshold (aubio_tempo, 0);
+    aubio_tempo_in = new_fvec(hop_size);
     aubio_tempo_out = new_fvec(1);
-     */
-
-    smp_type freq_min = 20;
-    smp_type freq_max = 200;
-    smp_type cf = sqrt(freq_max * freq_min);
-    smp_type bw = 1 / log10(2) * log10(freq_max / freq_min);
-    bandpass = BiQuad_new(BPF, 0, cf, 44100, bw);
-    
-    lowpass = BiQuad_new(LPF, 0, 100, 44100 , 1.916853);
-    
-    old_env = 0;
 
     ctx->output_running = true;
     ctx->output.buf_frames = 0;

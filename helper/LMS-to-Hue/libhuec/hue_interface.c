@@ -118,7 +118,7 @@ extern int hue_connect(hue_bridge_t *bridge) {
 		return -1;
 	}
 
-	printf("Socket opened!\n");
+	//printf("Socket opened!\n");
 
 	return 0;
 }
@@ -158,7 +158,7 @@ extern int hue_send_request(hue_bridge_t *bridge, hue_request_t *request) {
 	asprintf(&complete_message,"%s\r\n\r\n%s", message_header, request->body);
     free(message_header);
 
-	printf("Sending to Hue:\n%s\n", complete_message);
+	//printf("Sending to Hue:\n%s\n", complete_message);
 	send(bridge->sock, complete_message, strlen(complete_message), 0);
 	free(complete_message);
 
