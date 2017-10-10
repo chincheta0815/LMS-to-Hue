@@ -1,5 +1,5 @@
 /*
- *  libhuec - philips hue library for C
+ *  chue - philips hue library for C
  *
  *  (c) Rouven Weiler 2017
  *
@@ -19,14 +19,23 @@
  */
 
 
-#ifndef __HUE_CONFIGURATION_H
-#define __HUE_CONFIGURATION_H
+#ifndef __CHUE_INTERFACE_H
+#define __CHUE_INTERFACE_H
 
 
-#include "hue_common.h"
-#include "hue_interface.h"
+#include "chue_common.h"
+#include "chue_configuration.h"
 
 
-extern int hue_get_bridge_config(hue_bridge_t *bridge);
+enum { _GET, _DELETE, _POST, _PUT };
+
+
+char *chue_request_method2string(int method_value);
+
+extern int chue_connect(chue_bridge_t *bridge);
+extern int chue_disconnect(chue_bridge_t *bridge);
+extern int chue_receive_response(chue_bridge_t *bridge, chue_response_t *response);
+extern int chue_send_request(chue_bridge_t *bridge, chue_request_t *request);
+
 
 #endif

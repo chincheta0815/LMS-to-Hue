@@ -22,6 +22,7 @@
 
 #include "conf_util.h"
 #include "log_util.h"
+#include "chue_log.h"
 
 /*----------------------------------------------------------------------------*/
 /* globals */
@@ -34,7 +35,7 @@ extern log_level	output_loglevel;
 extern log_level	main_loglevel;
 extern log_level	slimmain_loglevel;
 extern log_level	util_loglevel;
-
+extern log_level    virtual_loglevel;
 
 /*----------------------------------------------------------------------------*/
 /* locals */
@@ -86,6 +87,8 @@ void SaveConfig(char *name, void *ref, bool full)
 	XMLUpdateNode(doc, root, false, "main_log",level2debug(main_loglevel));
 	XMLUpdateNode(doc, root, false, "slimmain_log", level2debug(slimmain_loglevel));
 	XMLUpdateNode(doc, root, false, "util_log",level2debug(util_loglevel));
+	XMLUpdateNode(doc, root, false, "virtual_log",level2debug(virtual_loglevel));
+	XMLUpdateNode(doc, root, false, "hue_log",chue_log_level2debug(chue_loglevel));
 	XMLUpdateNode(doc, root, false, "scan_interval", "%d", (u32_t) glScanInterval);
 	XMLUpdateNode(doc, root, false, "scan_timeout", "%d", (u32_t) glScanTimeout);
 	XMLUpdateNode(doc, root, false, "log_limit", "%d", (s32_t) glLogLimit);
@@ -117,9 +120,9 @@ void SaveConfig(char *name, void *ref, bool full)
 			ixmlNode_appendChild((IXML_Node*) root, dev_node);
 
 			//XMLUpdateNode(doc, dev_node, false, "friendly_name", p->FriendlyName);
-            XMLUpdateNode(doc, dev_node, true, "ip_address", inet_ntoa(p->Hue.ipAddress));
-            XMLUpdateNode(doc, dev_node, true, "user_valid", "%d", (int) p->UserValid);
-            XMLUpdateNode(doc, dev_node, true, "name", p->Hue.name);
+            XMLUpdateNode(doc, dev_node, true, "ip_address", inet_ntoa(p->Hue.ip_address));
+            XMLUpdateNode(doc, dev_node, true, "user_valid", "%d", (int)p->UserValid);
+            //XMLUpdateNode(doc, dev_node, true, "name", p->Hue.name);
 			XMLUpdateNode(doc, dev_node, true, "name", p->sq_config.name);
 			if (memcmp(p->sq_config.mac, "\0\0\0\0\0\0", 6)) {
 				XMLUpdateNode(doc, dev_node, true, "mac", "%02x:%02x:%02x:%02x:%02x:%02x", p->sq_config.mac[0],
@@ -133,10 +136,10 @@ void SaveConfig(char *name, void *ref, bool full)
 			dev_node = XMLAddNode(doc, root, "device", NULL);
 			XMLAddNode(doc, dev_node, "udn", p->UDN);
 			XMLAddNode(doc, dev_node, "name", p->Hue.name);
-			XMLAddNode(doc, dev_node, "user_name", p->Hue.userName);
-            XMLAddNode(doc, dev_node, "user_valid", "%d", (int) p->UserValid);
+			XMLAddNode(doc, dev_node, "user_name", p->Hue.user_name);
+            XMLAddNode(doc, dev_node, "user_valid", "%d", (int)p->UserValid);
 			//XMLAddNode(doc, dev_node, "friendly_name", p->FriendlyName);
-            XMLAddNode(doc, dev_node, "ip_address", inet_ntoa(p->Hue.ipAddress));
+            XMLAddNode(doc, dev_node, "ip_address", inet_ntoa(p->Hue.ip_address));
 			if (*p->sq_config.dynamic.server) XMLAddNode(doc, dev_node, "server", p->sq_config.dynamic.server);
 			//if (!memcmp(p->sq_config.mac, "\0\0\0\0\0\0", 6)) {
 				XMLAddNode(doc, dev_node, "mac", "%02x:%02x:%02x:%02x:%02x:%02x", p->sq_config.mac[0],
@@ -218,6 +221,8 @@ static void LoadGlobalItem(char *name, char *val)
 	if (!strcmp(name, "main_log")) main_loglevel = debug2level(val);
 	if (!strcmp(name, "slimmain_log")) slimmain_loglevel = debug2level(val);
 	if (!strcmp(name, "util_log")) util_loglevel = debug2level(val);
+	if (!strcmp(name, "virtual_log")) virtual_loglevel = debug2level(val);
+	if (!strcmp(name, "hue_log")) chue_loglevel = chue_log_debug2level(val);
 	if (!strcmp(name, "scan_interval")) glScanInterval = atol(val);
 	if (!strcmp(name, "scan_timeout")) glScanTimeout = atol(val);
 	if (!strcmp(name, "log_limit")) glLogLimit = atol(val);

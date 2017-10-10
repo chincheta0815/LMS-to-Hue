@@ -33,7 +33,7 @@
 #include "util.h"
 #include "virtual.h"
 
-#include "libhuec.h"
+#include "chue.h"
 
 /*----------------------------------------------------------------------------*/
 /* typedefs */
@@ -67,7 +67,7 @@ struct sHB {
     struct virtualcl_s *vPlayer;
     sq_dev_param_t sq_config;
     bool on;
-    hue_bridge_t    Hue;
+    chue_bridge_t    Hue;
     bool UserValid;
     char Manufacturer[RESOURCE_LENGTH];
     char UDN[RESOURCE_LENGTH];

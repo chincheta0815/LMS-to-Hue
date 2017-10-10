@@ -24,9 +24,12 @@
 
 #include "jansson.h"
 
-#include "hue_configuration.h"
+#include "chue_configuration.h"
+#include "chue_log.h"
 
-uint8_t *hue_stringMac2uint8_t(const char *stringMac) {
+static chue_loglevel_t *clp = &chue_loglevel;
+
+uint8_t *chue_stringMac2uint8_t(const char *stringMac) {
     int i;
     static uint8_t uint8tmac[6];
     
@@ -41,62 +44,65 @@ uint8_t *hue_stringMac2uint8_t(const char *stringMac) {
 /**
  * @desc Gets the configuration of the hue bridge
  *
- * @param pointer to a variable of type hue_bridge_t
+ * @param pointer to a variable of type chue_bridge_t
  * @return 0 for success or 1 for error
  */
-extern int hue_get_bridge_config(hue_bridge_t *bridge) {
+extern bool chue_get_bridge_config(chue_bridge_t *bridge) {
 
-	json_t *root, *apiVersion, *macAddr, *name;
+	json_t *root, *api_version, *mac_addr, *name;
 	json_error_t error;
-	hue_request_t request;
-	hue_response_t response;
+	chue_request_t request;
+	chue_response_t response;
 
-	if (hue_connect(bridge)) {
-		return 1;
+	if (chue_connect(bridge)) {
+		return false;
 	}
 
 	request.method = _GET;
 
-	snprintf(request.uri, HB_STR_LEN,
+	snprintf(request.uri, CHUE_STR_LEN,
 		 "/api/%s/config",
-		 bridge->userName
+		 bridge->user_name
 	);
     
 	// send empty body for getting the configuration
 	request.body = "";
 
-	hue_send_request(bridge, &request);
-	hue_receive_response(bridge, &response);
+	chue_send_request(bridge, &request);
+	chue_receive_response(bridge, &response);
 
-	hue_disconnect(bridge);
+	chue_disconnect(bridge);
 
 	root = json_loads(response.body, 0, &error);
 	if (response.body) free(response.body);
 
 	if (!root) {
-		printf("Error root.\n");
-		return 1;
+		CHUE_ERROR("Error root.\n");
+		return false;
 	}
 
 	if (!json_is_object(root)) {
-		printf("Error object.\n");
+		CHUE_ERROR("Error object.\n");
 		json_decref(root);
-		return 1;
+		return false;
 	}
 
-	apiVersion = json_object_get(root, "apiversion");
+	api_version = json_object_get(root, "apiversion");
 	// will be zero-terminated as the whole context if NULL'd at init
-	strncpy(bridge->apiVersion, json_string_value(apiVersion), HB_STR_LEN);
+	strncpy(bridge->api_version, json_string_value(api_version), CHUE_STR_LEN);
 
 	// maybe make a function for that conversion.
-	macAddr = json_object_get(root, "mac");
-	memcpy(bridge->mac, hue_stringMac2uint8_t(json_string_value(macAddr)), sizeof(bridge->mac));
+	mac_addr = json_object_get(root, "mac");
+	memcpy(bridge->mac, chue_stringMac2uint8_t(json_string_value(mac_addr)), sizeof(bridge->mac));
+	snprintf(bridge->cache_state_file, CHUE_STR_LEN,
+             "huebridge_%02x%02x%02x%02x%02x%02x.state",
+             bridge->mac[0], bridge->mac[1], bridge->mac[2], bridge->mac[3], bridge->mac[4], bridge->mac[5]);
 
 	name = json_object_get(root, "name");
 	// will be zero-terminated as the whole context if NULL'd at init
-	strncpy(bridge->name, json_string_value(name), HB_STR_LEN);
+	strncpy(bridge->name, json_string_value(name), CHUE_STR_LEN);
 
 	json_decref(root);
 
-	return 0;
+	return true;
 }

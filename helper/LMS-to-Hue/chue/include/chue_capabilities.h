@@ -1,5 +1,5 @@
 /*
- *  libhuec - philips hue library for C
+ *  chue - philips hue library for C
  *
  *  (c) Rouven Weiler 2017
  *
@@ -19,15 +19,15 @@
  */
 
 
-#ifndef __HUE_CAPABILITES_H
-#define __HUE_CAPABILITES_H
+#ifndef __CHUE_CAPABILITES_H
+#define __CHUE_CAPABILITES_H
 
 
-#include "hue_common.h"
-#include "hue_interface.h"
+#include "chue_common.h"
+#include "chue_interface.h"
 
 
-extern int hue_get_all_capabilities(hue_bridge_t *bridge);
+extern int chue_get_all_capabilities(chue_bridge_t *bridge);
 
 
 #endif

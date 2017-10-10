@@ -76,7 +76,7 @@ char *level2debug(log_level level)
 	case lWARN: return "warn";
 	case lINFO: return "info";
 	case lDEBUG: return "debug";
-	case lSDEBUG: return "debug";
+	case lSDEBUG: return "sdebug";
 	default: return "warn";
 	}
 }

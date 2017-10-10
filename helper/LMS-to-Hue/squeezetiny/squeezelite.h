@@ -463,7 +463,7 @@ void wake_output(struct thread_ctx_s *ctx);
 
 // output_hue.c
 void output_init_common(void *device, void *light_device, unsigned output_buf_size, u32_t sample_rate, struct thread_ctx_s *ctx);
-void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx);
+void output_hue_thread_init(void *vplayer, chue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx);
 void output_close_common(struct thread_ctx_s *ctx);
 
 // output_pack.c

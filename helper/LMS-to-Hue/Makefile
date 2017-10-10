@@ -13,7 +13,7 @@ TOOLS		= ./tools
 SRC		= ./squeeze2hue
 SQUEEZETINY	= ./squeezetiny
 VIRTUAL		= ./virtual
-LIBHUEC		= ./libhuec
+CHUE		= ./chue
 
 VALGRIND	= $(BASE)/valgrind
 UPNP 		= $(BASE)/libupnp/1.6.19
@@ -23,7 +23,7 @@ BIQUAD		= $(BASE)/biquad
 
 DEFINES 	+= -DHAVE_STDINT_H -DRESAMPLE -DNDEBUG -D_FILE_OFFSET_BITS=64 
 
-vpath %.c $(TOOLS):$(SRC):$(LIBHUEC):$(SQUEEZETINY):$(VIRTUAL):$(BIQUAD)
+vpath %.c $(TOOLS):$(SRC):$(CHUE):$(SQUEEZETINY):$(VIRTUAL):$(BIQUAD)
 
 LIBRARY 	= $(OBJ)/libupnp.a $(OBJ)/libthreadutil.a $(OBJ)/libixml.a $(OBJ)/libsoxr.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a 
 LIBRARY_STATIC 	= $(LIBRARY) $(OBJ)/libfaad.a $(OBJ)/libsoxr.a $(OBJ)/libFLAC.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a 
@@ -44,14 +44,14 @@ INCLUDE = -I. \
 	  -I$(AUBIO)/include \
 	  -I$(VIRTUAL) \
 	  -I$(BIQUAD)/include \
-	  -I$(LIBHUEC)/include
+	  -I$(CHUE)/include
 
 DEPS	= $(SQUEEZETINY)/squeezedefs.h
 		  
 SOURCES = slimproto.c buffer.c stream.c utils.c pcm.c process.c resample.c \
 	output.c decode.c output_pack.c output_hue.c  main.c util_common.c \
       	squeeze2hue.c util.c conf_util.c log_util.c virtual.c biquad.c \
-	hue_capabilities.c hue_configuration.c hue_interface.c hue_lights.c
+	chue_log.c chue_capabilities.c chue_common.c chue_configuration.c chue_interface.c chue_lights.c
 		
 SOURCES_LIBS = mpg.c flac.c mad.c faad.c
 		

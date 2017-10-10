@@ -23,7 +23,7 @@
 #include "squeezelite.h"
 #include "virtual.h"
 
-#include "libhuec.h"
+#include "chue.h"
 #include "aubio.h"
 
 extern log_level	output_loglevel;
@@ -39,7 +39,6 @@ fvec_t *aubio_tempo_in;
 fvec_t *aubio_tempo_out;
 smpl_t isBeat;
 __u8 isSilence;
-bool lampActive;
 
 /*---------------------------------------------------------------------------*/
 void wake_output(struct thread_ctx_s *ctx) {
@@ -87,7 +86,7 @@ void output_close(struct thread_ctx_s *ctx) {
 int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
     LOG_INFO("[%p]: analyzing chunk with %d frames for disco", device, num_frames);
 
-    hue_bridge_t *bridge;
+    chue_bridge_t *bridge;
     bridge = device;
 
     for (int i = 0; i < num_frames; i++) {
@@ -98,21 +97,15 @@ int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
     isBeat = fvec_get_sample(aubio_tempo_out, 0);
     isSilence = aubio_silence_detection( aubio_tempo_in, -90);
 
-    if ( isBeat && !isSilence) {
-        hue_light_t hueLight;
-        hueLight.attribute.id = 2;
-        if ( !lampActive ) {
-            hue_set_light_state(bridge, &hueLight, 2, "BRI", "255", "TRANSITIONTIME", "0");
-            lampActive = true;
-        }
+    chue_light_t hueLight;
+    hueLight = bridge->lights[0];
+    if ( isBeat && !isSilence && !hueLight.attribute.active ) {
+        chue_set_light_state(bridge, hueLight, 2, "BRI", "255", "TRANSITIONTIME", "0");
+        hueLight.attribute.active = true;
     }
     else {
-        hue_light_t hueLight;
-        hueLight.attribute.id = 2;
-        if ( lampActive ) {
-            hue_set_light_state(bridge, &hueLight, 2, "BRI", "0", "TRANSITIONTIME", "0");
-            lampActive = false;
-        }
+        chue_set_light_state(bridge, hueLight, 2, "BRI", "0", "TRANSITIONTIME", "0");
+        hueLight.attribute.active = false;
     }
 
     return 0;
@@ -135,7 +128,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
             // nothing to do, sleep
             if (ctx->output.buf_frames) {
-                LOG_INFO("[%p]: sending chunk to %s", ctx->output.vplayer_device, ((hue_bridge_t *)ctx->output.light_device)->name);
+                LOG_INFO("[%p]: sending chunk to %s", ctx->output.vplayer_device, ((chue_bridge_t *)ctx->output.light_device)->name);
 
                 // Start virtual player for simple time sample consumption (real time).
                 virtual_send_chunk(ctx->output.vplayer_device, ctx->output.buf, ctx->output.buf_frames, &playtime);
@@ -173,7 +166,7 @@ static void *output_hue_thread(struct thread_ctx_s *ctx) {
 
 
 /*---------------------------------------------------------------------------*/
-void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
+void output_hue_thread_init(void *vplayer, chue_bridge_t *hue, unsigned output_buf_size, struct thread_ctx_s *ctx) {
     pthread_attr_t attr;
 
     LOG_INFO("[%p]: init output hue", ctx);
@@ -191,7 +184,7 @@ void output_hue_thread_init(void *vplayer, hue_bridge_t *hue, unsigned output_bu
     int hop_size = FRAMES_PER_BLOCK;
     isBeat = 0;
     isSilence = 0;
-    lampActive = true;
+
     aubio_tempo = new_aubio_tempo("default", buf_size, hop_size, 44100);
     aubio_tempo_set_threshold (aubio_tempo, 0);
     aubio_tempo_in = new_fvec(hop_size);

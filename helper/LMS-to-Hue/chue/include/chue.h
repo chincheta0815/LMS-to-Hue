@@ -1,5 +1,5 @@
 /*
- *  libhuec - philips hue library for C
+ *  chue - philips hue library for C
  *
  *  (c) Rouven Weiler 2017
  *
@@ -19,14 +19,15 @@
  */
 
 
-#ifndef __LIBHUEC_H
-#define __LIBHUEC_H
+#ifndef __CHUE_H
+#define __CHUE_H
 
 
-#include "hue_interface.h"
-#include "hue_capabilities.h"
-#include "hue_common.h"
-#include "hue_configuration.h"
-#include "hue_lights.h"
+#include "chue_interface.h"
+#include "chue_capabilities.h"
+#include "chue_common.h"
+#include "chue_configuration.h"
+#include "chue_lights.h"
+#include "chue_log.h"
 
 #endif

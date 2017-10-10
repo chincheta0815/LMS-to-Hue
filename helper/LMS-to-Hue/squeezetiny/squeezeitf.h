@@ -86,14 +86,14 @@ typedef struct {
     u8_t 	endianness;
 } sq_format_t;
 
-typedef struct hue_bridge_s hue_bridge_t;
+typedef struct chue_bridge_s chue_bridge_t;
 
 typedef bool (*sq_callback_t)(sq_dev_handle_t handle, void *caller_id, sq_action_t action, void *param);
 
 void                sq_init(void);
 void                sq_end(void);
 
-bool                sq_run_device(void *vplayer, sq_dev_handle_t handle, hue_bridge_t *hue, sq_dev_param_t *param);
+bool                sq_run_device(void *vplayer, sq_dev_handle_t handle, chue_bridge_t *hue, sq_dev_param_t *param);
 void                sq_delete_device(sq_dev_handle_t);
 sq_dev_handle_t     sq_reserve_device(void *caller_id, sq_callback_t callback);
 void                sq_release_device(sq_dev_handle_t);

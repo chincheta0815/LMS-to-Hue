@@ -5,6 +5,8 @@
                 <th>[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_IP' | string %]&nbsp;&nbsp;&nbsp;</th>
                 <th align="center">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_CONNECTED' | string %]</th>
                 <th>&nbsp;</th>
+                <th>&nbsp;</th>
+                <th>&nbsp;</th>
             </tr>
             [% FOREACH item IN xml_device %]
             <tr>
@@ -20,6 +22,15 @@
                 <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
                     <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% item.udn %]">
                     <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" colspan="2">
+                        [% cacheDir %][% IF arch == Windows %]\[% ELSE %]/[% END %][% item.cachedstatefile %]&nbsp;&nbsp;&nbsp;
+                </td>
+                <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
+                    <a href="[% webroot %]huebridge.state" target="cachedstate">
+                    <input type="hidden" name="showStateFileButtonHelper[% loop.index %]" value="[% item.cachedstatefile %]">
+                    <input type="submit" name="showStateFile[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_TABLE_CACHEDSTATEFILE_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                    </a>
                 </td>
             </tr>
             [% END %]

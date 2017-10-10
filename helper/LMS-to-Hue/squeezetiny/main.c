@@ -623,7 +623,7 @@ sq_dev_handle_t sq_reserve_device(void *MR, sq_callback_t callback) {
 
 
 /*---------------------------------------------------------------------------*/
-bool sq_run_device(void *vplayer, sq_dev_handle_t handle, hue_bridge_t *hue, sq_dev_param_t *param) {
+bool sq_run_device(void *vplayer, sq_dev_handle_t handle, chue_bridge_t *hue, sq_dev_param_t *param) {
     struct thread_ctx_s *ctx = &thread_ctx[handle - 1];
 
     memcpy(&ctx->config, param, sizeof(sq_dev_param_t));

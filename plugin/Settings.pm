@@ -57,7 +57,7 @@ sub handler {
     $params->{'configFilePath'} = Slim::Utils::OSDetect::dirsFor('prefs');
 
     # Read in XMLConfig data from the binary config file.
-    $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
+    $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile( KeyAttr => 'device' );
 
     # Handle the XMLConfig prefs.
     # Only work with those needed and listed in @XMLConfigPrefs.
@@ -158,6 +158,16 @@ sub handler {
         }
     }
 
+    # Get a connect trigger from the GUI and assign it with the right device.
+    # For showing a GUI message box to the user set a span in the html template.
+    for( my $i = 0; defined($params->{"showStateFileButtonHelper$i"}); $i++ ) {
+        if( $params->{"showStateFile$i"} ){
+
+            $params->{'stateFileToShow'} = $params->{"showStateFileButtonHelper$i"};
+            delete $params->{'saveSettings'};
+        }
+    }
+
     # In case we have to save settings and there is a XMLConfig change, restart.
     if ( $params->{'saveSettings'} ) {
 
@@ -177,8 +187,9 @@ sub handler {
 
 sub handler_tableHueBridges {
     my ($client, $params) = @_;
+    my $macString;
 
-    $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile(KeyAttr => 'device');
+    $XMLConfig = Plugins::HueBridge::Squeeze2Hue->readXMLConfigFile( KeyAttr => 'device' );
     
     if ( $XMLConfig->{'device'} ) {
 
@@ -190,6 +201,13 @@ sub handler_tableHueBridges {
                 $XMLConfigRestartRequested = 1;
             }
 
+            $macString = $XMLConfig->{'device'}->[0]->{'mac'};
+            $macString =~ tr/:-//d;
+            $macString =~ lc $macString;
+           
+            $params->{'arch'} = Slim::Utils::OSDetect::details->{'os'};
+            $params->{'cacheDir'} = Slim::Utils::OSDetect::dirsFor('cache');
+            $XMLConfig->{'device'}->[0]->{'cachedstatefile'} = 'huebridge_' . $macString . '.state';
             $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
         }
 

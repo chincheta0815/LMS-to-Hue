@@ -1,5 +1,5 @@
 /*
- *  huelic - philips hue library for C
+ *  chue - philips hue library for C
  *
  *  (c) Rouven Weiler 2017
  *
@@ -24,54 +24,57 @@
 
 #include "jansson.h"
 
-#include "hue_capabilities.h"
+#include "chue_capabilities.h"
+#include "chue_log.h"
+
+static chue_loglevel_t *clp = &chue_loglevel;
 
 
 /**
  * @desc Gets the configuration of the hue bridge
  *
- * @param pointer to a variable of type hue_bridge_t
+ * @param pointer to a variable of type chue_bridge_t
  * @return 0 for success or 1 for error
  */
-extern int hue_get_all_capabilities(hue_bridge_t *bridge) {
+extern int chue_get_all_capabilities(chue_bridge_t *bridge) {
 
-    json_t *root, *available, *lights, *data, *hue_error;
+    json_t *root, *available, *lights, *data, *chue_error;
     json_error_t error;
-	hue_request_t request;
-	hue_response_t response;
+	chue_request_t request;
+	chue_response_t response;
 
-	if (hue_connect(bridge)) {
+	if (chue_connect(bridge)) {
 		return 1;
 	}
 
 	request.method = _GET;
 
-	snprintf(request.uri, HB_STR_LEN,
+	snprintf(request.uri, CHUE_STR_LEN,
         "/api/%s/capabilities",
-        bridge->userName
+        bridge->user_name
 	);
 
 	// send empty body for getting the configuration
 	request.body = "";
 
-	hue_send_request(bridge, &request);
-	hue_receive_response(bridge, &response);
+	chue_send_request(bridge, &request);
+	chue_receive_response(bridge, &response);
 
-	hue_disconnect(bridge);
+	chue_disconnect(bridge);
 
 	root = json_loads(response.body, 0, &error);
 	if (response.body) free(response.body);
 
 	if (!root) {
-		printf("Error root.\n");
+		CHUE_ERROR("Error root.\n");
 		return 1;
 	}
 
 	if (json_is_array(root)) {
 
 		data = json_array_get(root, 0);
-		hue_error = json_object_get(data, "error");
-		json_object_get(hue_error, "description");
+		chue_error = json_object_get(data, "error");
+		json_object_get(chue_error, "description");
 
 		json_decref(root);
 		return 1;
@@ -80,7 +83,7 @@ extern int hue_get_all_capabilities(hue_bridge_t *bridge) {
 	if (json_is_object(root)) {
 		lights = json_object_get(root, "lights");
 		available = json_object_get(lights, "available");
-		bridge->capabilities.lights = json_integer_value(available);
+		bridge->capabilities.avail_lights = json_integer_value(available);
 
 		//printf("Available lights: %d\n", bridge->capabilities.lights);
 

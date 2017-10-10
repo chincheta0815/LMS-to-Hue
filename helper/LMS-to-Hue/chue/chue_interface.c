@@ -20,25 +20,27 @@
 
 #define _GNU_SOURCE
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
-#define HUE_MSG_CHUNK 1024
+#define CHUE_MSG_CHUNK 1024
 
-#include "log_util.h"
+#include "chue_interface.h"
+#include "chue_log.h"
 
-#include "hue_interface.h"
+static chue_loglevel_t *clp = &chue_loglevel;
 
 #if SUNOS
 #include <sys/ddi.h>
 #endif
 
-extern log_level    hue_loglevel;
-static log_level    *loglevel = &hue_loglevel;
-
 /*----------------------------------------------------------------------------*/
-char *hue_request_method2string(int method_value) {
+char *chue_request_method2string(int method_value) {
     switch(method_value) {
 			case _GET:
                 return "GET";
@@ -96,13 +98,13 @@ static int connect_timeout(sockfd sock, const struct sockaddr *addr, socklen_t a
 	return -1;
 }
 
-/**
+/*
  * @desc Creates a socket used for communicating with a hue bridge
  *
- * @param pointer to a variable of type hue_bridge_t
+ * @param pointer to a variable of type chue_bridge_t
  * @return 0 for success or 1 for error
  */
-extern int hue_connect(hue_bridge_t *bridge) {
+extern int chue_connect(chue_bridge_t *bridge) {
 	int err;
 	struct sockaddr_in addr;
 
@@ -111,29 +113,29 @@ extern int hue_connect(hue_bridge_t *bridge) {
 	set_nosigpipe(bridge->sock);
 
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = bridge->ipAddress.s_addr;
+	addr.sin_addr.s_addr = bridge->ip_address.s_addr;
 	addr.sin_port = htons(80);
 
 	err = connect_timeout(bridge->sock, (struct sockaddr *) &addr, sizeof(addr), 2);
 
 	if (err) {
-		hue_disconnect(bridge);
-		LOG_DEBUG("Cannot open socket connection (%d)", err);
+		chue_disconnect(bridge);
+		CHUE_DEBUG("Cannot open socket connection (%d)", err);
 		return 1;
 	}
 
-	LOG_SDEBUG("Socket opened!\n");
+	CHUE_SDEBUG("Socket opened!\n");
 
 	return 0;
 }
 
-/**
+/*
  * @desc Closes a socket used for communicating with a hue bridge
  *
- * @param pointer to a variable of type hue_bridge_t
+ * @param pointer to a variable of type chue_bridge_t
  * @return 0 for success or 1 for error
  */
-extern int hue_disconnect(hue_bridge_t *bridge) {
+extern int chue_disconnect(chue_bridge_t *bridge) {
 	int rv = 0;
 
 	if (bridge->sock != -1) {
@@ -145,24 +147,24 @@ extern int hue_disconnect(hue_bridge_t *bridge) {
 }
 
 
-/**
+/*
  * @desc Creates and sends a request to a hue bridge
  *
- * @param pointer to a variable of type hue_bridge_t
- * @param pointer to a variable of type hue_request_t
+ * @param pointer to a variable of type chue_bridge_t
+ * @param pointer to a variable of type chue_request_t
  * @return 0 for success or 1 for error
  */
-extern int hue_send_request(hue_bridge_t *bridge, hue_request_t *request) {
+extern int chue_send_request(chue_bridge_t *bridge, chue_request_t *request) {
 	char *message_header;
     char *complete_message;
 
 	asprintf(&message_header, "%s %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s%s\r\nContent-Type: application/json\r\nContent-Length: %d",
-			hue_request_method2string(request->method), request->uri, inet_ntoa(bridge->ipAddress), "libhuec/", LIBHUEC_VERSION, strlen(request->body));
+			chue_request_method2string(request->method), request->uri, inet_ntoa(bridge->ip_address), "chue/", CHUE_VERSION, strlen(request->body));
 
 	asprintf(&complete_message,"%s\r\n\r\n%s", message_header, request->body);
     free(message_header);
 
-	LOG_SDEBUG("Sending to Hue:\n%s\n", complete_message);
+	CHUE_SDEBUG("Sending to Hue:\n%s\n", complete_message);
 	send(bridge->sock, complete_message, strlen(complete_message), 0);
 	free(complete_message);
 
@@ -170,17 +172,17 @@ extern int hue_send_request(hue_bridge_t *bridge, hue_request_t *request) {
 }
 
 
-/**
+/*
  * @desc Recevies a response from a hue bridge
  *
- * @param pointer to a variable of type hue_bridge_t
- * @param pointer to a variable of type hue_response_t
+ * @param pointer to a variable of type chue_bridge_t
+ * @param pointer to a variable of type chue_response_t
  * @return 0 for success or 1 for error
  */
-extern int hue_receive_response(hue_bridge_t *bridge, hue_response_t *response) {
+extern int chue_receive_response(chue_bridge_t *bridge, chue_response_t *response) {
     int len = 0;
     int wait = 100;
-    int size = HUE_MSG_CHUNK;
+    int size = CHUE_MSG_CHUNK;
     int remainingBodyLength = 0;
     int ret = 1;
     char *response_message = malloc(size);
@@ -220,7 +222,7 @@ extern int hue_receive_response(hue_bridge_t *bridge, hue_response_t *response) 
 			len += bytesReceived;
 
 			if (len == size - 1) {
-				size += HUE_MSG_CHUNK;
+				size += CHUE_MSG_CHUNK;
 				response_message = realloc(response_message, size);
 				if(!response_message) {
 					break;
@@ -254,7 +256,7 @@ extern int hue_receive_response(hue_bridge_t *bridge, hue_response_t *response) 
 	if (!wait) {
 		// timeout occured
 		// I would rather log a warning here as timeout does not mean failure
-		LOG_WARN("Timeout occured!");
+		CHUE_WARN("Timeout occured!");
 		ret = 0;
 	}
 

@@ -43,7 +43,7 @@
 #include "log_util.h"
 #include "util.h"
 
-#include "libhuec.h"
+#include "chue.h"
 #include "virtual.h"
 
 
@@ -70,7 +70,7 @@ log_level   main_loglevel = lINFO;
 log_level   slimmain_loglevel = lINFO;
 log_level   util_loglevel = lINFO;
 log_level   virtual_loglevel = lINFO;
-log_level   hue_loglevel = lERROR;
+chue_loglevel_t   chue_loglevel = lERROR;
 
 tHBConfig   glHBConfig = {
                 true,   // enabled
@@ -117,6 +117,12 @@ sq_dev_param_t glDeviceParam = {
 static pthread_t    glMainThread;
 void                *glConfigID = NULL;
 char                glConfigName[SQ_STR_LENGTH] = "./config.xml";
+#if LINUX || FREEBSD || SUNOS
+char                glHueCacheDir[SQ_STR_LENGTH] = "/tmp";
+#endif
+#if WIN
+char                glHueCacheDir[SQ_STR_LENGTH] = "C:\Temp";
+#endif
 static bool         glDiscovery = false;
 u32_t               glScanInterval = SCAN_INTERVAL;
 u32_t               glScanTimeout = SCAN_TIMEOUT;
@@ -159,10 +165,11 @@ static char usage[] =
             "  -b <address>]\tNetwork address to bind to\n"
             "  -x <config file>\tread config from file (default is ./config.xml)\n"
             "  -i <config file>\tdiscover players, save <config file> and exit\n"
+            "  -c <cache dir>\tcache directory for storing temporary hue data\n"
             "  -I \t\t\tauto save config at every network scan\n"
             "  -f <logfile>\t\tWrite debug to logfile\n"
             "  -p <pid file>\t\twrite PID in file\n"
-            "  -d <log>=<level>\tSet logging level, logs: all|slimproto|stream|decode|output|web|main|util|raop, level: error|warn|info|debug|sdebug\n"
+            "  -d <log>=<level>\tSet logging level, logs: all|slimproto|stream|decode|output|web|main|util|virtual|hue, level: error|warn|info|debug|sdebug\n"
 #if LINUX || FREEBSD || SUNOS
             "  -z \t\t\tDaemonize\n"
 #endif
@@ -268,6 +275,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
             device->TrackRunning = false;
             device->TrackDuration = 0;
             device->sqState = SQ_STOP;
+            chue_restore_all_light_states_from_file(&device->Hue);
             virtual_stop(device->vPlayer);
 
             strcpy(Req->Type, "STOP");
@@ -280,6 +288,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
 
             device->TrackRunning = false;
             device->sqState = SQ_PAUSE;
+            chue_restore_all_light_states_from_file(&device->Hue);
             virtual_pause(device->vPlayer);
 
             Req = malloc(sizeof(tHueReq));
@@ -294,6 +303,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
             device->TrackRunning = true;
             device->sqState = SQ_PLAY;
 
+            chue_dump_all_light_states_to_file(&device->Hue);
             if (*((unsigned*) param)) virtual_start_at(device->vPlayer, TIME_MS2NTP(*((unsigned*) param)));
 
             strcpy(Req->Type, "UNPAUSE");
@@ -321,6 +331,7 @@ bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void 
             tHueReq *Req = malloc(sizeof(tHueReq));
 
             device->sqState = SQ_PLAY;
+            chue_dump_all_light_states_to_file(&device->Hue);
             virtual_connect(device->vPlayer);
 
             strcpy(Req->Type, "CONNECT");
@@ -765,22 +776,29 @@ static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, 
     strcpy(Device->FriendlyName, friendlyName);
     strcpy(Device->Manufacturer, manufacturer);
 
-    Device->Hue.ipAddress.s_addr = ExtractIP(location);
+    Device->Hue.ip_address.s_addr = ExtractIP(location);
     Device->vPlayer = virtual_create(FRAMES_PER_BLOCK);
 
-    strcpy(Device->Hue.userName, Device->Config.UserName);
+    strcpy(Device->Hue.user_name, Device->Config.UserName);
+    strcpy(Device->Hue.cache_dir, glHueCacheDir);
 
-    hue_get_bridge_config(&Device->Hue);
+    if(!chue_get_bridge_config(&Device->Hue)){
+        LOG_ERROR("[%p]: cannot get bridge configuration", Device);
+        Device->UserValid = false;
+        ret = false;
+    };
+    
     if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {
         memcpy(Device->sq_config.mac, Device->Hue.mac, mac_size);
     }
 
-    if (!hue_get_all_capabilities(&Device->Hue)) {
+    if (chue_get_all_lights(&Device->Hue)) {
+        chue_dump_all_light_states_to_file(&Device->Hue);
         LOG_SDEBUG("[%p]: connected to bridge (%s)", Device, Device->Hue.name);
         Device->UserValid = true;
     } 
     else {
-        LOG_WARN("[%p]: cannot get bridge capabilities (check username)", Device);
+        LOG_WARN("[%p]: cannot get light states", Device);
         Device->UserValid = false;
         ret = false;
     }
@@ -985,7 +1003,7 @@ bool ParseArgs(int argc, char **argv) {
 
     while (optind < argc && strlen(argv[optind]) >= 2 && argv[optind][0] == '-') {
         char *opt = argv[optind] + 1;
-        if (strstr("stxdfpib", opt) && optind < argc - 1) {
+        if (strstr("stxdfpicb", opt) && optind < argc - 1) {
             optarg = argv[optind + 1];
             optind += 2;
         } else if (strstr("tzZIk"
@@ -1028,6 +1046,9 @@ bool ParseArgs(int argc, char **argv) {
             case 'i':
                 glSaveConfigFile = optarg;
                 break;
+            case 'c':
+                strcpy(glHueCacheDir, optarg);
+                break;
             case 'I':
                 glAutoSaveConfigFile = true;
                 break;
@@ -1061,6 +1082,8 @@ bool ParseArgs(int argc, char **argv) {
                         if (!strcmp(l, "all") || !strcmp(l, "output"))    	output_loglevel = new;
                         if (!strcmp(l, "all") || !strcmp(l, "main"))     	main_loglevel = new;
                         if (!strcmp(l, "all") || !strcmp(l, "util"))    	util_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "virtual"))     virtual_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "hue"))         chue_loglevel = new;
                         if (!strcmp(l, "all") || !strcmp(l, "slimmain"))    slimmain_loglevel = new;				}
                     else {
                         printf("%s", usage);
@@ -1218,6 +1241,12 @@ int main(int argc, char *argv[])
             i = scanf("%s", level);
             util_loglevel = debug2level(level);
         }
+        
+        if (!strcmp(resp, "huedbg"))    {
+            char level[20];
+            i = scanf("%s", level);
+            chue_loglevel = chue_log_debug2level(level);
+        }
 
         if (!strcmp(resp, "save"))	{
             char name[128];
@@ -1228,9 +1257,9 @@ int main(int argc, char *argv[])
 
     if (glConfigID) ixmlDocument_free(glConfigID);
     glMainRunning = false;
-    LOG_INFO("stopping squeelite devices ...", NULL);
+    LOG_INFO("stopping squeezelite devices ...", NULL);
     sq_end();
-    LOG_INFO("stopping Raop devices ...", NULL);
+    LOG_INFO("stopping Virtual devices ...", NULL);
     Stop();
     LOG_INFO("all done", NULL);
 
