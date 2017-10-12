@@ -1,16 +1,16 @@
 <?xml version='1.0' standalone='yes'?>
 <extensions>
-    <defaultState>enabled</defaultState>
-    <version>0.0.1.0.1</version>
-    <targetApplication>
-        <id>SlimServer</id>
-        <maxVersion>*.*</maxVersion>
-        <minVersion>7.7</minVersion>
-    </targetApplication>
-    <email></email>
-    <name>PLUGIN_HUEBRIDGE_NAME</name>
-    <description>PLUGIN_HUEBRIDGE_DESC</description>
-    <creator>chincheta0815</creator>
-    <optionsURL>plugins/HueBridge/settings/basic.html</optionsURL>
-    <module>Plugins::HueBridge::Plugin</module>
+  <description>PLUGIN_HUEBRIDGE_DESC</description>
+  <defaultState>enabled</defaultState>
+  <version>0.0.1.0.1</version>
+  <targetApplication>
+    <id>SlimServer</id>
+    <minVersion>7.7</minVersion>
+    <maxVersion>*.*</maxVersion>
+  </targetApplication>
+  <module>Plugins::HueBridge::Plugin</module>
+  <creator>chincheta0815</creator>
+  <name>PLUGIN_HUEBRIDGE_NAME</name>
+  <email></email>
+  <optionsURL>plugins/HueBridge/settings/basic.html</optionsURL>
 </extensions>

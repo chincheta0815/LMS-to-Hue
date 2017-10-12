@@ -251,7 +251,7 @@
                     <input name="pref_loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF prefs.pref_loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
 		        </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <a href="[% webroot %]huebridge.log" target="log">
+                    <a href="[% webroot %]plugins/HueBridge/huebridge-log.html" target="log">
                         <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                     </a>
                 </td>
@@ -276,7 +276,7 @@
                         <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_configFileName" id="configFileName" value="[% prefs.pref_configFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                        <a href="[% webroot %]huebridge.xml" target="config">
+                        <a href="[% webroot %]plugins/HueBridge/settings/huebridge-config.html" target="config">
                         <input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                         </a>
                 </td>

@@ -1,17 +1,17 @@
 <?xml version='1.0' standalone='yes'?>
 <extensions>
-  <plugins>
-    <plugin version="0.0.1.0.1" name="HueBridge" maxTarget="7.*" minTarget="7.7">
-      <title lang="EN">Hue bridge</title>
-      <creator></creator>
-      <email></email>
-      <link></link>
-      <desc lang="EN">Use Hue devices in LMS</desc>
-      <sha>18bf206357fcd51ce0ffafc6a76b4ddf606cc339</sha>
-      <url>http://downloads.sourceforge.net/project/lms-to-hue/dev/HueBridge-0.0.1.0.1.zip</url>
-    </plugin>
-  </plugins>
   <details>
     <title lang="EN">Hue Plugin - development</title>
   </details>
+  <plugins>
+    <plugin minTarget="7.7" maxTarget="7.*" name="HueBridge" version="0.0.1.0.1">
+      <url>http://downloads.sourceforge.net/project/lms-to-hue/dev/HueBridge-0.0.1.0.1.zip</url>
+      <desc lang="EN">Use Hue devices in LMS</desc>
+      <link></link>
+      <creator></creator>
+      <sha>bca61bd234e9f892017c57f395cd5179f8d0786d</sha>
+      <title lang="EN">Hue bridge</title>
+      <email></email>
+    </plugin>
+  </plugins>
 </extensions>

@@ -16,6 +16,8 @@ use Plugins::HueBridge::Squeeze2Hue;
 my $log   = logger('plugin.huebridge');
 my $prefs = preferences('plugin.huebridge');
 
+my $macStringForStatefile = "00000000000";
+
 my $XMLConfig;
 my $XMLConfigRestartRequested;
 
@@ -162,8 +164,8 @@ sub handler {
     # For showing a GUI message box to the user set a span in the html template.
     for( my $i = 0; defined($params->{"showStateFileButtonHelper$i"}); $i++ ) {
         if( $params->{"showStateFile$i"} ){
-
-            $params->{'stateFileToShow'} = $params->{"showStateFileButtonHelper$i"};
+            
+            $macStringForStatefile = $params->{"showStateFileButtonHelper$i"};
             delete $params->{'saveSettings'};
         }
     }
@@ -183,6 +185,10 @@ sub handler {
     }
 
     return $class->SUPER::handler($client, $params, $callback, \@args);
+}
+
+sub macStringForStatefile {
+    return $macStringForStatefile;
 }
 
 sub handler_tableHueBridges {
@@ -207,7 +213,7 @@ sub handler_tableHueBridges {
            
             $params->{'arch'} = Slim::Utils::OSDetect::details->{'os'};
             $params->{'cacheDir'} = Slim::Utils::OSDetect::dirsFor('cache');
-            $XMLConfig->{'device'}->[0]->{'cachedstatefile'} = 'huebridge_' . $macString . '.state';
+            $XMLConfig->{'device'}->[0]->{'macstring'} = $macString;
             $params->{'xml_' . $prefName} = $XMLConfig->{$prefName};
         }
 

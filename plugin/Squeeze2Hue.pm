@@ -11,6 +11,8 @@ use XML::Simple qw(:strict);
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 
+use Plugins::HueBridge::Settings;
+
 my $prefs = preferences('plugin.huebridge');
 my $log   = logger('plugin.huebridge');
 
@@ -428,42 +430,30 @@ sub handler_logFile {
 }
 
 sub handler_configFile {
-	my ($client, $params, undef, undef, $response) = @_;
+	my ($client, $params) = @_;
 
-	$response->header("Content-Type" => "text/xml; charset=utf-8");
+    $log->debug("Got config file with name '" . configFile() . "'");
 
-	my $body = '';
-	
-	$log->debug("Preparing configfile ('" . configFile() . "') for display in GUI");
-	
-	if ( -e configFile() ) {
-	
-		open( my $fileHandle, '<', configFile() );
-		read( $fileHandle, $body, -s $fileHandle );
-		$fileHandle->close();
-	}	
+    open(my $fileHandle, '<', configFile());
+    read($fileHandle, $params->{'configfileContent'}, -s $fileHandle);
+    close($fileHandle);
 
-	return \$body;
+	return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-config.html', $params);
 }
 
 sub handler_stateFile {
-    my ($client, $params, undef, undef, $response) = @_;
+    my ($client, $params) = @_;
 
-    my $stateFile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $params->{'stateFileToShow'});
-    
-    $log->debug("Preparing statefile ('" . $stateFile . "') for display");
-    $response->header("Content-Type" => "application/json; charset=utf-8");
+    my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile() . ".state";
+    my $statefile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $statefileName);
 
-    my $body = '';
-    
-    if ( -e $stateFile ) {
-    
-        open( my $fileHandle, '<', $stateFile );
-        read( $fileHandle, $body, -s $fileHandle );
-        $fileHandle->close();
-    }
+    $log->debug("Got light state file with name '" . $statefile ."'");
 
-    return \$body;
+    open(my $fileHandle, '<', $statefile);
+    read($fileHandle, $params->{'statefileContent'}, -s $fileHandle);
+    close($fileHandle);
+
+    return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-state.html', $params);
 }
 
 sub handler_userGuide {

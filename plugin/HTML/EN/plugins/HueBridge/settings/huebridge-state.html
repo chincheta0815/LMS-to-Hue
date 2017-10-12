@@ -1,0 +1,8 @@
+[% PROCESS settings/header.html %]
+[% WRAPPER setting title="PLUGIN_HUEBRIDGE_NAME" desc="" %]
+    <div class="groupDesc">[% 'PLUGIN_HUEBRIDGE_DESC' | string %]</div>
+[% END %]
+[% WRAPPER setting title="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_NAME" desc="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_DESC" %]
+    <pre><code>[% statefileContent %]</code></pre>
+[% END %]
+[% PROCESS settings/footer.html %]
