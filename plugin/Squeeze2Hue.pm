@@ -444,16 +444,31 @@ sub handler_configFile {
 sub handler_stateFile {
     my ($client, $params) = @_;
 
-    my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile() . ".state";
+    my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile()  . ".state";
     my $statefile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $statefileName);
 
-    $log->debug("Got light state file with name '" . $statefile ."'");
+    $log->debug("Got request for light state file with name '" . $statefile ."'");
 
     open(my $fileHandle, '<', $statefile);
     read($fileHandle, $params->{'statefileContent'}, -s $fileHandle);
     close($fileHandle);
 
     return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-state.html', $params);
+}
+
+sub handler_stateFileContent {
+    my ($client, $params) = @_;
+
+    my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile()  . ".state";
+    my $statefile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $statefileName);
+
+    $log->debug("Got content for light state file with name '" . $statefile ."'");
+
+    open(my $fileHandle, '<', $statefile);
+    read($fileHandle, $params->{'statefileContent'}, -s $fileHandle);
+    close($fileHandle);
+
+    return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-statefile-content.html', $params);
 }
 
 sub handler_userGuide {

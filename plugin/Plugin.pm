@@ -46,9 +46,10 @@ sub initPlugin {
         Slim::Web::Pages->addPageFunction("plugins/HueBridge/settings/tableHueBridges.html" => \&Plugins::HueBridge::Settings::handler_tableHueBridges);
         
         Slim::Web::Pages->addPageFunction("plugins/HueBridge/huebridge-log.html" => \&Plugins::HueBridge::Squeeze2Hue::handler_logFile);
-        Slim::Web::Pages->addPageFunction(qr/plugins\/HueBridge\/settings\/huebridge-([0-9a-f]{12})-state\.html/, \&Plugins::HueBridge::Squeeze2Hue::handler_stateFile);
-        Slim::Web::Pages->addPageFunction("plugins/HueBridge/settings/huebridge-config.html", \&Plugins::HueBridge::Squeeze2Hue::handler_configFile);
-        Slim::Web::Pages->addPageFunction("plugins/HueBridge/huebridgeguide.html", \&Plugins::HueBridge::Squeeze2Hue::handler_userGuide);
+        Slim::Web::Pages->addPageFunction(qr/plugins\/HueBridge\/settings\/huebridge-([0-9a-f]{12})-state\.html/ => \&Plugins::HueBridge::Squeeze2Hue::handler_stateFile);
+        Slim::Web::Pages->addPageFunction("plugins/HueBridge/settings/huebridge-statefile-content.html" => \&Plugins::HueBridge::Squeeze2Hue::handler_stateFileContent);
+        Slim::Web::Pages->addPageFunction("plugins/HueBridge/settings/huebridge-config.html" => \&Plugins::HueBridge::Squeeze2Hue::handler_configFile);
+        Slim::Web::Pages->addPageFunction("plugins/HueBridge/huebridgeguide.html" => \&Plugins::HueBridge::Squeeze2Hue::handler_userGuide);
     }
 
     require Plugins::HueBridge::HueCom;
