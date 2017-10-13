@@ -2,10 +2,10 @@
     <script TYPE="text/javascript">
         Ext.onReady(function(items) {
             Ext.Ajax.request({
-                url: 'plugins/HueBridge/settings/huebridge-statefile-content.html',
+                url: 'plugins/HueBridge/helper/huebridge-content.html',
 
                 success: function(response) {
-                    Ext.get('statefileContent').update(response.responseText);
+                    Ext.get('fileContent').update(response.responseText);
                 }
             });
         });
@@ -15,7 +15,5 @@
 [% WRAPPER setting title="PLUGIN_HUEBRIDGE_NAME" desc="" %]
     <div class="groupDesc">[% 'PLUGIN_HUEBRIDGE_DESC' | string %]</div>
 [% END %]
-[% WRAPPER setting title="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_NAME" desc="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_DESC" %]
-    <div id="statefileContent"></div>
-[% END %]
+    <div id="fileContent"></div>
 [% PROCESS settings/footer.html %]

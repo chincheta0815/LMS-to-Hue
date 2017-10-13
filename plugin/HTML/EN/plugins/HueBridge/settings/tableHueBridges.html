@@ -6,7 +6,6 @@
                 <th align="center">[% 'PLUGIN_HUEBRIDGE_TABLE_HUEBRIDGE_CONNECTED' | string %]</th>
                 <th>&nbsp;</th>
                 <th>&nbsp;</th>
-                <th>&nbsp;</th>
             </tr>
             [% FOREACH item IN xml_device %]
             <tr>
@@ -17,18 +16,15 @@
                     [% item.ip_address %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center">
-                    <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick disableOnHueBridgeBackgroundAction" disabled readonly>
+                    <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick" disabled readonly>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
                     <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% item.udn %]">
                     <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
-                <td class="[% odd ? "odd" : "even" %]" colspan="2">
-                        [% cacheDir %][% IF arch == Windows %]\[% ELSE %]/[% END %]huebridge_[% item.macstring %].state&nbsp;&nbsp;&nbsp;
-                </td>
                 <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
                     <input type="hidden" name="showStateFileButtonHelper[% loop.index %]" value="[% item.macstring %]">
-                    <input type="submit" name="showStateFile[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_TABLE_CACHEDSTATEFILE_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] onClick="window.open('[% webroot %]plugins/HueBridge/settings/huebridge-[% item.macstring %]-state.html')" />
+                    <input type="submit" name="showStateFile[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_TABLE_CACHEDSTATEFILE_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] onClick="window.open('[% webroot %]plugins/HueBridge/settings/huebridge-[% item.macstring %]-state.html','settings')" />
                 </td>
             </tr>
             [% END %]

@@ -3,7 +3,6 @@ package Plugins::HueBridge::Squeeze2Hue;
 use strict;
 
 use Proc::Background;
-use File::ReadBackwards;
 use File::Spec::Functions;
 use Data::Dumper;
 use XML::Simple qw(:strict);
@@ -20,6 +19,8 @@ my $squeeze2hue;
 my $squeeze2hueRestartStatus;
 my $squeeze2hueRestartCounter = 0;
 my $squeeze2hueRestartCounterTimeWait = 15;
+my $squeeze2huePageHandleChooser = "none";
+my $squeeze2hueNumLogLinesToShow = 20;
 
 sub initCLICommands {
     # Command init
@@ -401,74 +402,87 @@ sub writeXMLConfigFile {
     XMLout($configData, RootName => "squeeze2hue", KeyAttr => [], NoSort => 1, NoAttr => 1, OutputFile => $configFile);
 }
 
+sub readFile {
+    my $filename = shift;
+    my $content;
+    
+    open(my $fileHandle, '<', $filename);
+    read($fileHandle, $content, -s $fileHandle);
+    close($fileHandle);
+    
+    return $content;
+}
+
 sub handler_logFile {
 	my ($client, $params, undef, undef, $response) = @_;
 
-    $log->debug("Preparing logfile ('" . logFile() . "') for display");
-
 	$response->header("Refresh" => "10; url=" . $params->{path} . ($params->{lines} ? '?lines=' . $params->{lines} : ''));
-	$response->header("Content-Type" => "text/plain; charset=utf-8");
 
-	my $body = '';
-	my $file = File::ReadBackwards->new(logFile());
-	
-	if ($file){
+    $squeeze2huePageHandleChooser = "logFile";
 
-		my @lines;
-		my $count = $params->{lines} || 1000;
-
-		while ( --$count && (my $line = $file->readline()) ) {
-			unshift (@lines, $line);
-		}
-
-		$body .= join('', @lines);
-
-		close($file);
-	};
-
-	return \$body;
+	return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-log.html', $params);
 }
 
 sub handler_configFile {
-	my ($client, $params) = @_;
+	my ($client, $params, undef, undef, $response) = @_;
 
-    $log->debug("Got config file with name '" . configFile() . "'");
-
-    open(my $fileHandle, '<', configFile());
-    read($fileHandle, $params->{'configfileContent'}, -s $fileHandle);
-    close($fileHandle);
+    $response->header("Refresh" => "30;");
+    
+    $squeeze2huePageHandleChooser = "configFile";
 
 	return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-config.html', $params);
 }
 
 sub handler_stateFile {
-    my ($client, $params) = @_;
-
+    my ($client, $params, undef, undef, $response) = @_;
+    
+    $response->header("Refresh" => "30;");
+    
     my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile()  . ".state";
     my $statefile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $statefileName);
-
-    $log->debug("Got request for light state file with name '" . $statefile ."'");
 
     open(my $fileHandle, '<', $statefile);
     read($fileHandle, $params->{'statefileContent'}, -s $fileHandle);
     close($fileHandle);
+
+    $squeeze2huePageHandleChooser = "stateFile";
 
     return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-state.html', $params);
 }
 
-sub handler_stateFileContent {
+sub handler_content {
     my ($client, $params) = @_;
 
-    my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile()  . ".state";
-    my $statefile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $statefileName);
+    if ( $squeeze2huePageHandleChooser eq "stateFile" ) {
+        my $statefileName = "huebridge_" . Plugins::HueBridge::Settings->macStringForStatefile()  . ".state";
+        my $statefile = catdir(Slim::Utils::OSDetect::dirsFor('cache'), $statefileName);
+        
+        $log->debug("Got request for light state file with name '" . $statefile ."'");
 
-    $log->debug("Got content for light state file with name '" . $statefile ."'");
+        $params->{'statefileContent'} = readFile($statefile);
+    }
+    elsif ( $squeeze2huePageHandleChooser eq "configFile" ) {
+    
+        $log->debug("Got config file with name '" . configFile() . "'");
+    
+        $params->{'configfileContent'} = readFile(configFile());
+    }
+    elsif ( $squeeze2huePageHandleChooser eq "logFile" ) {
+        my $logContent = readFile(logFile());
+    
+        if ($logContent){
+            $logContent = reverse($logContent);
+            $params->{'logfileContent'} = join("\n", @$logContent[0 .. $squeeze2hueNumLogLinesToShow]);
+        }
+        else {
+        
+            $params->{'logfileContent'} = "Logfile empty";
+        }
+    }
+    
+    $squeeze2huePageHandleChooser = "none";
 
-    open(my $fileHandle, '<', $statefile);
-    read($fileHandle, $params->{'statefileContent'}, -s $fileHandle);
-    close($fileHandle);
-
-    return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/settings/huebridge-statefile-content.html', $params);
+    return Slim::Web::HTTP::filltemplatefile('plugins/HueBridge/helper/huebridge-content.html', $params);
 }
 
 sub handler_userGuide {

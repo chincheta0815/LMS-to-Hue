@@ -195,3 +195,9 @@ PLUGIN_HUEBRIDGE_CONFIGFILE_NAME
 
 PLUGIN_HUEBRIDGE_CONFIGFILE_DESC
 	EN	Shows the content of the huebridge.xml
+
+PLUGIN_HUEBRIDGE_LOGFILE_NAME
+	EN	Log File of the HueBridge Binary
+
+PLUGIN_HUEBRIDGE_CONFIGFILE_DESC
+	EN	Shows the content of the huebridge.log

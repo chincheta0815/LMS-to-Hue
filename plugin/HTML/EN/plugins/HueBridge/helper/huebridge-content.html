@@ -1,0 +1,13 @@
+[% IF configfileContent %]
+	[% WRAPPER setting title="PLUGIN_HUEBRIDGE_CONFIGFILE_NAME" desc="PLUGIN_HUEBRIDGE_CONFIGFILE_DESC" %]
+        <pre><code>[% configfileContent %]</code></pre>
+    [% END %]
+[% ELSIF statefileContent %]
+    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_NAME" desc="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_DESC" %]
+        <pre><code>[% statefileContent %]</code></pre>
+    [% END %]
+[% ELSIF logfileContent %]
+    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_LOGFILE_NAME" desc="PLUGIN_HUEBRIDGE_LOGFILE_DESC" %]
+        [% logfileContent %]
+    [% END %]
+[% END %]
