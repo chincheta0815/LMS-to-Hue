@@ -1,0 +1,22 @@
+[% extJsScripts = BLOCK %]
+        <link rel="stylesheet" type="text/css" href="[% webroot %]plugins/HueBridge/html/script/prism.css" />
+[% END %]
+[% PROCESS settings/header.html %]
+<script src="[% webroot %]plugins/HueBridge/html/script/prism.js"></script>
+[% WRAPPER setting title="PLUGIN_HUEBRIDGE_NAME" desc="" %]
+    <div class="groupDesc">[% 'PLUGIN_HUEBRIDGE_DESC' | string %]</div>
+[% END %]
+[% IF configfileContent %]
+    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_CONFIGFILE_NAME" desc="PLUGIN_HUEBRIDGE_CONFIGFILE_DESC" %]
+        <pre><code class="line-numbers language-markup"><xmp>[% configfileContent %]</xmp></code></pre>
+    [% END %]
+[% ELSIF statefileContent %]
+    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_NAME" desc="PLUGIN_HUEBRIDGE_CACHEDSTATEFILE_DESC" %]
+        <pre><code class="line-numbers language-json">[% statefileContent %]</code></pre>
+    [% END %]
+[% ELSIF logfileContent %]
+    [% WRAPPER setting title="PLUGIN_HUEBRIDGE_LOGFILE_NAME" desc="PLUGIN_HUEBRIDGE_LOGFILE_DESC" %]
+        <pre><code class="line-numbers language-none">[% logfileContent %]</code></pre>
+    [% END %]
+[% END %]
+[% PROCESS settings/footer.html %]

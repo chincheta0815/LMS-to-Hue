@@ -17,6 +17,8 @@ my $connectProgressTimeWait = 29.33;
 my $connectProgressCounter;
 my $connectDisconnectStatus;
 
+my $device;
+
 sub initCLICommands {
     # Command init
     #    |requires client
@@ -115,7 +117,7 @@ sub _sendConnectRequest {
     my $deviceUDN = $params->{'deviceUDN'};
     my $XMLConfig = $params->{'XMLConfig'};
     
-    my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
+    my $device = $XMLConfig->{'device'}->{$deviceUDN};
         
     my $bridgeIpAddress = $device->{'ip_address'};
     
@@ -147,7 +149,6 @@ sub _sendConnectRequest {
 }
 
 sub _sendConnectRequestOK{
-
     my $asyncHTTP = shift;
     my $deviceUDN = $asyncHTTP->params('deviceUDN');
     my $XMLConfig = $asyncHTTP->params('XMLConfig');
@@ -157,19 +158,19 @@ sub _sendConnectRequestOK{
     $log->debug('Connect request sucessfully sent to hue bridge (' . $deviceUDN . ').');
     my $bridgeResponse = decode_json($asyncHTTP->content);
  
+    my $device = $XMLConfig->{'device'}->{$deviceUDN};
+
     if(exists($bridgeResponse->[0]->{error})){
         $log->info('Pairing with hue bridge (' . $deviceUDN . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
-        
-        my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
-        $device->{'user_name'} = 'error';
+
+        $device->{'user_name'} = 'none';
         $device->{'user_valid'} = '0';
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');
         $log->debug('Got username \'' . $bridgeResponse->[0]->{success}->{username} . '\' from hue bridge (' . $deviceUDN . ').');
-        
-        my $device = Plugins::HueBridge::Settings::getDeviceByUDN( $deviceUDN, $XMLConfig->{'device'} );
+
         $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
         $device->{'user_valid'} = '1';
         
@@ -187,6 +188,12 @@ sub _sendConnectRequestERROR {
     $log->error('Request to hue bridge (' . $deviceUDN . ') could not be processed.');
     
     unconnect();
+}
+
+sub processedDevice {
+    my $self = shift;
+
+    return $device;
 }
 
 1;

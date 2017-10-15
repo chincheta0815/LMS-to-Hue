@@ -151,8 +151,8 @@
 	[% END %]
 
     <style>
-        .x-progress-bar { background: #008d89#; }
-        .x-progress-text { color: #008d89; }
+        .x-progress-bar { background: #008d8a#; }
+        .x-progress-text { color: #008d8a; }
     </style>
 
     [% WRAPPER setting title="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_NAME" desc="PLUGIN_HUEBRIDGE_GENERAL_SETTINGS_DESC" %]
@@ -251,7 +251,7 @@
                     <input name="pref_loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF prefs.pref_loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
 		        </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <a href="[% webroot %]plugins/HueBridge/huebridge-log.html" target="log">
+                    <a href="[% webroot %]plugins/HueBridge/huebridge-file.html?content=logfile" class="stdedit disableOnHueBridgeBackgroundAction" >
                         <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                     </a>
                 </td>
@@ -276,8 +276,8 @@
                         <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_configFileName" id="configFileName" value="[% prefs.pref_configFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                        <a href="[% webroot %]plugins/HueBridge/settings/huebridge-config.html" target="config">
-                        <input type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                        <a href="[% webroot %]plugins/HueBridge/settings/huebridge-file.html?content=configfile" class="stdedit disableOnHueBridgeBackgroundAction" >
+                        <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                         </a>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">

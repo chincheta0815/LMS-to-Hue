@@ -7,26 +7,28 @@
                 <th>&nbsp;</th>
                 <th>&nbsp;</th>
             </tr>
-            [% FOREACH item IN xml_device %]
-            <tr>
-                <td class="[% odd ? "odd" : "even" %]">
-                    [% item.name %]&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]">
-                    [% item.ip_address %]&nbsp;&nbsp;&nbsp;
-                </td>
-                <td class="[% odd ? "odd" : "even" %]" align="center">
-                    <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick" disabled readonly>
-                </td>
-                <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
-                    <input type="hidden" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% item.udn %]">
-                    <input type="submit" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" class="stdclick disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
-                </td>
-                <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
-                    <input type="hidden" name="showStateFileButtonHelper[% loop.index %]" value="[% item.macstring %]">
-                    <input type="submit" name="showStateFile[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_TABLE_CACHEDSTATEFILE_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] onClick="window.open('[% webroot %]plugins/HueBridge/settings/huebridge-[% item.macstring %]-state.html','settings')" />
-                </td>
-            </tr>
+            [% FOREACH udn IN xml_device.pairs %]
+                [% item = udn.value %]
+                <tr>
+                    <td class="[% odd ? "odd" : "even" %]">
+                        [% item.name %]&nbsp;&nbsp;&nbsp;
+                    </td>
+                    <td class="[% odd ? "odd" : "even" %]">
+                        [% item.ip_address %]&nbsp;&nbsp;&nbsp;
+                    </td>
+                    <td class="[% odd ? "odd" : "even" %]" align="center">
+                        <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick" disabled readonly>
+                            </td>
+                    <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
+                        <input type="hidden" class="stdedit disableOnHueBridgeBackgroundAction" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% udn.key %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                        <input type="submit" class="stdclick disableOnHueBridgeBackgroundAction" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                    </td>
+                    <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
+                        <a href="[% webroot %]plugins/HueBridge/huebridge-file.html?content=statefile&bridge=[% item.macstring %]" class="stdedit disableOnHueBridgeBackgroundAction" >
+                            <input type="button" class="stdedit disableOnHueBridgeBackgroundAction" name="showStateFile" value="[% 'PLUGIN_HUEBRIDGE_TABLE_CACHEDSTATEFILE_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]" />
+                        </a>
+                    </td>
+                </tr>
             [% END %]
             <tr style="height: 5px;">
                 <td class="[% odd ? "odd" : "even" %]" colspan="4"></td>
