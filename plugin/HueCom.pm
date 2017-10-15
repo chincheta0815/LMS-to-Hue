@@ -10,6 +10,8 @@ use Data::Dumper;
 
 use JSON::XS;
 
+use Plugins::HueBridge::Util;
+
 my $prefs = preferences('plugin.huebridge');
 my $log = logger('plugin.huebridge');
 
@@ -17,7 +19,7 @@ my $connectProgressTimeWait = 29.33;
 my $connectProgressCounter;
 my $connectDisconnectStatus;
 
-my $device;
+my $deviceData;
 
 sub initCLICommands {
     # Command init
@@ -117,9 +119,9 @@ sub _sendConnectRequest {
     my $deviceUDN = $params->{'deviceUDN'};
     my $XMLConfig = $params->{'XMLConfig'};
     
-    my $device = $XMLConfig->{'device'}->{$deviceUDN};
+    my ($deviceIndex, $deviceData) = Plugins::HueBridge::Util::getDeviceByKey( 'udn', $deviceUDN, $XMLConfig->{'device'} );
         
-    my $bridgeIpAddress = $device->{'ip_address'};
+    my $bridgeIpAddress = $deviceData->{'ip_address'};
     
     my $uri = join('', 'http://', $bridgeIpAddress, '/api');
     my $contentType = "application/json";
@@ -158,21 +160,21 @@ sub _sendConnectRequestOK{
     $log->debug('Connect request sucessfully sent to hue bridge (' . $deviceUDN . ').');
     my $bridgeResponse = decode_json($asyncHTTP->content);
  
-    my $device = $XMLConfig->{'device'}->{$deviceUDN};
+    my ($deviceIndex, $deviceData) = Plugins::HueBridge::Settings::getDeviceByKey( 'udn', $deviceUDN, $XMLConfig->{'device'} );
 
     if(exists($bridgeResponse->[0]->{error})){
         $log->info('Pairing with hue bridge (' . $deviceUDN . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
 
-        $device->{'user_name'} = 'none';
-        $device->{'user_valid'} = '0';
+        $deviceData->{'user_name'} = 'none';
+        $deviceData->{'user_valid'} = '0';
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');
         $log->debug('Got username \'' . $bridgeResponse->[0]->{success}->{username} . '\' from hue bridge (' . $deviceUDN . ').');
 
-        $device->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
-        $device->{'user_valid'} = '1';
+        $deviceData->{'user_name'} = $bridgeResponse->[0]->{success}->{username};
+        $deviceData->{'user_valid'} = '1';
         
         unconnect();
     }
@@ -190,10 +192,10 @@ sub _sendConnectRequestERROR {
     unconnect();
 }
 
-sub processedDevice {
+sub dataOfConnectedDevice {
     my $self = shift;
 
-    return $device;
+    return $deviceData;
 }
 
 1;

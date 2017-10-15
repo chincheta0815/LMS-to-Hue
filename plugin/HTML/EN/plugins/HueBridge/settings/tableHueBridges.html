@@ -7,8 +7,7 @@
                 <th>&nbsp;</th>
                 <th>&nbsp;</th>
             </tr>
-            [% FOREACH udn IN xml_device.pairs %]
-                [% item = udn.value %]
+            [% FOREACH item IN xml_device %]
                 <tr>
                     <td class="[% odd ? "odd" : "even" %]">
                         [% item.name %]&nbsp;&nbsp;&nbsp;
@@ -20,7 +19,7 @@
                         <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick" disabled readonly>
                             </td>
                     <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
-                        <input type="hidden" class="stdedit disableOnHueBridgeBackgroundAction" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% udn.key %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                        <input type="hidden" class="stdedit disableOnHueBridgeBackgroundAction" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% item.udn %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                         <input type="submit" class="stdclick disableOnHueBridgeBackgroundAction" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                     </td>
                     <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">

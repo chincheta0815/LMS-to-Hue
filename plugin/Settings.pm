@@ -67,19 +67,28 @@ sub handler {
 
             # Push the 'xml_' prefixed params to the XMLConfig for saving.
             $XMLConfig->{$xmlTag} = $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag};
-
+            
+            # Process the 'devices':
+            # First delete the macstring item.
+            # Then when there was a connect request add overwrite the data with the new.
             if ( $xmlTag eq 'device' ) {
-                if ( $params->{'deviceToConnect'} ) {
-                    $XMLConfig->{$xmlTag}->{$params->{'deviceToConnect'}} = Plugins::HueBridge::HueCom->processedDevice();
-                    delete $params->{'deviceToConnect'};
-                }
-                foreach my $udn (keys (%{$XMLConfig->{$xmlTag}})) {
-                    delete $XMLConfig->{$xmlTag}->{$udn}->{'macstring'};
+            
+                for (my $i = 0; $i < @{$params->{'xml_' .$xmlTag}}; $i++ ) {
+                    # First the cleanup.
+                    delete $params->{'xml_' .$xmlTag}->[$i]->{'macstring'};
+            
+                    # Now the update.
+                    if ( $params->{'deviceToConnect'} ) {
+                        my ($deviceIndex, $deviceData) = Plugins::HueBridge::Settings::getDeviceByKey( 'udn', $params->{'deviceToConnect'}, $XMLConfig->{$xmlTag} );
+                    
+                        $XMLConfig->{$xmlTag}->[$deviceIndex]->{$params->{'deviceToConnect'}} = Plugins::HueBridge::HueCom->dataOfConnectedDevice();
+                        delete $params->{'deviceToConnect'};
+                    }
                 }
             }
             
             # Request a binary restart for taking the changes into effect.
-            $params->{'XMLConfigRestartRequested'} = 1;
+            # $params->{'XMLConfigRestartRequested'} = 1;
         }
 
         $params->{'xml_' . $xmlTag} = $XMLConfig->{$xmlTag};
@@ -197,12 +206,12 @@ sub handler_tableHueBridges {
     
     if ( $params->{'xml_device'} ) {
 
-        foreach my $udn (keys %{$params->{'xml_device'}}) {
-            $macString = $params->{'xml_device'}->{$udn}->{'mac'};
+        for( my $i = 0; $i < @{$params->{'xml_device'}}; $i++ ) {
+            $macString = $params->{'xml_device'}->[$i]->{'mac'};
             $macString =~ tr/:-//d;
             $macString =~ lc $macString;
 
-            $params->{'xml_device'}->{$udn}->{'macstring'} = $macString;
+            $params->{'xml_device'}->[$i]->{'macstring'} = $macString;
         }
 
         return Slim::Web::HTTP::filltemplatefile("plugins/HueBridge/settings/tableHueBridges.html", $params);

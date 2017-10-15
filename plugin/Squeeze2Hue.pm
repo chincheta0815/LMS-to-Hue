@@ -387,7 +387,7 @@ sub readXMLConfigFile {
     my $file = Plugins::HueBridge::Squeeze2Hue->configFile();
 
     if (-e $file) {
-        $ret = XMLin($file, ForceArray => ['device'], KeepRoot => 0, NoAttr => 1, KeyAttr => 'udn', @args);
+        $ret = XMLin($file, ForceArray => [ qw(device common) ], KeepRoot => 0, NoAttr => 1, KeyAttr => [ qw(device common) ], @args);
     }
 
     return $ret;
