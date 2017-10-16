@@ -65,15 +65,20 @@ sub handler {
         
         if ( $params->{'saveSettings'} ) {
 
-            # Push the 'xml_' prefixed params to the XMLConfig for saving.
-            $XMLConfig->{$xmlTag} = $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag};
+            # Push the 'xml_' prefixed params to the XMLConfig for saving,
+            # but only when there was a change.
+            if ( $XMLConfig->{$xmlTag} ne $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag} ) {
+                $XMLConfig->{$xmlTag} = $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag};
+                $params->{'XMLConfigRestartRequested'} = 1;
+            }
             
             # Process the 'devices':
             # First delete the macstring item.
-            # Then when there was a connect request add overwrite the data with the new.
+            # Then when there was a connect request add overwrite the data with the new,
+            # but only when there was a change.
             if ( $xmlTag eq 'device' ) {
             
-                for (my $i = 0; $i < @{$params->{'xml_' .$xmlTag}}; $i++ ) {
+                for (my $i = 0; $i < @{$squeeze2hueParams->{'handler'}->{'xml_' .$xmlTag}}; $i++ ) {
                     # First the cleanup.
                     delete $params->{'xml_' .$xmlTag}->[$i]->{'macstring'};
             
@@ -81,14 +86,17 @@ sub handler {
                     if ( $params->{'deviceToConnect'} ) {
                         my ($deviceIndex, $deviceData) = Plugins::HueBridge::Settings::getDeviceByKey( 'udn', $params->{'deviceToConnect'}, $XMLConfig->{$xmlTag} );
                     
-                        $XMLConfig->{$xmlTag}->[$deviceIndex]->{$params->{'deviceToConnect'}} = Plugins::HueBridge::HueCom->dataOfConnectedDevice();
+                        if ( $XMLConfig->{$xmlTag}->[$deviceIndex]->{$params->{'deviceToConnect'}} ne Plugins::HueBridge::HueCom->dataOfConnectedDevice() 
+                             && 
+                             Plugins::HueBridge::HueCom->dataOfConnectedDevice()->{'user_name'} ne 'none'
+                            ) {
+                            $XMLConfig->{$xmlTag}->[$deviceIndex]->{$params->{'deviceToConnect'}} = Plugins::HueBridge::HueCom->dataOfConnectedDevice();
+                            $params->{'XMLConfigRestartRequested'} = 1;
+                        }
                         delete $params->{'deviceToConnect'};
                     }
                 }
             }
-            
-            # Request a binary restart for taking the changes into effect.
-            # $params->{'XMLConfigRestartRequested'} = 1;
         }
 
         $params->{'xml_' . $xmlTag} = $XMLConfig->{$xmlTag};
