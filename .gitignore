@@ -220,5 +220,5 @@ pip-log.txt
 *.td*
 *.map
 /perl/
-
+test.sh
 
