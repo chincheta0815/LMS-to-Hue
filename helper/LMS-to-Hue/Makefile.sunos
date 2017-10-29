@@ -1,5 +1,17 @@
 CC	= gcc
-CFLAGS  = -Wall -fPIC -O2 $(OPTS) $(INCLUDE) $(DEFINES)
+
+CFLAGS	= -Wall
+#CFLAGS  = -Wall -Wextra -Wpedantic \
+#	  -Wformat=2 -Wno-unused-parameter -Wshadow \
+#          -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
+#          -Wredundant-decls -Wnested-externs -Wmissing-include-dirs 
+
+#ifeq ($(CC),gcc)
+#    CFLAGS += -Wjump-misses-init -Wlogical-op
+#endif
+
+CFLAGS	+= -fPIC -O2 $(OPTS) $(INCLUDE) $(DEFINES)
+
 LDFLAGS = -s -lpthread -lm -lsocket -lnsl -L.
 #LDFLAGS = -s -lpthread -lcrypto -ldl -lm -lrt -lsocket -lnsl -lz -L.
 DEFINES = -D__EXTENSIONS__ -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT

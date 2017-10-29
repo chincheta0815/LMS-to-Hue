@@ -2,16 +2,32 @@ package Plugins::HueBridge::Util;
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 sub readFile {
-    my ($self, $filename) = @_;
-    my $content;
-    
-    if ( open(my $fileHandle, '<', $filename) ) {
-        read($fileHandle, $content, -s $fileHandle);
-        close($fileHandle);
+    my ($self, $filename, $numLines, $mode) = @_;
+    my @content;
+    my $string;
+
+    open(my $fileHandle, '<', $filename);
+    chomp(@content = <$fileHandle>);
+    close($fileHandle);
+
+    if ( $numLines =~ /^\d+$/ ) {
+        if ( $#content <= $numLines ) {
+            $numLines = $#content;
+        }
+        @content = @content[($#content-$numLines+1) .. $#content];
     }
-    return $content;
+
+    if ( $mode eq 'reverse' ) {
+        @content = reverse(@content);
+        @content[$#content+1] = '...';
+    }
+
+    $string = join("\n", @content);
+
+    return $string;
 }
 
 sub getDeviceByKey {

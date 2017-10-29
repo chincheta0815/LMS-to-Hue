@@ -63,16 +63,9 @@ sub handler {
     # For better recognition in the template use 'xml_' as a prefix.
     foreach my $xmlTag (keys %{$XMLConfig}) {
         
-        if ( $params->{'saveSettings'} ) {
-
-            # Push the 'xml_' prefixed params to the XMLConfig for saving,
-            # but only when there was a change.
-            if ( $XMLConfig->{$xmlTag} ne $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag} ) {
-                $XMLConfig->{$xmlTag} = $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag};
-                $params->{'XMLConfigRestartRequested'} = 1;
-            }
+        if ( $params->{'saveSettings'} && $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag} ) {
             
-            # Process the 'devices':
+            # Process the 'device':
             # First delete the macstring item.
             # Then when there was a connect request add overwrite the data with the new,
             # but only when there was a change.
@@ -93,9 +86,20 @@ sub handler {
                             $XMLConfig->{$xmlTag}->[$deviceIndex]->{$params->{'deviceToConnect'}} = Plugins::HueBridge::HueCom->dataOfConnectedDevice();
                             $params->{'XMLConfigRestartRequested'} = 1;
                         }
+
                         delete $params->{'deviceToConnect'};
                     }
                 }
+            }
+            elsif ( $xmlTag eq 'common' ) {
+                # Do nothing since we do not process 'common' values.
+            }
+            # Push the 'xml_' prefixed params to the XMLConfig for saving,
+            # but only when there was a change.
+            elsif ( $XMLConfig->{$xmlTag} ne $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag} ) {
+                $XMLConfig->{$xmlTag} = $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag};
+                $log->debug('Tag found: ' . $squeeze2hueParams->{'handler'}->{'xml_' . $xmlTag});
+                $params->{'XMLConfigRestartRequested'} = 1;
             }
         }
 
@@ -168,14 +172,9 @@ sub handler {
 
     # Get a connect trigger from the GUI and assign it with the right device.
     # For showing a GUI message box to the user set a span in the html template.
-    for( my $i = 0; defined($params->{"connectHueBridgeButtonHelper$i"}); $i++ ) {
-        if( $params->{"connectHueBridge$i"} ){
+    if( $params->{'url_query'} && $params->{'url_query'} =~ m/connectHueBridge=(\w*)/g ){
 
-            $params->{'deviceToConnect'} = $params->{"connectHueBridgeButtonHelper$i"};
-            delete $params->{"connectHueBridge$i"};
-            delete $params->{"connectHueBridgeButtonHelper$i"};
-            
-            my $deviceUDN = $params->{'deviceToConnect'};
+            my $deviceUDN = $1;
             
             $log->debug('Triggered \'connect\' of device with udn: ' . $deviceUDN);
         
@@ -184,7 +183,6 @@ sub handler {
             
             $params->{'XMLConfigRestartRequested'} = 1;
             delete $params->{'saveSettings'};
-        }
     }
 
     # In case we have to save settings and there is a XMLConfig change, restart.
@@ -195,7 +193,7 @@ sub handler {
             my $XMLConfigRestartUrl = $params->{'webroot'} . $params->{'path'} . '?doXMLConfigRestart=1';
             $XMLConfigRestartUrl .= '&rand=' . $params->{'rand'} if $params->{'rand'};
 
-            $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="showXMLConfigRestartWarning"><a href="' .$$XMLConfigRestartUrl. '"></a></span>';
+            $params->{'squeeze2hueBackgroundActionMessageBox'} = '<span id="showXMLConfigRestartWarning"><a href="' . $XMLConfigRestartUrl . '"></a></span>';
             
             $params->{'XMLConfigRestartRequested'} = 0;
         }
@@ -254,11 +252,11 @@ sub handler_file {
         $params->{'configfileContent'} = Plugins::HueBridge::Util->readFile(Plugins::HueBridge::Squeeze2Hue->configFile());
     }
     elsif( $fileTarget eq 'logfile' ) {
-        my $logContent = Plugins::HueBridge::Util->readFile(Plugins::HueBridge::Squeeze2Hue->logFile());
+        my $logContent = Plugins::HueBridge::Util->readFile( Plugins::HueBridge::Squeeze2Hue->logFile(), $prefs->get('numLinesLogFile'), 'reverse' );
         $log->debug("Got request for log file with name '" . Plugins::HueBridge::Squeeze2Hue->logFile() ."'");
-        if ($logContent){
-            $logContent = reverse($logContent);
-            $params->{'logfileContent'} = join("\n", @$logContent[0 .. $prefs->get('numLinesLogFile')]);
+        if ($logContent) {
+
+            $params->{'logfileContent'} = $logContent;
         }
         else {
 

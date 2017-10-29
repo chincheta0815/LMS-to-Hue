@@ -200,12 +200,7 @@ sub start {
 	
 	push @params, @_;
 
-	if ($loggingEnabled) {
-	
-		open(my $fileHandle, ">>", Plugins::HueBridge::Squeeze2Hue->logFile() );
-		print($fileHandle, '\nStarting Squeeze2Hue binary (' .$path. ' ' .@params. ')\n');
-		close($fileHandle);
-	}
+    $log->debug('Starting Squeeze2Hue binary (' . $path . ' ' . join(" ", @params) . ')');
 	
 	eval { $squeeze2hue = Proc::Background->new({ 'die_upon_destroy' => 1 }, $path, @params); };
 
@@ -236,13 +231,6 @@ sub beat {
 	if ($prefs->get('autorun') && !($squeeze2hue && $squeeze2hue->alive)) {
 	
 		$log->error('crashed ... restarting');
-		
-		if ($prefs->get('loggingEnabled')) {
-		
-			open(my $fileHandle, ">>", Plugins::HueBridge::Squeeze2Hue->logFile());
-			print($fileHandle, '\nSqueeze2Hue binary crashed (' .$path. ' ' .@args. ') ... restarting.\n');
-			close($fileHandle);
-		}
 		
 		eval { $squeeze2hue = Proc::Background->new({ 'die_upon_destroy' => 1 }, $path, @args); };
 	}	
@@ -371,7 +359,7 @@ sub getRestartStatus {
 }
 
 sub logFile {
-    my $self = shift
+    my $self = shift;
 	return catdir(Slim::Utils::OSDetect::dirsFor('log'), "huebridge.log");
 }
 

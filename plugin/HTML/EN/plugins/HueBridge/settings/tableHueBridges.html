@@ -19,8 +19,9 @@
                         <input type="checkbox" [% IF item.user_valid %] checked="1" [% END %] name="item.user_valid" value="1" class="stdclick" disabled readonly>
                             </td>
                     <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
-                        <input type="hidden" class="stdedit disableOnHueBridgeBackgroundAction" name="connectHueBridgeButtonHelper[% loop.index %]" value="[% item.udn %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
-                        <input type="submit" class="stdclick disableOnHueBridgeBackgroundAction" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                        <a href="[% webroot %]plugins/HueBridge/Settings.html?connectHueBridge=[% item.udn %]" class="stdedit disableOnHueBridgeBackgroundAction" >
+                            <input type="button" class="stdclick disableOnHueBridgeBackgroundAction" name="connectHueBridge[% loop.index %]" value="[% 'PLUGIN_HUEBRIDGE_CONNECT_BUTTON_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                        </a>
                     </td>
                     <td class="[% odd ? "odd" : "even" %]" align="center" style="padding: 0 5px">
                         <a href="[% webroot %]plugins/HueBridge/huebridge-file.html?content=statefile&bridge=[% item.macstring %]" class="stdedit disableOnHueBridgeBackgroundAction" >

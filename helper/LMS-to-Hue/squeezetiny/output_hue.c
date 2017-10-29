@@ -89,8 +89,12 @@ int disco_process_chunk(void *device, __u8 *frame_buf, int num_frames){
     chue_bridge_t *bridge;
     bridge = device;
 
+    // cast the pointer to the correct datatype
+    __s16 *samples = (__s16*)frame_buf;
+
+    // 1 frame = 2x16 bits samples; smpl_t is needed for aubio.
     for (int i = 0; i < num_frames; i++) {
-        aubio_tempo_in->data[i] =  (smpl_t)frame_buf[i] - pow(2, sizeof(__u8)*8) / pow(2, (sizeof(__u8)*8 - 1) );
+        aubio_tempo_in->data[i] =  ( (smpl_t)samples[2*i] + (smpl_t)samples[2*i+1] ) / ( 2.0 * pow(2, (sizeof(__s16)*8-1) ) );
     }
 
     aubio_tempo_do(aubio_tempo, aubio_tempo_in, aubio_tempo_out);
