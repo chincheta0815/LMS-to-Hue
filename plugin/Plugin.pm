@@ -21,16 +21,14 @@ my $prefs = preferences('plugin.huebridge');
 
 
 $prefs->init({
+    autosave => 0,
+    binary => undef,
     binaryAutorun => 0,
-    opts => '',
-    debugs => '',
+    debugs => undef,
     loggingEnabled => 0,
     numLinesLogFile => 25,
-    binary => undef,
-    configFileName => 'huebridge.xml',
-    profilesURL => initProfilesURL(),
-    autosave => 1,
-    eraselog => 0
+    showAdvancedHueBridgeOptions => 0,
+    xmlConfigFileName => 'huebridge.xml'
 });
 
 
@@ -63,12 +61,6 @@ sub initPlugin {
     }
 
     return 1;
-}
-
-sub initProfilesURL {
-    my $file = catdir(Slim::Utils::PluginManager->allPlugins->{'HueBridge'}->{'basedir'}, 'install.xml');
-
-    return XMLin($file, ForceArray => 0, KeepRoot => 0, NoAttr => 0)->{'profilesURL'};
 }
 
 sub shutdownPlugin {

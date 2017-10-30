@@ -119,13 +119,13 @@ sub _sendConnectRequest {
     my $deviceUDN = $params->{'deviceUDN'};
     my $XMLConfig = $params->{'XMLConfig'};
     
-    my ($deviceIndex, $deviceData) = Plugins::HueBridge::Util::getDeviceByKey( 'udn', $deviceUDN, $XMLConfig->{'device'} );
+    my ($deviceIndex, $deviceData) = Plugins::HueBridge::Util->getDeviceByKey( 'udn', $deviceUDN, $XMLConfig->{'device'} );
         
     my $bridgeIpAddress = $deviceData->{'ip_address'};
     
     my $uri = join('', 'http://', $bridgeIpAddress, '/api');
     my $contentType = "application/json";
-    
+
     my $request = { 'devicetype' => 'squeeze2hue#lms' };
     my $requestBody = encode_json($request);
     
@@ -139,7 +139,7 @@ sub _sendConnectRequest {
     
     my $asyncHTTP = Slim::Networking::SimpleAsyncHTTP->new(
         \&_sendConnectRequestOK,
-        \&_sendConnectReqeustERROR,
+        \&_sendConnectRequestERROR,
         {
             deviceUDN => $deviceUDN,
             XMLConfig => $XMLConfig,
@@ -160,14 +160,11 @@ sub _sendConnectRequestOK{
     $log->debug('Connect request sucessfully sent to hue bridge (' . $deviceUDN . ').');
     my $bridgeResponse = decode_json($asyncHTTP->content);
  
-    my ($deviceIndex, $deviceData) = Plugins::HueBridge::Settings::getDeviceByKey( 'udn', $deviceUDN, $XMLConfig->{'device'} );
+    my ($deviceIndex, $deviceData) = Plugins::HueBridge::Util->getDeviceByKey( 'udn', $deviceUDN, $XMLConfig->{'device'} );
 
     if(exists($bridgeResponse->[0]->{error})){
         $log->info('Pairing with hue bridge (' . $deviceUDN . ') failed.');
         $log->debug('Message from hue bridge was: \'' .$bridgeResponse->[0]->{error}->{description}. '\'');
-
-        $deviceData->{'user_name'} = 'none';
-        $deviceData->{'user_valid'} = '0';
     }
     elsif(exists($bridgeResponse->[0]->{success})) {
         $log->debug('Pairing with hue bridge (' . $deviceUDN . ' successful.');

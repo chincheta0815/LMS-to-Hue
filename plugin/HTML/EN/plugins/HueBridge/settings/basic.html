@@ -188,7 +188,7 @@
 			[% 'PLUGIN_HUEBRIDGE_BINARY_AUTORUN_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input name="pref_binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgeBackgroundAction" [% IF prefs.pref_binaryAutorun %] checked="1" [% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                    <input name="pref_binaryAutorun" type="checkbox" class="stdedit disableOnHueBridgeBackgroundAction" [% IF prefs.pref_binaryAutorun %]checked[% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
             </tr>
             <tr>
@@ -221,7 +221,7 @@
                     [% 'PLUGIN_HUEBRIDGE_SHOW_ADVANCED_OPTIONS_NAME' | string %]&nbsp;&nbsp;&nbsp;
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <input type="checkbox" [% IF prefs.pref_showAdvancedHueBridgeOptions %] checked="1" [% END %] class="stdedit disableOnHueBridgeBackgroundAction" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] name="pref_showAdvancedHueBridgeOptions" id="pref_showAdvancedHueBridgeOptions" value="1">
+                    <input name="pref_showAdvancedHueBridgeOptions" type="checkbox" class="stdedit disableOnHueBridgeBackgroundAction" [% IF prefs.pref_showAdvancedHueBridgeOptions %]checked[% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
                 </td>
             </tr>
         </table>
@@ -248,20 +248,20 @@
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                     [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_ENABLE_NAME' | string %]&nbsp;
-                    <input name="pref_loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF prefs.pref_loggingEnabled %] checked [% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
+                    <input name="pref_loggingEnabled" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF prefs.pref_loggingEnabled %]checked[% END %]  [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
 		        </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    <a href="[% webroot %]plugins/HueBridge/huebridge-file.html?content=logfile" class="stdedit disableOnHueBridgeBackgroundAction" >
+                    <a href="[% webroot %]plugins/HueBridge/huebridge-file.html?target=logfile" class="stdedit disableOnHueBridgeBackgroundAction" >
                         <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                     </a>
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_LOGSIZE_NAME' | string %]&nbsp;
-                    <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_log_limit" id="xml_log_limit" value="[% xml_log_limit %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2">
+                    [% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_NUMLINESLOGFILE_NAME" | string %]&nbsp;
+                    <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_numLinesLogFile" id="numLinesLogFile" value="[% prefs.pref_numLinesLogFile %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                    [% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_ERASELOG_NAME" | string %]&nbsp;
-                    <input name="pref_eraselog" class="stdedit disableOnHueBridgeBackgroundAction" type="checkbox" [% IF pref_eraselog %] checked [% END %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
+                    [% 'PLUGIN_HUEBRIDGE_OPTION_LOGGING_LOGSIZE_NAME' | string %]&nbsp;
+                    <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_log_limit" id="xml_log_limit" value="[% xml_log_limit %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                     <input name="cleanlog" class="stdedit disableOnHueBridgeBackgroundAction" type="submit" value=[% "PLUGIN_HUEBRIDGE_OPTION_LOGGING_CLEANLOG_NAME" | string %] [% IF statusHueBridgeBackgroundAction %]disabled[% END %]>
@@ -273,10 +273,10 @@
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" colspan="2">
                         [% configFilePath %][% IF arch == Windows %]\[% ELSE %]/[% END %]
-                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_configFileName" id="configFileName" value="[% prefs.pref_configFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="pref_xmlConfigFileName" id="xmlConfigFileName" value="[% prefs.pref_xmlConfigFileName %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="20">
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
-                        <a href="[% webroot %]plugins/HueBridge/settings/huebridge-file.html?content=configfile" class="stdedit disableOnHueBridgeBackgroundAction" >
+                        <a href="[% webroot %]plugins/HueBridge/settings/huebridge-file.html?target=configfile" class="stdedit disableOnHueBridgeBackgroundAction" >
                         <input class="stdedit disableOnHueBridgeBackgroundAction" type="button" value="[% 'PLUGIN_HUEBRIDGE_OPTION_CONFIGURATION_SHOWFILECONTENT_NAME' | string %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] />
                         </a>
                 </td>
@@ -291,11 +291,11 @@
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                         [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_INTERVAL_NAME' | string %]&nbsp;
-                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_scan_interval" id="xml_scan_interval" value="[% xml_scan_interval %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_scan_interval" value="[% xml_scan_interval %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
                 </td>
                 <td class="[% odd ? "odd" : "even" %]">
                         [% 'PLUGIN_HUEBRIDGE_OPTION_SCANNING_TIMEOUT_NAME' | string %]&nbsp;
-                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_scan_timeout" id="xml_scan_timeout" value="[% xml_scan_timeout %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
+                        <input type="text" class="stdedit disableOnHueBridgeBackgroundAction" name="xml_scan_timeout" value="[% xml_scan_timeout %]" [% IF statusHueBridgeBackgroundAction %]disabled[% END %] size="2"> (s)
                 </td>
                 <td class="[% odd ? "odd" : "even" %]" colspan="3">
                     &nbsp;
@@ -305,6 +305,16 @@
                 <td class="[% odd ? "odd" : "even" %]" colspan="2"></td>
             </tr>
         </table>
+        [% ELSE %]
+            <!-- When showAdvancedOptions is not selected pass around the options in hidden elements avoiding their deletion. -->
+            <input type="hidden" name="pref_debugs" value="[% prefs.pref_debugs %]">
+            <input type="hidden" name="pref_loggingEnabled" value="[% prefs.pref_loggingEnabled %]">
+            <input type="hidden" name="xml_log_limit" value="xml_log_limit">
+            <input type="hidden" name="pref_numLinesLogFile" value="[% prefs.pref_numLinesLogFile %]">
+            <input type="hidden" name="pref_xmlConfigFileName" value="[% prefs.pref_xmlConfigFileName %]">
+            <input type="hidden" name="pref_autosave" value="[% prefs.pref_autosave %]">
+            <input type="hidden" name="xml_scan_interval" value="xml_scan_interval">
+            <input type="hidden" name="xml_scan_timeout" value="xml_scan_timeout">
         [% END %]
     [% END %]
 

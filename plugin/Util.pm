@@ -13,16 +13,16 @@ sub readFile {
     chomp(@content = <$fileHandle>);
     close($fileHandle);
 
-    if ( $numLines =~ /^\d+$/ ) {
+    if ( $numLines && $numLines =~ /^\d+$/ ) {
         if ( $#content <= $numLines ) {
             $numLines = $#content;
         }
         @content = @content[($#content-$numLines+1) .. $#content];
     }
 
-    if ( $mode eq 'reverse' ) {
+    if ( $mode && $mode eq 'reverse' ) {
         @content = reverse(@content);
-        @content[$#content+1] = '...';
+        $content[$#content+1] = '...';
     }
 
     $string = join("\n", @content);
@@ -31,7 +31,7 @@ sub readFile {
 }
 
 sub getDeviceByKey {
-    my ($key, $value, $listpar) = @_;
+    my ($self, $key, $value, $listpar) = @_;
     my @list = @{$listpar};
     my $i = 0;
 
