@@ -41,14 +41,14 @@ void 		QueueInit(tQueue *queue);
 void 		QueueInsert(tQueue *queue, void *item);
 void 		*QueueExtract(tQueue *queue);
 void 		QueueFlush(tQueue *queue);
-int			pthread_cond_reltimedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, u32_t msWait);
+int		pthread_cond_reltimedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, u32_t msWait);
 
-char 		*XMLGetFirstDocumentItem(IXML_Document *doc, const char *item);
-char 		*XMLGetFirstElementItem(IXML_Element *element, const char *item);
-IXML_Node   *XMLAddNode(IXML_Document *doc, IXML_Node *parent, char *name, char *fmt, ...);
-IXML_Node 	*XMLUpdateNode(IXML_Document *doc, IXML_Node *parent, bool refresh, char *name, char *fmt, ...);
-int 		XMLAddAttribute(IXML_Document *doc, IXML_Node *parent, char *name, char *fmt, ...);
+char 	  *XMLGetFirstDocumentItem(IXML_Document *doc, const char *item);
+char      *XMLGetFirstElementItem(IXML_Element *element, const char *item);
+IXML_Node *XMLAddNode(IXML_Document *doc, IXML_Node *parent, char *name, char *fmt, ...);
+IXML_Node *XMLUpdateNode(IXML_Document *doc, IXML_Node *parent, bool refresh, char *name, char *fmt, ...);
+int       XMLAddAttribute(IXML_Document *doc, IXML_Node *parent, char *name, char *fmt, ...);
 
-char 		*uPNPEvent2String(Upnp_EventType S);
+char      *uPNPEvent2String(Upnp_EventType S);
 
 #endif

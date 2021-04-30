@@ -95,8 +95,14 @@ void send_packet(u8_t *packet, size_t len, sockfd sock) {
 
 /*---------------------------------------------------------------------------*/
 static void sendHELO(bool reconnect, const char *fixed_cap, const char *var_cap, u8_t mac[6], struct thread_ctx_s *ctx) {
-	const char *base_cap = "Model=squeezelite,ModelName=SqueezeLite,AccuratePlayPoints=1,HasDigitalOut=0";
+	char *base_cap;
 	struct HELO_packet pkt;
+
+	asprintf(&base_cap,
+#if USE_SSL
+	"CanHTTPS=1,"
+#endif
+	"Model=squeezelite,ModelName=%s,AccuratePlayPoints=0,HasDigitalOut=1", sq_model_name);
 
 	memset(&pkt, 0, sizeof(pkt));
 	memcpy(&pkt.opcode, "HELO", 4);
@@ -115,6 +121,8 @@ static void sendHELO(bool reconnect, const char *fixed_cap, const char *var_cap,
 	send_packet((u8_t *)base_cap, strlen(base_cap), ctx->sock);
 	send_packet((u8_t *)fixed_cap, strlen(fixed_cap), ctx->sock);
 	send_packet((u8_t *)var_cap, strlen(var_cap), ctx->sock);
+
+	free(base_cap);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -129,9 +137,9 @@ static void sendSTAT(const char *event, u32_t server_timestamp, struct thread_ct
 		LOG_DEBUG("[%p]: ms fr:%u clk:%u (frames_played: %u device_frames: %u)", ctx, ms_played, now - ctx->output.start_at, ctx->status.frames_played, ctx->status.device_frames);
 	} else if (ctx->status.frames_played && now > ctx->status.stream_start) {
 		ms_played = now - ctx->status.stream_start;
-		LOG_INFO("[%p]: ms_played: %u using elapsed time (frames_played: %u device_frames: %u)", ctx, ms_played, ctx->status.frames_played, ctx->status.device_frames);
+		LOG_DEBUG("[%p]: ms_played: %u using elapsed time (frames_played: %u device_frames: %u)", ctx, ms_played, ctx->status.frames_played, ctx->status.device_frames);
 	} else {
-		LOG_SDEBUG("[%p]: ms_played: 0", ctx);
+		LOG_DEBUG("[%p]: ms_played: 0", ctx);
 		ms_played = 0;
 	}
 
@@ -296,7 +304,8 @@ static void process_strm(u8_t *pkt, int len, struct thread_ctx_s *ctx) {
 		break;
 	case 's':
 		{
-			sq_format_t	format;
+			u8_t codec, sample_size, channels, endianness;
+			u32_t sample_rate;
 			unsigned header_len = len - sizeof(struct strm_packet);
 			char *header = (char *)(pkt + sizeof(struct strm_packet));
 			in_addr_t ip = (in_addr_t)strm->server_ip; // keep in network byte order
@@ -307,27 +316,37 @@ static void process_strm(u8_t *pkt, int len, struct thread_ctx_s *ctx) {
 					  ctx, strm->autostart, strm->transition_period, strm->transition_type - '0', strm->format);
 
 			ctx->autostart = strm->autostart - '0';
+
 			sendSTAT("STMf", 0, ctx);
 			if (header_len > MAX_HEADER -1) {
 				LOG_WARN("[%p] header too long: %u", ctx, header_len);
 				break;
 			}
 
-			if (strm->format != 'a')
-				format.sample_size = (strm->pcm_sample_size != '?') ? pcm_sample_size[strm->pcm_sample_size - '0'] : 0xff;
-			else
-				format.sample_size = strm->pcm_sample_size;
-			format.sample_rate = (strm->pcm_sample_rate != '?') ? pcm_sample_rate[strm->pcm_sample_rate - '0'] : 0xff;
-			if (format.sample_rate > ctx->config.sample_rate) {
-				 LOG_WARN("[%p]: Sample rate %u error suspected, forcing to %u", ctx, format.sample_rate, ctx->config.sample_rate);
-				 format.sample_rate = ctx->config.sample_rate;
-			 }
-			format.channels = (strm->pcm_channels != '?') ? pcm_channels[strm->pcm_channels - '1'] : 0xff;
-			format.endianness = (strm->pcm_endianness != '?') ? strm->pcm_endianness - '0' : 0xff;
-			format.codec = strm->format;
+			LOCK_O;
+			ctx->output.threshold = strm->output_threshold;
+			ctx->output.next_replay_gain = unpackN(&strm->replay_gain);
+			ctx->output.fade_mode = strm->transition_type - '0';
+			ctx->output.fade_secs = strm->transition_period;
+			ctx->output.invert = (strm->flags & 0x03) == 0x03;
+			ctx->output.channels = (strm->flags & 0x0c) >> 2;
+			LOG_DEBUG("[%p]: set fade mode: %u, channels: %u, invert: %u", ctx, ctx->output.fade_mode, ctx->output.channels, ctx->output.invert);
+			UNLOCK_O;
 
 			if (strm->format != '?') {
-				codec_open(format.codec, format.sample_size, format.sample_rate, format.channels, format.endianness, ctx);
+				if (strm->pcm_sample_size == '?') sample_size = 0xff;
+				else if (strm->format == 'a' || strm->format == 'd' || strm->format == 'f') sample_size = strm->pcm_sample_size;
+				else sample_size = pcm_sample_size[strm->pcm_sample_size - '0'];
+				sample_rate = (strm->pcm_sample_rate != '?') ? pcm_sample_rate[strm->pcm_sample_rate - '0'] : 0xff;
+				if (sample_rate > ctx->config.sample_rate) {
+					 LOG_WARN("[%p]: Sample rate %u error suspected, forcing to %u", ctx, sample_rate, ctx->config.sample_rate);
+					 sample_rate = ctx->config.sample_rate;
+				}
+				channels = (strm->pcm_channels != '?') ? pcm_channels[strm->pcm_channels - '1'] : 0xff;
+				endianness = (strm->pcm_endianness != '?') ? strm->pcm_endianness - '0' : 0xff;
+				codec = strm->format;
+				codec_open(codec, sample_size, sample_rate, channels, endianness, ctx);
+				LOG_INFO("[%p]: codec:%c, ch:%d, s:%d, r:%d", ctx, codec, channels, sample_size,sample_rate);
 			} else if (ctx->autostart >= 2) {
 				// extension to slimproto to allow server to detect codec from response header and send back in codc message
 				LOG_WARN("[%p] streaming unknown codec", ctx);
@@ -337,19 +356,12 @@ static void process_strm(u8_t *pkt, int len, struct thread_ctx_s *ctx) {
 			}
 
 			// TODO: must be changed if one day direct streaming is enabled
-			ctx_callback(ctx, SQ_CONNECT, &format);
+			ctx_callback(ctx, SQ_CONNECT, NULL);
 
-			stream_sock(ip, port, header, header_len, strm->threshold * 1024, ctx->autostart >= 2, ctx);
+			stream_sock(ip, port, strm->flags & 0x20, header, header_len, strm->threshold * 1024, ctx->autostart >= 2, ctx);
 
 			sendSTAT("STMc", 0, ctx);
 			ctx->sentSTMu = ctx->sentSTMo = ctx->sentSTMl = ctx->sentSTMd = false;
-			LOCK_O;
-			ctx->output.threshold = strm->output_threshold;
-			ctx->output.next_replay_gain = unpackN(&strm->replay_gain);
-			ctx->output.fade_mode = strm->transition_type - '0';
-			ctx->output.fade_secs = strm->transition_period;
-			LOG_DEBUG("[%p]: set fade mode: %u", ctx, ctx->output.fade_mode);
-			UNLOCK_O;
 		}
 		break;
 	default:
@@ -383,18 +395,19 @@ static void process_cont(u8_t *pkt, int len, struct thread_ctx_s *ctx) {
 /*---------------------------------------------------------------------------*/
 static void process_codc(u8_t *pkt, int len, struct thread_ctx_s *ctx) {
 	struct codc_packet *codc = (struct codc_packet *)pkt;
-	sq_format_t	format;
+	u8_t codec, sample_size, channels, endianness;
+	u32_t sample_rate;
 
 	if (codc->format != 'a')
-		format.sample_size = (codc->pcm_sample_size != '?') ? pcm_sample_size[codc->pcm_sample_size - '0'] : 0xff;
+		sample_size = (codc->pcm_sample_size != '?') ? pcm_sample_size[codc->pcm_sample_size - '0'] : 0xff;
 	else
-		format.sample_size = codc->pcm_sample_size;
-	format.sample_rate = (codc->pcm_sample_rate != '?') ? pcm_sample_rate[codc->pcm_sample_rate - '0'] : 0xff;
-	format.channels = (codc->pcm_channels != '?') ? pcm_channels[codc->pcm_channels - '1'] : 0xff;
-	format.endianness = (codc->pcm_endianness != '?') ? codc->pcm_channels - '0' : 0xff;
-	format.codec = codc->format;
+		sample_size = codc->pcm_sample_size;
+	sample_rate = (codc->pcm_sample_rate != '?') ? pcm_sample_rate[codc->pcm_sample_rate - '0'] : 0xff;
+	channels = (codc->pcm_channels != '?') ? pcm_channels[codc->pcm_channels - '1'] : 0xff;
+	endianness = (codc->pcm_endianness != '?') ? codc->pcm_channels - '0' : 0xff;
+	codec = codc->format;
 
-	codec_open(format.codec, format.sample_size, format.sample_rate, format.channels, format.endianness, ctx);
+	codec_open(codec, sample_size, sample_rate, channels, endianness, ctx);
 
 	LOG_DEBUG("[%p] codc: %c", ctx, codc->format);
 }
@@ -425,10 +438,18 @@ static void process_audg(u8_t *pkt, int len, struct thread_ctx_s *ctx) {
 	LOG_DEBUG("[%p] (old) audg gainL: %u gainR: %u", ctx, audg->old_gainL, audg->old_gainR);
 
 	LOCK_O;
-	ctx->output.gainL = ctx->output.gainR = FIXED_ONE;
+
+	if (ctx->config.soft_volume) {
+		ctx->output.gainL = audg->adjust ? audg->gainL : FIXED_ONE;
+		ctx->output.gainR = audg->adjust ? audg->gainR : FIXED_ONE;
+	}
+	else ctx->output.gainL = ctx->output.gainR = FIXED_ONE;
+
 	UNLOCK_O;
 
-	ctx_callback(ctx, SQ_VOLUME, (void*) &gain);
+	if (audg->adjust) {
+		ctx_callback(ctx, SQ_VOLUME, (void*) &gain);
+    }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -442,8 +463,8 @@ static void process_setd(u8_t *pkt, int len,struct thread_ctx_s *ctx) {
 				sendSETDName(ctx->config.name, ctx->sock);
 			}
 		} else if (len > 5) {
-			strncpy(ctx->config.name, setd->data, SQ_STR_LENGTH);
-			ctx->config.name[SQ_STR_LENGTH - 1] = '\0';
+			strncpy(ctx->config.name, setd->data, _STR_LEN_);
+			ctx->config.name[_STR_LEN_ - 1] = '\0';
 			LOG_DEBUG("[%p] set name: %s", ctx, setd->data);
 			// confirm change to server
 			sendSETDName(setd->data, ctx->sock);
@@ -587,7 +608,7 @@ static void slimproto_run(struct thread_ctx_s *ctx) {
 				wake = true;
 			}
 
-			if (ctx->cli_sock > 0 && gettime_ms() > ctx->cli_timestamp + 10000) {
+			if (ctx->cli_sock > 0 && (int) (gettime_ms() - ctx->cli_timeout) > 0) {
 				if (!mutex_trylock(ctx->cli_mutex)) {
 					LOG_INFO("[%p] Closing CLI socket %d", ctx, ctx->cli_sock);
 					closesocket(ctx->cli_sock);
@@ -653,7 +674,7 @@ static void slimproto_run(struct thread_ctx_s *ctx) {
 			UNLOCK_S;
 
 			LOCK_O;
-			ctx->status.output_full = min(_buf_used(ctx->outputbuf) + ctx->output.device_true_frames * BYTES_PER_FRAME, ctx->outputbuf->size);
+			ctx->status.output_full = _buf_used(ctx->outputbuf);
 			ctx->status.output_size = ctx->outputbuf->size;
 			ctx->status.frames_played = ctx->output.frames_played_dmp;
 			ctx->status.current_sample_rate = ctx->output.current_sample_rate;
@@ -675,6 +696,7 @@ static void slimproto_run(struct thread_ctx_s *ctx) {
 			if (ctx->output.state == OUTPUT_RUNNING && !ctx->sentSTMo && ctx->status.output_full == 0 && ctx->status.stream_state == STREAMING_HTTP) {
 				_sendSTMo = true;
 				ctx->sentSTMo = true;
+				LOG_WARN("[%p]: output underrun", ctx);
 			}
 			UNLOCK_O;
 
@@ -685,7 +707,7 @@ static void slimproto_run(struct thread_ctx_s *ctx) {
 				ctx->status.last = now;
 			}
 
-			if ((ctx->status.stream_state == STREAMING_HTTP || ctx->status.stream_state == STREAMING_FILE || ctx->stream.disconnect == DISCONNECT_OK)
+			if ((ctx->status.stream_state == STREAMING_HTTP || ctx->status.stream_state == STREAMING_FILE || (ctx->status.stream_state == DISCONNECT && ctx->stream.disconnect == DISCONNECT_OK))
 				&& !ctx->sentSTMl && ctx->decode.state == DECODE_READY) {
 				if (ctx->autostart == 0) {
 					ctx->decode.state = DECODE_RUNNING;
@@ -737,17 +759,17 @@ void wake_controller(struct thread_ctx_s *ctx) {
 void discover_server(struct thread_ctx_s *ctx) {
 	struct sockaddr_in d;
 	struct sockaddr_in s;
-	char buf[32], vers[] = "VERS", port[] = "JSON";
+	char buf[32], vers[] = "VERS", port[] = "JSON", clip[] = "CLIP";
 	struct pollfd pollinfo;
 	u8_t len;
-
 	int disc_sock = socket(AF_INET, SOCK_DGRAM, 0);
-
 	socklen_t enable = 1;
+
+	ctx->cli_port = 9090;
+
 	setsockopt(disc_sock, SOL_SOCKET, SO_BROADCAST, (const void *)&enable, sizeof(enable));
 
-	len = sprintf(buf,"e%s\xff%s", vers, port) + 1;
-	*strchr(buf, 0xff) = '\0';
+	len = sprintf(buf,"e%s%c%s%c%s", vers, '\0', port, '\0', clip) + 1;
 
 	memset(&d, 0, sizeof(d));
 	d.sin_family = AF_INET;
@@ -767,24 +789,27 @@ void discover_server(struct thread_ctx_s *ctx) {
 		}
 
 		if (poll(&pollinfo, 1, 5000) == 1) {
-			char readbuf[32], *p;
+			char readbuf[128], *p;
 
 			socklen_t slen = sizeof(s);
-			memset(readbuf, 0, 32);
-			recvfrom(disc_sock, readbuf, 32 - 1, 0, (struct sockaddr *)&s, &slen);
+			memset(readbuf, 0, sizeof(readbuf));
+			recvfrom(disc_sock, readbuf, sizeof(readbuf) - 1, 0, (struct sockaddr *)&s, &slen);
 
 			if ((p = strstr(readbuf, vers)) != NULL) {
 				p += strlen(vers);
-				len = *p;
 				strncpy(ctx->server_version, p + 1, min(SERVER_VERSION_LEN, *p));
 				ctx->server_version[min(SERVER_VERSION_LEN, *p)] = '\0';
 			}
 
 			 if ((p = strstr(readbuf, port)) != NULL) {
 				p += strlen(port);
-				len = *p;
 				strncpy(ctx->server_port, p + 1, min(5, *p));
 				ctx->server_port[min(6, *p)] = '\0';
+			}
+
+			if ((p = strstr(readbuf, clip)) != NULL) {
+				p += strlen(clip);
+				ctx->cli_port = atoi(p + 1);
 			}
 
 			strcpy(ctx->server_ip, inet_ntoa(s.sin_addr));
@@ -807,8 +832,9 @@ static void slimproto(struct thread_ctx_s *ctx) {
 	bool reconnect = false;
 	unsigned failed_connect = 0;
 
-	mutex_create(ctx->mutex);
-	mutex_create(ctx->cli_mutex);
+	discover_server(ctx);
+	LOG_INFO("squeezelite [%p] <=> player [%p]", ctx, ctx->MR);
+	LOG_INFO("[%p] connecting to %s:%d", ctx, inet_ntoa(ctx->serv_addr.sin_addr), ntohs(ctx->serv_addr.sin_port));
 
 	while (ctx->running) {
 
@@ -821,14 +847,11 @@ static void slimproto(struct thread_ctx_s *ctx) {
 			LOG_INFO("[%p] switching server to %s:%d", ctx, inet_ntoa(ctx->serv_addr.sin_addr), ntohs(ctx->serv_addr.sin_port));
 		}
 
-		ctx->cli_sock = -1;
 		ctx->sock = socket(AF_INET, SOCK_STREAM, 0);
 		set_nonblock(ctx->sock);
 		set_nosigpipe(ctx->sock);
-			
-		LOG_INFO("[%p] server %s:%d", ctx, inet_ntoa(ctx->serv_addr.sin_addr), ntohs(ctx->serv_addr.sin_port));
 
-		if (connect_timeout(ctx->sock, (struct sockaddr *) &ctx->serv_addr, sizeof(ctx->serv_addr), 5) != 0) {
+		if (connect_timeout(ctx->sock, (struct sockaddr *) &ctx->serv_addr, sizeof(ctx->serv_addr), 5*1000) != 0) {
 
 			LOG_WARN("[%p] unable to connect to server %u", ctx, failed_connect);
 			sleep(5);
@@ -853,7 +876,7 @@ static void slimproto(struct thread_ctx_s *ctx) {
 				ctx->new_server_cap = NULL;
 			}
 
-			sendHELO(reconnect, ctx->fixed_cap, ctx->var_cap, ctx->mac, ctx);
+			sendHELO(reconnect, ctx->fixed_cap, ctx->var_cap, ctx->config.mac, ctx);
 
 			slimproto_run(ctx);
 
@@ -864,25 +887,30 @@ static void slimproto(struct thread_ctx_s *ctx) {
 			usleep(100000);
 		}
 
+		mutex_lock(ctx->cli_mutex);
+		if (ctx->cli_sock != -1) {
+			closesocket(ctx->cli_sock);
+			ctx->cli_sock = -1;
+		}
+		mutex_unlock(ctx->cli_mutex);
 		closesocket(ctx->sock);
-		if (ctx->cli_sock != -1) closesocket(ctx->cli_sock);
+
 		if (ctx->new_server_cap)	{
 			free(ctx->new_server_cap);
 			ctx->new_server_cap = NULL;
 		}
 	}
-
-	mutex_destroy(ctx->mutex);
-	mutex_destroy(ctx->cli_mutex);
 }
 
 
 /*---------------------------------------------------------------------------*/
 void slimproto_close(struct thread_ctx_s *ctx) {
 	LOG_INFO("[%p] slimproto stop for %s", ctx, ctx->config.name);
-  	ctx->running = false;
+	ctx->running = false;
 	wake_controller(ctx);
-	pthread_detach(ctx->thread);
+	pthread_join(ctx->thread, NULL);
+	mutex_destroy(ctx->mutex);
+	mutex_destroy(ctx->cli_mutex);
 }
 
 
@@ -892,24 +920,24 @@ void slimproto_thread_init(struct thread_ctx_s *ctx) {
 	char *codec, *buf;
 
 	wake_create(ctx->wake_e);
+	mutex_create(ctx->mutex);
+	mutex_create(ctx->cli_mutex);
 
-	ctx->running = true;
 	ctx->slimproto_ip = 0;
 	ctx->slimproto_port = PORT;
-	ctx->sock = -1;
+	ctx->cli_sock = ctx->sock = -1;
+	ctx->running = true;
 
 	if (strcmp(ctx->config.server, "?")) {
 		server_addr(ctx->config.server, &ctx->slimproto_ip, &ctx->slimproto_port);
 	}
-
-	discover_server(ctx);
 
 	/* could be avoided as whole context is reset at init ...*/
 	strcpy(ctx->var_cap, "");
 	ctx->new_server_cap = NULL;
 
 	LOCK_O;
-	sprintf(ctx->fixed_cap, ",MaxSampleRate=%u", ctx->config.sample_rate);
+	sprintf(ctx->fixed_cap, ",MaxSampleRate=%u", soxr_loaded ? ctx->config.sample_rate : 44100);
 
 	codec = buf = strdup(ctx->config.codecs);
 	while (codec && *codec ) {
@@ -929,10 +957,6 @@ void slimproto_thread_init(struct thread_ctx_s *ctx) {
 	free(buf);
 
 	UNLOCK_O;
-
-	memcpy(ctx->mac, ctx->config.mac, 6);
-
-	LOG_INFO("[%p] connecting to %s:%d", ctx, inet_ntoa(ctx->serv_addr.sin_addr), ntohs(ctx->serv_addr.sin_port));
 
 	ctx->new_server = 0;
 

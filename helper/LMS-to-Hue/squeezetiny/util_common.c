@@ -36,6 +36,9 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <netdb.h>
+#if SUNOS
+#include <sys/sockio.h>
+#endif
 #if FREEBSD
 #include <ifaddrs.h>
 #include <net/if_dl.h>
@@ -56,14 +59,6 @@
 #include <netinet/in.h>
 #include <netinet/if_ether.h>
 #include <sys/time.h>
-#endif
-#if SUNOS
-#include <sys/socket.h>
-#include <sys/sockio.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <net/if_dl.h>
-#include <net/if_types.h>
 #endif
 
 #include "util_common.h"
@@ -217,17 +212,20 @@ u64_t hash64_buf(char *str, size_t len)
 }
 
 /*---------------------------------------------------------------------------*/
-char *stristr(char *s1, char *s2)
+#if WIN
+char *strcasestr(const char *haystack, const char *needle)
 {
- char *s1_lwr = strlwr(strdup(s1));
- char *s2_lwr = strlwr(strdup(s2));
- char *p = strstr(s1_lwr, s2_lwr);
+ char *haystack_lwr = strlwr(strdup(haystack));
+ char *needle_lwr = strlwr(strdup(needle));
+ char *p = strstr(haystack_lwr, needle_lwr);
 
- if (p) p = s1 + (p - s1_lwr);
- free(s1_lwr);
- free(s2_lwr);
+ if (p) p = haystack + (p - haystack_lwr);
+ free(haystack_lwr);
+ free(needle_lwr);
  return p;
 }
+#endif
+
 
 /*---------------------------------------------------------------------------*/
 /* IMPORTANT: be sure to free() the returned string after use */

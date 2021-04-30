@@ -1,5 +1,5 @@
 /*
- *  Squeeze2hue - LMS to Hue gateway
+ *  SSL symbols dynamic loader
  *
  *  (c) Philippe, philippe_44@outlook.com
  *
@@ -18,20 +18,13 @@
  *
  */
 
-#ifndef __CONF_UTIL_H
-#define __CONF_UTIL_H
+#ifndef SSLSHIM_H
+#define SSLSHIM_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+// this must be include after various openssl includes
 
-#include "ixml.h"
-#include "squeeze2hue.h"
-
-extern void MakeMacUnique(struct sMR *Device);
-extern void SaveConfig(char *name, void *ref, int mode);
-extern void *LoadConfig(char *name, tMRConfig *Conf, sq_dev_param_t *sq_conf);
-extern void *FindMRConfig(void *ref, char *UDN);
-extern void *LoadMRConfig(void *ref, char *UDN, tMRConfig *Conf, sq_dev_param_t *sq_conf);
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+int RSA_set0_key(RSA* r, BIGNUM* n, BIGNUM* e, BIGNUM* d);
+#endif
 
 #endif

@@ -1,7 +1,8 @@
 /*
- *  Squeeze2hue - LMS to Hue gateway
+ * virtual.h: Virtual player
  *
- *  (c) Philippe, philippe_44@outlook.com
+ * Copyright (C) 2004 Shiro Ninomiya <shiron@snino.com>
+ *				 2016 Philippe <philippe_44@outlook.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,20 +19,12 @@
  *
  */
 
-#ifndef __CONF_UTIL_H
-#define __CONF_UTIL_H
+#ifndef __HUE_STREAM_H_
+#define __HUE_STREAM_H_
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "hue_bridge.h"
 
-#include "ixml.h"
-#include "squeeze2hue.h"
+bool hue_ent_stream_init(struct huebridgecl_s *p);
+void hue_ent_stream_stop(struct huebridgecl_s *p);
 
-extern void MakeMacUnique(struct sMR *Device);
-extern void SaveConfig(char *name, void *ref, int mode);
-extern void *LoadConfig(char *name, tMRConfig *Conf, sq_dev_param_t *sq_conf);
-extern void *FindMRConfig(void *ref, char *UDN);
-extern void *LoadMRConfig(void *ref, char *UDN, tMRConfig *Conf, sq_dev_param_t *sq_conf);
-
-#endif
+#endif /* __HUE_STREAM_H_ */

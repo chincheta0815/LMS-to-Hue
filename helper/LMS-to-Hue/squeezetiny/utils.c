@@ -21,7 +21,7 @@
 
 #include "squeezelite.h"
 #include <fcntl.h>
-
+#include "util.h"
 #include "log_util.h"
 
 #if LINUX || OSX || FREEBSD || SUNOS
@@ -29,6 +29,9 @@
 #include <net/if.h>
 #include <net/if_arp.h>
 #include <netdb.h>
+#if SUNOS
+#include <sys/sockio.h>
+#endif
 #if FREEBSD
 #include <ifaddrs.h>
 #include <net/if_dl.h>
@@ -50,18 +53,9 @@
 #include <netinet/if_ether.h>
 #include <sys/time.h>
 #endif
-#if SUNOS
-#include <sys/socket.h>
-#include <sys/sockio.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <net/if_dl.h>
-#include <net/if_types.h>
-#endif
 
-
-#if WIN
 extern log_level 	util_loglevel;
+#if WIN || FREEBSD
 static log_level 	*loglevel = &util_loglevel;
 #endif
 
@@ -70,7 +64,7 @@ char *next_param(char *src, char c) {
 	static char *str = NULL;
 	char *ptr, *ret;
 	if (src) str = src;
- 	if (str && (ptr = strchr(str, c))) {
+	if (str && (ptr = strchr(str, c))) {
 		ret = str;
 		*ptr = '\0';
 		str = ptr + 1;
@@ -88,27 +82,23 @@ u32_t gettime_ms(void) {
 	return (u32_t) ((u64_t) (tv.tv_sec + 0x83AA7E80) * 1000 + (u64_t) tv.tv_usec / 1000);
 }
 
-
 u64_t gettime_ms64(void) {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return (u64_t) (tv.tv_sec + 0x83AA7E80) * 1000 + tv.tv_usec / 1000;
 }
 
-
-
 u64_t timeval_to_ntp(struct timeval tv, struct ntp_s *ntp)
 {
 	struct ntp_s local;
 
 	local.seconds  = tv.tv_sec + 0x83AA7E80;
-	local.fraction = (((__u64) tv.tv_usec) << 32) / 1000000;
+	local.fraction = (((u64_t) tv.tv_usec) << 32) / 1000000;
 
 	if (ntp) *ntp = local;
 
-	return (((__u64) local.seconds) << 32) + local.fraction;
+	return (((u64_t) local.seconds) << 32) + local.fraction;
 }
-
 
 u64_t get_ntp(struct ntp_s *ntp)
 {
@@ -117,7 +107,6 @@ u64_t get_ntp(struct ntp_s *ntp)
 	gettimeofday(&ctv, NULL);
 	return timeval_to_ntp(ctv, ntp);
 }
-
 
 // mutex wait with timeout
 #if LINUX || FREEBSD || SUNOS
@@ -157,19 +146,19 @@ int _mutex_timedlock(pthread_mutex_t *m, u32_t ms_wait)
 #if LINUX
 // search first 4 interfaces returned by IFCONF
 void get_mac(u8_t mac[]) {
-	struct ifconf ifc;
-	struct ifreq *ifr, *ifend;
-	struct ifreq ifreq;
-	struct ifreq ifs[4];
+    struct ifconf ifc;
+    struct ifreq *ifr, *ifend;
+    struct ifreq ifreq;
+    struct ifreq ifs[4];
 
 	mac[0] = mac[1] = mac[2] = mac[3] = mac[4] = mac[5] = 0;
 
-	int s = socket(AF_INET, SOCK_DGRAM, 0);
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+ 
+    ifc.ifc_len = sizeof(ifs);
+    ifc.ifc_req = ifs;
 
-	ifc.ifc_len = sizeof(ifs);
-	ifc.ifc_req = ifs;
-
-	if (ioctl(s, SIOCGIFCONF, &ifc) == 0) {
+    if (ioctl(s, SIOCGIFCONF, &ifc) == 0) {
 		ifend = ifs + (ifc.ifc_len / sizeof(struct ifreq));
 
 		for (ifr = ifc.ifc_req; ifr < ifend; ifr++) {
@@ -195,9 +184,9 @@ void get_mac(u8_t mac[]) {
 	struct ifaddrs *addrs, *ptr;
 	const struct sockaddr_dl *dlAddr;
 	const unsigned char *base;
-
+	
 	mac[0] = mac[1] = mac[2] = mac[3] = mac[4] = mac[5] = 0;
-
+	
 	if (getifaddrs(&addrs) == 0) {
 		ptr = addrs;
 		while (ptr) {
@@ -214,80 +203,13 @@ void get_mac(u8_t mac[]) {
 }
 #endif
 
-// mac address
-#if SUNOS
-void get_mac(u8_t mac[]) {
-	struct  arpreq          parpreq;
-	struct  sockaddr_in     *psa;
-	struct  in_addr         inaddr;
-	struct  hostent         *phost;
-	char                    hostname[MAXHOSTNAMELEN];
-	char                    **paddrs;
-	char                    *utmac;
-	int                     sock;
-	int                     status=0;
-
-	utmac = getenv("UTMAC");
-	if (utmac)
-	{
-		if ( strlen(utmac) == 17 )
-		{
-			if (sscanf(utmac,"%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx",
-				&mac[0],&mac[1],&mac[2],&mac[3],&mac[4],&mac[5]) == 6)
-			{
-				return;
-			}
-		}
-
-	}
-
-	mac[0] = mac[1] = mac[2] = mac[3] = mac[4] = mac[5] = 0;
-
-	gethostname(hostname,  MAXHOSTNAMELEN);
-
-	phost = gethostbyname(hostname);
-
-	paddrs = phost->h_addr_list;
-	memcpy(&inaddr.s_addr, *paddrs, sizeof(inaddr.s_addr));
-
-	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-	if(sock == -1)
-	{
-		mac[5] = 1;
-		return;
-	}
-
-	memset(&parpreq, 0, sizeof(struct arpreq));
-	psa = (struct sockaddr_in *) &parpreq.arp_pa;
-	memset(psa, 0, sizeof(struct sockaddr_in));
-	psa->sin_family = AF_INET;
-	memcpy(&psa->sin_addr, *paddrs, sizeof(struct in_addr));
-
-	status = ioctl(sock, SIOCGARP, &parpreq);
-
-	if(status == -1)
-	{
-		mac[5] = 2;
-		return;
-	}
-
-	mac[0] = (unsigned char) parpreq.arp_ha.sa_data[0];
-	mac[1] = (unsigned char) parpreq.arp_ha.sa_data[1];
-	mac[2] = (unsigned char) parpreq.arp_ha.sa_data[2];
-	mac[3] = (unsigned char) parpreq.arp_ha.sa_data[3];
-	mac[4] = (unsigned char) parpreq.arp_ha.sa_data[4];
-	mac[5] = (unsigned char) parpreq.arp_ha.sa_data[5];
-}
-#endif
-
 #if WIN
 #pragma comment(lib, "IPHLPAPI.lib")
-void gfet_mac(u8_t mac[]) {
-	IP_ADAPTER_INFO AdapterInfo[16];
-	DWORD dwBufLen = sizeof(AdapterInfo);
-	DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
-
+void get_mac(u8_t mac[]) {
+    IP_ADAPTER_INFO AdapterInfo[16];
+    DWORD dwBufLen = sizeof(AdapterInfo);
+    DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);
+	
 	mac[0] = mac[1] = mac[2] = mac[3] = mac[4] = mac[5] = 0;
 
 	if (GetAdaptersInfo(AdapterInfo, &dwBufLen) == ERROR_SUCCESS) {
@@ -306,14 +228,14 @@ void set_nonblock(sockfd s) {
 #endif
 }
 
-// connect for socket already set to non blocking with timeout in seconds
+// connect for socket already set to non blocking with timeout in ms
 int connect_timeout(sockfd sock, const struct sockaddr *addr, socklen_t addrlen, int timeout) {
 	fd_set w, e;
 	struct timeval tval;
 
 	if (connect(sock, addr, addrlen) < 0) {
 #if !WIN
-		if (last_error() && last_error() != EINPROGRESS) {
+		if (last_error() != EINPROGRESS) {
 #else
 		if (last_error() != WSAEWOULDBLOCK) {
 #endif
@@ -324,8 +246,8 @@ int connect_timeout(sockfd sock, const struct sockaddr *addr, socklen_t addrlen,
 	FD_ZERO(&w);
 	FD_SET(sock, &w);
 	e = w;
-	tval.tv_sec = timeout;
-	tval.tv_usec = 0;
+	tval.tv_sec = timeout / 1000;
+	tval.tv_usec = (timeout - tval.tv_sec * 1000) * 1000;
 
 	// only return 0 if w set and sock error is zero, otherwise return error code
 	if (select(sock + 1, NULL, &w, &e, timeout ? &tval : NULL) == 1 && FD_ISSET(sock, &w)) {
@@ -369,7 +291,7 @@ void set_readwake_handles(event_handle handles[], sockfd s, event_event e) {
 	handles[0] = WSACreateEvent();
 	handles[1] = e;
 	WSAEventSelect(s, handles[0], FD_READ | FD_CLOSE);
-#elif SELFPIPE
+#elif SELFPIPE  || LOOPBACK
 	handles[0].fd = s;
 	handles[1].fd = e.fds[0];
 	handles[0].events = POLLIN;
@@ -407,6 +329,42 @@ event_type wait_readwake(event_handle handles[], int timeout) {
 #endif
 }
 
+#if LOOPBACK
+void _wake_create(event_event* e) {
+	struct sockaddr_in addr;
+	short port;
+	socklen_t len;
+
+	e->mfds = e->fds[0] = e->fds[1] = -1;
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+	// create sending socket - will wait for connections
+	addr.sin_port = 0;
+	e->mfds = socket(AF_INET, SOCK_STREAM, 0);
+	bind(e->mfds, (struct sockaddr*) &addr, sizeof(addr));
+	len = sizeof(struct sockaddr);
+
+	// get assigned port & listen
+	getsockname(e->mfds, (struct sockaddr *) &addr, &len);
+	port = addr.sin_port;
+	listen(e->mfds, 1);
+
+	// create receiving socket
+	addr.sin_port = 0;
+	e->fds[0] = socket(AF_INET, SOCK_STREAM, 0);
+	bind(e->fds[0], (struct sockaddr*) &addr, sizeof(addr));
+
+	// connect to sender (we listen so it can't be blocking)
+	addr.sin_port = port;
+	connect(e->fds[0], (struct sockaddr*) &addr, sizeof(addr));
+
+	// this one will work or fail, but not block
+	len = sizeof(struct sockaddr);
+	e->fds[1] = accept(e->mfds, (struct sockaddr*) &addr, &len);
+}
+#endif
+
 // pack/unpack to network byte order
 void packN(u32_t *dest, u32_t val) {
 	u8_t *ptr = (u8_t *)dest;
@@ -435,21 +393,8 @@ void set_nosigpipe(sockfd s) {
 }
 #endif
 
+
 #if WIN
-void winsock_init(void) {
-    WSADATA wsaData;
-	WORD wVersionRequested = MAKEWORD(2, 2);
-    int WSerr = WSAStartup(wVersionRequested, &wsaData);
-    if (WSerr != 0) {
-		LOG_ERROR("Bad winsock version", NULL);
-        exit(1);
-    }
-}
-
-void winsock_close(void) {
-	WSACleanup();
-}
-
 void *dlopen(const char *filename, int flag) {
 	SetLastError(0);
 	return LoadLibrary((LPCTSTR)filename);
@@ -475,35 +420,38 @@ char *dlerror(void) {
 	return NULL;
 }
 
-// this only implements numfds == 1
 int poll(struct pollfd *fds, unsigned long numfds, int timeout) {
 	fd_set r, w;
 	struct timeval tv;
-	int ret;
-	
+	int ret, i, max_fds = fds[0].fd;
+
 	FD_ZERO(&r);
 	FD_ZERO(&w);
-	
-	if (fds[0].events & POLLIN) FD_SET(fds[0].fd, &r);
-	if (fds[0].events & POLLOUT) FD_SET(fds[0].fd, &w);
-	
+
+	for (i = 0; i < numfds; i++) {
+		if (fds[i].events & POLLIN) FD_SET(fds[i].fd, &r);
+		if (fds[i].events & POLLOUT) FD_SET(fds[i].fd, &w);
+		if (max_fds < fds[i].fd) max_fds = fds[i].fd;
+	}
+
 	tv.tv_sec = timeout / 1000;
 	tv.tv_usec = 1000 * (timeout % 1000);
-	
-	ret = select(fds[0].fd + 1, &r, &w, NULL, &tv);
-    
+
+	ret = select(max_fds + 1, &r, &w, NULL, &tv);
+
 	if (ret < 0) return ret;
-	
-	fds[0].revents = 0;
-	if (FD_ISSET(fds[0].fd, &r)) fds[0].revents |= POLLIN;
-	if (FD_ISSET(fds[0].fd, &w)) fds[0].revents |= POLLOUT;
-	
+
+	for (i = 0; i < numfds; i++) {
+		fds[i].revents = 0;
+		if (FD_ISSET(fds[i].fd, &r)) fds[i].revents |= POLLIN;
+		if (FD_ISSET(fds[i].fd, &w)) fds[i].revents |= POLLOUT;
+	}
+
 	return ret;
 }
-
 #endif
 
-#if LINUX || FREEBSD || SUNOS
+#if LINUX || FREEBSD
 void touch_memory(u8_t *buf, size_t size) {
 	u8_t *ptr;
 	for (ptr = buf; ptr < buf + size; ptr += sysconf(_SC_PAGESIZE)) {
@@ -512,7 +460,7 @@ void touch_memory(u8_t *buf, size_t size) {
 }
 #endif
 
-#if LINUX || FREEBSD || SUNOS
+#if LINUX || SUNOS
 int SendARP(in_addr_t src, in_addr_t dst, u32_t *mac, u32_t *size) {
 	int                 s;
 	struct arpreq       areq;
@@ -592,6 +540,12 @@ int SendARP(in_addr_t src, in_addr_t dst, u32_t *mac, u32_t *size)
 
 	free(buf);
 	return (found_entry);
+}
+#elif !WIN
+int SendARP(in_addr_t src, in_addr_t dst, u32_t *mac, u32_t *size)
+{
+	LOG_ERROR("No SendARP build for this platform", NULL);
+	return 1;
 }
 #endif
 

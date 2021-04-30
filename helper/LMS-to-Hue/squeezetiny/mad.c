@@ -219,7 +219,7 @@ static decode_state mad_decode(struct thread_ctx_s *ctx) {
 			decode_state ret;
 			if (!eos && m->stream.error == MAD_ERROR_BUFLEN) {
 				ret = DECODE_RUNNING;
-			} else if (eos && (m->stream.error == MAD_ERROR_BUFLEN || m->stream.error == MAD_ERROR_LOSTSYNC)) {
+			} else if (eos && (m->stream.error == MAD_ERROR_BUFLEN || m->stream.error == MAD_ERROR_LOSTSYNC || m->stream.error == MAD_ERROR_BADBITRATE)) {
 				ret = DECODE_COMPLETE;
 			} else if (!MAD_RECOVERABLE(m->stream.error)) {
 				LOG_INFO("[%p]: mad_frame_decode error: %s - stopping decoder", ctx, MAD(&gm, stream_errorstr, &m->stream));
@@ -238,12 +238,17 @@ static decode_state mad_decode(struct thread_ctx_s *ctx) {
 		MAD(&gm, synth_frame, &m->synth, &m->frame);
 
 		if (ctx->decode.new_stream) {
+			// seems that mad can use some help in term of sync detection
+			if (m->stream.next_frame[0] != 0xff || (m->stream.next_frame[1] & 0xf0) != 0xf0) continue;
+
 			LOCK_O;
 			LOG_INFO("[%p]: setting track_start", ctx);
-			//output.next_sample_rate = decode_newstream(m->synth.pcm.samplerate, ctx->output.supported_rates);
+
+			// don't use next_sample_rate
 			ctx->output.current_sample_rate = decode_newstream(m->synth.pcm.samplerate, ctx->output.supported_rates, ctx);
 			ctx->output.track_start = ctx->outputbuf->writep;
 			if (ctx->output.fade_mode) _checkfade(true, ctx);
+
 			ctx->decode.new_stream = false;
 			UNLOCK_O;
 		}
@@ -338,10 +343,17 @@ static void mad_open(u8_t sample_size, u32_t sample_rate, u8_t channels, u8_t en
 	if (!m) {
 		m = ctx->decode.handle = malloc(sizeof(struct mad));
 		if (!m) return;
-		m->readbuf = NULL;
+		m->readbuf = malloc(READBUF_SIZE + MAD_BUFFER_GUARD);
+		if (!m->readbuf) {
+			free(m);
+			return;
+		}
+	} else {
+		mad_synth_finish(&m->synth); // macro only in current version
+		MAD(&gm, frame_finish, &m->frame);
+		MAD(&gm, stream_finish, &m->stream);
 	}
 
-	if (!m->readbuf) m->readbuf = malloc(READBUF_SIZE + MAD_BUFFER_GUARD);
 	m->checktags = 1;
 	m->consume = 0;
 	m->skip = MAD_DELAY;

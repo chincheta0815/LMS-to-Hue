@@ -35,8 +35,8 @@ struct codec	*codecs[MAX_CODECS];
 #define UNLOCK_S mutex_unlock(ctx->streambuf->mutex)
 #define LOCK_O   mutex_lock(ctx->outputbuf->mutex)
 #define UNLOCK_O mutex_unlock(ctx->outputbuf->mutex)
-#define LOCK_D   mutex_lock(ctx->decode.mutex);
-#define UNLOCK_D mutex_unlock(ctx->decode.mutex);
+#define LOCK_D   mutex_lock(ctx->decode.mutex)
+#define UNLOCK_D mutex_unlock(ctx->decode.mutex)
 
 #if PROCESS
 #define IF_DIRECT(x)    if (ctx->decode.direct) { x }
@@ -121,15 +121,14 @@ static void *decode_thread(struct thread_ctx_s *ctx) {
 void decode_init(void) {
 	int i = 0;
 
-#if FFMPEG
-	if (!strstr(exclude_codecs, "alac") && (!include_codecs || strstr(include_codecs, "alac")))  codecs[i++] = register_ff("alc");
-	if (!strstr(exclude_codecs, "wma")  && (!include_codecs || strstr(include_codecs, "wma")))   codecs[i++] = register_ff("wma");
-#endif
 	codecs[i++] = register_pcm();
 	if ((codecs[i] = register_mad()) == NULL) codecs[i] = register_mpg();
 	i++;
+	codecs[i++] = register_alac();
 	codecs[i++] = register_flac();
 	codecs[i++] = register_faad();
+	codecs[i++] = register_vorbis();
+	codecs[i++] = register_opus();
 #if RESAMPLE
 	register_soxr();
 #endif
@@ -142,7 +141,10 @@ void decode_end(void) {
 	deregister_mpg();
 	deregister_mad();
 	deregister_flac();
+	deregister_alac();
 	deregister_faad();
+	deregister_vorbis();
+	deregister_opus();
 #if RESAMPLE
 	deregister_soxr();
 #endif
@@ -203,7 +205,7 @@ void decode_flush(struct thread_ctx_s *ctx) {
 }
 
 /*---------------------------------------------------------------------------*/
-unsigned decode_newstream(unsigned sample_rate, unsigned supported_rates[], struct thread_ctx_s *ctx) {
+unsigned decode_newstream(unsigned sample_rate, int supported_rates[], struct thread_ctx_s *ctx) {
 	// called with O locked to get sample rate for potentially processed output stream
 	// release O mutex during process_newstream as it can take some time
 
@@ -219,10 +221,10 @@ unsigned decode_newstream(unsigned sample_rate, unsigned supported_rates[], stru
 }
 
 /*---------------------------------------------------------------------------*/
-void codec_open(u8_t format, u8_t sample_size, u32_t sample_rate, u8_t channels, u8_t endianness, struct thread_ctx_s *ctx) {
+bool codec_open(u8_t codec, u8_t sample_size, u32_t sample_rate, u8_t channels, u8_t endianness, struct thread_ctx_s *ctx) {
 	int i;
 
-	LOG_DEBUG("codec open: '%c'", format);
+	LOG_DEBUG("codec open: '%c'", codec);
 
 	LOCK_D;
 
@@ -236,7 +238,7 @@ void codec_open(u8_t format, u8_t sample_size, u32_t sample_rate, u8_t channels,
 	// find the required codec
 	for (i = 0; i < MAX_CODECS; ++i) {
 
-		if (codecs[i] && codecs[i]->id == format) {
+		if (codecs[i] && codecs[i]->id == codec) {
 
 			if (ctx->codec && ctx->codec != codecs[i]) {
 				LOG_DEBUG("closing codec: '%c'", ctx->codec->id);
@@ -244,18 +246,18 @@ void codec_open(u8_t format, u8_t sample_size, u32_t sample_rate, u8_t channels,
 			}
 
 			ctx->codec = codecs[i];
-
 			ctx->codec->open(sample_size, sample_rate, channels, endianness, ctx);
-
 			ctx->decode.state = DECODE_READY;
 
 			UNLOCK_D;
-			return;
+			return true;
 		}
 	}
 
 	UNLOCK_D;
 
 	LOG_ERROR("codec not found", NULL);
+
+	return false;
 }
 

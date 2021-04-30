@@ -1,3 +1,6 @@
+DEPS_DIR	= /Users/weiler/devel.env/deps.dir
+DEPS_INC_DIR	= $(DEPS_DIR)/include
+DEPS_LIB_DIR	= $(DEPS_DIR)/lib
 BASE		= ..
 OS 		:= $(shell uname)
 
@@ -9,54 +12,60 @@ else
 LINKSTATIC 	= -static
 endif
 
-TOOLS		= ./tools
-SRC		= ./squeeze2hue
+LIBOPENSSL      = $(DEPS_INC_DIR)
+LIBCURL		= $(DEPS_INC_DIR)
+HUELIBENT	= $(DEPS_INC_DIR)/libHueEnt
+JSONC		= $(DEPS_INC_DIR)
+ALAC            = $(DEPS_INC_DIR)/alac
+OPUS            = $(DEPS_INC_DIR)/opus
+OGG             = $(DEPS_INC_DIR)/ogg
+VORBIS          = $(DEPS_INC_DIR)/vorbis
+SQUEEZE2HUE	= ./squeeze2hue
 SQUEEZETINY	= ./squeezetiny
-VIRTUAL		= ./virtual
-CHUE		= ./chue
-
-VALGRIND	= $(BASE)/valgrind
-UPNP 		= $(BASE)/libupnp/1.6.19
-JANSSON		= $(BASE)/jansson/2.10
-AUBIO		= $(BASE)/aubio/0.4.5
-BIQUAD		= $(BASE)/biquad
+TOOLS		= ./tools
+LIBUPNP         = $(DEPS_INC_DIR)/upnp
+MDNSSD		= $(BASE)/mdnssd
+HUEBRIDGE       = ./huebridge
 
 DEFINES 	+= -DHAVE_STDINT_H -DRESAMPLE -DNDEBUG -D_FILE_OFFSET_BITS=64 
 
-vpath %.c $(TOOLS):$(SRC):$(CHUE):$(SQUEEZETINY):$(VIRTUAL):$(BIQUAD)
+vpath %.c $(MDNSSD):$(SQUEEZE2HUE):$(SQUEEZETINY):$(TOOLS):$(HUEBRIDGE)
 
-LIBRARY 	= $(OBJ)/libupnp.a $(OBJ)/libthreadutil.a $(OBJ)/libixml.a $(OBJ)/libsoxr.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a 
-LIBRARY_STATIC 	= $(LIBRARY) $(OBJ)/libfaad.a $(OBJ)/libsoxr.a $(OBJ)/libFLAC.a $(OBJ)/libmad.a $(OBJ)/libjansson.a $(OBJ)/libaubio.a 
+LIBRARY 	= $(DEPS_LIB_DIR)/libixml.a $(DEPS_LIB_DIR)/libsoxr.a $(DEPS_LIB_DIR)/libalac.a
+                  
+LIBRARY_STATIC 	= $(LIBRARY) $(DEPS_LIB_DIR)/libssl.a $(DEPS_LIB_DIR)/libcrypto.a \
+                  $(DEPS_LIB_DIR)/libcurl.a $(DEPS_LIB_DIR)/libjson-c.a $(DEPS_LIB_DIR)/libHueEnt.a \
+                  $(DEPS_LIB_DIR)/libfaad.a $(DEPS_LIB_DIR)/libFLAC.a $(DEPS_LIB_DIR)/libmad.a \
+                  $(DEPS_LIB_DIR)/libogg.a \
+                  $(DEPS_LIB_DIR)/libvorbis.a $(DEPS_LIB_DIR)/libvorbisfile.a \
+                  $(DEPS_LIB_DIR)/libopus.a $(DEPS_LIB_DIR)/libopusfile.a \
+                  $(DEPS_LIB_DIR)/libfftw3.a
 
-INCLUDE = -I. \
-	  -I$(SQUEEZETINY) \
-	  -I$(TOOLS) \
-	  -I$(SRC) -I$(SRC)/inc \
-	  -I$(VALGRIND)/memcheck -I$(VALGRIND)/include \
-	  -I$(UPNP)/ixml/inc -I$(UPNP)/upnp/inc \
-	  -I$(BASE)/mpg123/src/libmpg123\
-	  -I$(BASE)/flac/include\
-	  -I$(BASE)/faad2/include\
-	  -I$(BASE)/libmad\
-	  -I$(BASE)/soxr/src\
-	  -I$(UPNP)/ixml/inc -I$(UPNP)/upnp/inc -I$(UPNP)/build/inc -I$(UPNP)/threadutil/inc \
-	  -I$(JANSSON)/include \
-	  -I$(AUBIO)/include \
-	  -I$(VIRTUAL) \
-	  -I$(BIQUAD)/include \
-	  -I$(CHUE)/include
+INCLUDE = -I$(SQUEEZETINY) \
+	  -I$(SQUEEZE2HUE)/inc \
+          -I$(TOOLS) \
+          -I$(LIBUPNP) \
+          -I$(MDNSSD) \
+          -I$(HUELIBENT) \
+          -I$(JSONC) \
+          -I$(OGG) \
+          -I$(OPUS) \
+          -I$(VORBIS) \
+          -I$(LIBCURL) \
+          -I$(HUEBRIDGE) \
+          -I$(ALAC)
 
 DEPS	= $(SQUEEZETINY)/squeezedefs.h
 		  
-SOURCES = slimproto.c buffer.c stream.c utils.c pcm.c process.c resample.c \
-	output.c decode.c output_pack.c output_hue.c  main.c util_common.c \
-      	squeeze2hue.c util.c conf_util.c log_util.c virtual.c biquad.c \
-	chue_log.c chue_capabilities.c chue_common.c chue_configuration.c chue_interface.c chue_lights.c
+SOURCES = conf_util.c hue_bridge.c hue_stream.c hue_analyze.c \
+          log_util.c mdnssd-min.c squeeze2hue.c util.c \
+          buffer.c decode.c main.c output.c output_huebridge.c output_pack.c \
+          pcm.c process.c resample.c slimproto.c stream.c utils.c util_common.c
 		
-SOURCES_LIBS = mpg.c flac.c mad.c faad.c
+SOURCES_LIBS = alac.c faad.c flac.c mad.c mpg.c opus.c vorbis.c
 		
-OBJECTS 	= $(patsubst %.c,$(OBJ)/%.o,$(SOURCES)) $(patsubst %.c,$(OBJ)/%.o,$(SOURCES_LIBS)) 
-OBJECTS_STATIC 	= $(patsubst %.c,$(OBJ)/%.o,$(SOURCES)) $(patsubst %.c,$(OBJ)/%-static.o,$(SOURCES_LIBS)) 
+OBJECTS 	= $(patsubst %.c,$(OBJ)/%.o,$(SOURCES)) $(patsubst %.c,$(OBJ)/%.o,$(SOURCES_LIBS))
+OBJECTS_STATIC 	= $(patsubst %.c,$(OBJ)/%.o,$(SOURCES)) $(patsubst %.c,$(OBJ)/%-static.o,$(SOURCES_LIBS))
 
 all: $(EXECUTABLE) $(EXECUTABLE_STATIC)
 

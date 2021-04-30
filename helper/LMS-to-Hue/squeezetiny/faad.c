@@ -90,7 +90,7 @@ static log_level *loglevel = &decode_loglevel;
 // minimal code for mp4 file parsing to extract audio config and find media data
 
 // adapted from faad2/common/mp4ff
-u32_t mp4_desc_length(u8_t **buf) {
+static u32_t mp4_desc_length(u8_t **buf) {
 	u8_t b;
 	u8_t num_bytes = 0;
 	u32_t length = 0;
@@ -301,9 +301,22 @@ static int read_mp4_header(unsigned long *samplerate_p, unsigned char *channels_
 			a->pos += bytes;
 			a->consume = consume - bytes;
 			break;
-		} else {
+		} else if (len > bytes && len <= _buf_used(ctx->streambuf)) {
+			// atom body wrapping around buffer, need to linearize it
+			u8_t *buf = malloc(bytes);
+			memcpy(buf, ctx->streambuf->readp, bytes);
+			memmove(ctx->streambuf->buf + bytes, ctx->streambuf->buf, ctx->streambuf->writep - ctx->streambuf->buf);
+			memcpy(ctx->streambuf->buf, buf, bytes);
+			_buf_inc_writep(ctx->streambuf, bytes);
+			LOG_WARN("[%p]: buffer wrap in mp4 header parsing type:%s len:%u bytes:%s", ctx, type, len, bytes);
 			break;
-		}
+		 } else if (len >= ctx->streambuf->size) {
+			// can't process an atom larger than streambuf!
+			LOG_ERROR("[%p]: atom %s too large for buffer %u %u", ctx, type, len, ctx->streambuf->size);
+			return -1;
+		 } else {
+			break;
+		 }
 	}
 
 	return 0;
@@ -371,7 +384,7 @@ static decode_state faad_decode(struct thread_ctx_s *ctx) {
 
 			LOCK_O;
 			LOG_INFO("[%p]: setting track_start", ctx);
-			//output.next_sample_rate = decode_newstream(samplerate, output.supported_rates);
+			// don't use next_sample_rate
 			ctx->output.current_sample_rate = decode_newstream(a->samplerate, ctx->output.supported_rates, ctx);
 			ctx->output.track_start = ctx->outputbuf->writep;
 			if (ctx->output.fade_mode) _checkfade(true, ctx);
@@ -392,7 +405,7 @@ static decode_state faad_decode(struct thread_ctx_s *ctx) {
 		}
 	}
 
-	if (bytes_wrap < WRAPBUF_LEN && bytes_total > WRAPBUF_LEN) {
+	if (bytes_wrap < WRAPBUF_LEN && bytes_wrap != bytes_total) {
 		// make a local copy of frames which may have wrapped round the end of streambuf
 		u8_t buf[WRAPBUF_LEN];
 		memcpy(buf, ctx->streambuf->readp, bytes_wrap);

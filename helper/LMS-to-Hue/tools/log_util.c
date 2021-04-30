@@ -54,6 +54,7 @@ void logprint(const char *fmt, ...) {
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);
+	va_end(args);
 	fflush(stderr);
 }
 
@@ -76,7 +77,7 @@ char *level2debug(log_level level)
 	case lWARN: return "warn";
 	case lINFO: return "info";
 	case lDEBUG: return "debug";
-	case lSDEBUG: return "sdebug";
+	case lSDEBUG: return "debug";
 	default: return "warn";
 	}
 }

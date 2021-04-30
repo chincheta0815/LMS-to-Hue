@@ -1,5 +1,5 @@
 /*
- *  chue logging utility
+ *  logging utility
  *
  *  (c) Adrian Smith 2012-2015, triode1@btinternet.com
  *  (c) Philippe 2016, philippe_44@outlook.com

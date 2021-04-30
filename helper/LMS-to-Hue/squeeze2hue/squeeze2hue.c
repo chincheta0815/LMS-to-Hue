@@ -1,7 +1,6 @@
 /*
- *  Squeeze2hue - LMS to Hue gateway
  *
- *  (c) Philippe, philippe_44@outlook.com
+ * squeeze2hue - LMS to Hue Entertainment Bridge
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,447 +17,362 @@
  *
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include <math.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <limits.h>
-#if WIN
-#include <process.h>
-#endif
-
-#if SUNOS
-#include <limits.h>
-#endif
-
-#include "ixml.h"
-#include "upnp.h"
-#include "upnpdebug.h"
-#include "upnptools.h"
-#include "squeezedefs.h"
 #include "squeeze2hue.h"
+#include "squeezedefs.h"
+#include "squeezeitf.h"
 #include "conf_util.h"
-#include "util_common.h"
 #include "log_util.h"
-#include "util.h"
+#include "util_common.h"
+#include "hue_bridge.h"
 
-#include "chue.h"
-#include "virtual.h"
+#define MODEL_NAME_STRING "Hue Entertainment Bridge"
+#define MDNS_DISCOVERY_TIME 20
 
+#define SET_LOGLEVEL(log) if (!strcmp(resp, #log"dbg")) {            \
+                              char level[20];                        \
+                              i = scanf("%s", level);                \
+                              log ## _loglevel = debug2level(level); \
+                          }
 
 /*----------------------------------------------------------------------------*/
-/* globals initialized */
+/* GLOBAL VARIABLES */
 /*----------------------------------------------------------------------------*/
-#if LINUX || FREEBSD || SUNOS
-bool            glDaemonize = false;
-#endif
-char            glInterface[16] = "?";
-bool            glInteractive = true;
-char            *glLogFile;
-s32_t           glLogLimit = -1;
-static char     *glPidFile = NULL;
-static char     *glSaveConfigFile = NULL;
-bool            glAutoSaveConfigFile = false;
-bool            glGracefullShutdown = true;
 
-log_level   slimproto_loglevel = lINFO;
-log_level   stream_loglevel = lWARN;
-log_level   decode_loglevel = lWARN;
-log_level   output_loglevel = lINFO;
-log_level   main_loglevel = lINFO;
-log_level   slimmain_loglevel = lINFO;
-log_level   util_loglevel = lINFO;
-log_level   virtual_loglevel = lINFO;
-chue_loglevel_t   chue_loglevel = lERROR;
+static pthread_t            glMainThread;
+static pthread_t            glmDNSsearchThread;
+static pthread_mutex_t      glMainMutex;
+static pthread_cond_t       glMainCond;
 
-tHBConfig   glHBConfig = {
-                true,   // enabled
-                false,  // connected (valid username)
-                "",     // device name
-                "none", // user name
-                30,     // remove count
-            };
+static bool                 glMainRunning = true;
+static bool                 glGracefulShutdown = true;
+static bool                 glDiscovery = false;
+static bool                 glInteractive = true;
+struct sMR                  glMRDevices[MAX_RENDERERS];
+
+static struct in_addr       glHost;
+static char                 *glPidFile;
+static bool                 glAutoSaveConfigFile = false;
+static void                 *glConfigID = NULL;
+static char                 glConfigFileName[_STR_LEN_] = "./hue_entertainment_bridge.xml";
+static char                 *glHostName;
+static char                 glModelName[_STR_LEN_] = MODEL_NAME_STRING;
+char                        glInterface[16] = "?";
+static struct mDNShandle_s  *glmDNSsearchHandle;
+static bool                 glDeviceRegister = false;
+int                         glMigration = 0;
+
+static char                 *glLogFile;
+s32_t                       glLogLimit = -1;
+u32_t                       glScanInterval = SCAN_INTERVAL;
+u32_t                       glScanTimeout = SCAN_TIMEOUT;
+
+log_level                   decode_loglevel = lINFO;
+log_level                   huebridge_loglevel = lINFO;
+log_level                   huestream_loglevel = lINFO;
+log_level                   hueprocess_loglevel = lINFO;
+log_level                   main_loglevel = lINFO;
+log_level                   output_loglevel = lINFO;
+log_level                   slimmain_loglevel = lINFO;
+log_level                   slimproto_loglevel = lINFO;
+log_level                   stream_loglevel = lINFO;
+log_level                   util_loglevel = lINFO;
+
+tMRConfig glMRConfig = {
+                                true,                   // enabled
+                                true,                   // autoplay
+                                0,                      // remove timeout
+                                "none",                 // user name
+                                "none",                 // client key
+                       };
 
 static u8_t LMSVolumeMap[101] = {
-                0, 1, 1, 1, 2, 2, 2, 3,  3,  4,
-                5, 5, 6, 6, 7, 8, 9, 9, 10, 11,
-                12, 13, 14, 15, 16, 16, 17, 18, 19, 20,
-                22, 23, 24, 25, 26, 27, 28, 29, 30, 32,
-                33, 34, 35, 37, 38, 39, 40, 42, 43, 44,
-                46, 47, 48, 50, 51, 53, 54, 56, 57, 59,
-                60, 61, 63, 65, 66, 68, 69, 71, 72, 74,
-                75, 77, 79, 80, 82, 84, 85, 87, 89, 90,
-                92, 94, 96, 97, 99, 101, 103, 104, 106, 108, 110,
-                112, 113, 115, 117, 119, 121, 123, 125, 127, 128
-            };
+                                0, 1, 1, 1, 2, 2, 2, 3,  3,  4,
+                                5, 5, 6, 6, 7, 8, 9, 9, 10, 11,
+                                12, 13, 14, 15, 16, 16, 17, 18, 19, 20,
+                                22, 23, 24, 25, 26, 27, 28, 29, 30, 32,
+                                33, 34, 35, 37, 38, 39, 40, 42, 43, 44,
+                                46, 47, 48, 50, 51, 53, 54, 56, 57, 59,
+                                60, 61, 63, 65, 66, 68, 69, 71, 72, 74,
+                                75, 77, 79, 80, 82, 84, 85, 87, 89, 90,
+                                92, 94, 96, 97, 99, 101, 103, 104, 106, 108, 110,
+                                112, 113, 115, 117, 119, 121, 123, 125, 127, 128
+                               };
 
 sq_dev_param_t glDeviceParam = {
-                STREAMBUF_SIZE,
-                OUTPUTBUF_SIZE,
-                "flc,pcm,aif,aac,mp3",
-                "?",
-                "",
-                { 0x00,0x00,0x00,0x00,0x00,0x00 },
+                                STREAMBUF_SIZE,
+                                OUTPUTBUF_SIZE,
+                                "aac,aif,flc,mp3,pcm",
+                                "?",
+                                "",
+                                { 0x00,0x00,0x00,0x00,0x00,0x00 },
+                                false,
 #if defined(RESAMPLE)
-                96000,
-                true,
-                "",
+                                96000,
+                                true,
+                                "",
 #else
-                44100,
+                                44100,
 #endif
-                { "" },
-            } ;
-
-
-/*----------------------------------------------------------------------------*/
-/* globals */
-/*----------------------------------------------------------------------------*/
-static pthread_t    glMainThread;
-void                *glConfigID = NULL;
-char                glConfigName[SQ_STR_LENGTH] = "./config.xml";
-#if LINUX || FREEBSD || SUNOS
-char                glHueCacheDir[SQ_STR_LENGTH] = "/tmp";
-#endif
-#if WIN
-char                glHueCacheDir[SQ_STR_LENGTH] = "C:\Temp";
-#endif
-static bool         glDiscovery = false;
-u32_t               glScanInterval = SCAN_INTERVAL;
-u32_t               glScanTimeout = SCAN_TIMEOUT;
-struct sHB          glHBDevices[MAX_RENDERERS];
-pthread_mutex_t     glHBFoundMutex;
-char                glUPnPSocket[128] = "?";
-unsigned int        glPort;
-char                glIPaddress[128] = "";
-UpnpClient_Handle   glControlPointHandle;
-
+				{ "" },
+                               } ;
 
 /*----------------------------------------------------------------------------*/
-/* const */
+/* local variables */
 /*----------------------------------------------------------------------------*/
-static const char   SEARCH_TARGET[]     = "upnp:rootdevice";
-static const char   cPhilipsHueBridge[] = "Philips hue bridge";
-static const char   cLogitech[]         = "Logitech";
-
-
-/*----------------------------------------------------------------------------*/
-/* locals */
-/*----------------------------------------------------------------------------*/
-extern log_level    main_loglevel;
-static log_level    *loglevel = &main_loglevel;
-
-static pthread_t    glUpdateHueThread;
-static bool         glMainRunning = true;
-
-static struct sLocList {
-                char    *Location;
-                struct  sLocList *Next;
-            } *glHBFoundList = NULL;
-
+extern log_level               main_loglevel;
+static log_level               *loglevel = &main_loglevel;
 
 static char usage[] =
-            VERSION "\n"
-            "See -t for license terms\n"
-            "Usage: [options]\n"
-            "  -s <server>[:<port>]\tConnect to specified server, otherwise uses autodiscovery to find server\n"
-            "  -b <address>]\tNetwork address to bind to\n"
-            "  -x <config file>\tread config from file (default is ./config.xml)\n"
-            "  -i <config file>\tdiscover players, save <config file> and exit\n"
-            "  -c <cache dir>\tcache directory for storing temporary hue data\n"
-            "  -I \t\t\tauto save config at every network scan\n"
-            "  -f <logfile>\t\tWrite debug to logfile\n"
-            "  -p <pid file>\t\twrite PID in file\n"
-            "  -d <log>=<level>\tSet logging level, logs: all|slimproto|stream|decode|output|web|main|util|virtual|hue, level: error|warn|info|debug|sdebug\n"
+                    VERSION "\n"
+                    "See -t for license terms\n"
+                    "Usage: [options]\n"
+                    "  -s <server>[:<port>]\tConnect to specified server, otherwise uses autodiscovery to find server\n"
+                    "  -a <port>[:<count>]\tset inbound port base and range\n"
+                    "  -b <address>]\tNetwork address to bind to\n"
+                    "  -x <config file>\tread config from file (default is ./config.xml)\n"
+                    "  -i <config file>\tdiscover players, save <config file> and exit\n"
+                    "  -r \t\t\tregister new devices and exist\n"
+                    "  -m <name1,name2...>\texclude from search devices whose model name contains name1 or name 2 ...\n"
+                    "  -I \t\t\tauto save config at every network scan\n"
+                    "  -f <logfile>\t\tWrite debug to logfile\n"
+                    "  -p <pid file>\t\twrite PID in file\n"
+                    "  -d <log>=<level>\tSet logging level, logs: all|slimproto|stream|decode|output|web|main|util|huebridge, level: error|warn|info|debug|sdebug\n"
+                    "  -M <modelname>\tSet the squeezelite player model name sent to the server (default: " MODEL_NAME_STRING ")\n"
 #if LINUX || FREEBSD || SUNOS
-            "  -z \t\t\tDaemonize\n"
+                    "  -z \t\t\tDaemonize\n"
 #endif
-            "  -Z \t\t\tNOT interactive\n"
-            "  -k \t\t\tImmediate exit on SIGQUIT and SIGTERM\n"
-            "  -t \t\t\tLicense terms\n"
-            "\n"
-            "Build options:"
+                    "  -Z \t\t\tNOT interactive\n"
+                    "  -k \t\t\tImmediate exit on SIGQUIT and SIGTERM\n"
+                    "  -t \t\t\tLicense terms\n"
+                    "\n"
+                    "Build options:"
 #if LINUX
-            " LINUX"
+                    " LINUX"
 #endif
 #if WIN
-            " WIN"
+                    " WIN"
 #endif
 #if OSX
-            " OSX"
+                    " OSX"
 #endif
 #if FREEBSD
-            " FREEBSD"
+                    " FREEBSD"
 #endif
 #if SUNOS
-            " SUNOS"
+                    " SUNOS"
 #endif
 #if EVENTFD
-            " EVENTFD"
+                    " EVENTFD"
 #endif
 #if SELFPIPE
-            " SELFPIPE"
+                    " SELFPIPE"
 #endif
 #if WINEVENT
-            " WINEVENT"
+                    " WINEVENT"
 #endif
-            "\n\n";
+		    "\n\n";
 
 static char license[] =
-            "This program is free software: you can redistribute it and/or modify\n"
-            "it under the terms of the GNU General Public License as published by\n"
-            "the Free Software Foundation, either version 3 of the License, or\n"
-            "(at your option) any later version.\n\n"
-            "This program is distributed in the hope that it will be useful,\n"
-            "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-            "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-            "GNU General Public License for more details.\n\n"
-            "You should have received a copy of the GNU General Public License\n"
-            "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\n"
-           ;
-
+                    "This program is free software: you can redistribute it and/or modify\n"
+                    "it under the terms of the GNU General Public License as published by\n"
+                    "the Free Software Foundation, either version 3 of the License, or\n"
+                    "(at your option) any later version.\n\n"
+                    "This program is distributed in the hope that it will be useful,\n"
+                    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+                    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+                    "GNU General Public License for more details.\n\n"
+                    "You should have received a copy of the GNU General Public License\n"
+                    "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\n";
 
 /*----------------------------------------------------------------------------*/
 /* prototypes */
 /*----------------------------------------------------------------------------*/
-static void *UpdateHueThread(void *args);
-static bool AddHueDevice(struct sHB *Device, char * UDN, IXML_Document *DescDoc,	const char *location);
-void        DelHueDevice(struct sHB *Device);
+static bool AddHueDevice(struct sMR *Device, mDNSservice_t *s);
+static void DelHueDevice(struct sMR *Device);
 
+bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void *param) {
+    struct sMR *Device = caller;
 
-/*----------------------------------------------------------------------------*/
-bool sq_callback(sq_dev_handle_t handle, void *caller, sq_action_t action, void *param)
-{
-    struct sHB *device = caller;
-    bool rc = true;
+    if (!Device) {
+        LOG_ERROR("no caller ID in callback", NULL);
+        return false;
+    }
 
-    if (!device)	{
-        LOG_ERROR("No caller ID in callback", NULL);
+    LOG_SDEBUG("callback for %s (%d)", Device->FriendlyName, action);
+
+    pthread_mutex_lock(&Device->Mutex);
+
+    if (!Device->Running) {
+        LOG_WARN("[%p]: huebridge has been removed", Device);
+        pthread_mutex_unlock(&Device->Mutex);
         return false;
     }
 
     if (action == SQ_ONOFF) {
-        device->on = *((bool*) param);
+        LOG_SDEBUG("[%p]: callback received SQ_ONOFF", Device);
+    
+        Device->On = *((bool*) param);
 
-        if (!device->on) {
-            tHueReq *Req = malloc(sizeof(tHueReq));
+        if (!Device->On && Device->Config.AutoPlay)
+            sq_notify(Device->SqueezeHandle, Device, SQ_PLAY, NULL, &Device->On);
 
-            virtual_disconnect(device->vPlayer);
+        if (!Device->On) {
+            tHuebridgeReq *Req = malloc(sizeof(tHuebridgeReq));
 
-            pthread_mutex_lock(&device->Mutex);
-            QueueFlush(&device->Queue);
+            QueueFlush(&Device->Queue);
             strcpy(Req->Type, "OFF");
-            QueueInsert(&device->Queue, Req);
-            pthread_cond_signal(&device->Cond);
-            pthread_mutex_unlock(&device->Mutex);
+            QueueInsert(&Device->Queue, Req);
+            pthread_cond_signal(&Device->Cond);
         }
 
-        LOG_DEBUG("[%p]: device set on/off %d", caller, device->on);
+        LOG_DEBUG("[%p]: huebridge set on/off %d", caller, Device->On);
     }
 
-    if (!device->on && action != SQ_SETNAME && action != SQ_SETSERVER) {
-        LOG_DEBUG("[%p]: device off or not controlled by LMS", caller);
+    if (!Device->On && action != SQ_SETNAME && action != SQ_SETSERVER) {
+        LOG_DEBUG("[%p]: huebridge off or not controlled by LMS", Device);
+        pthread_mutex_unlock(&Device->Mutex);
         return false;
     }
 
-    LOG_SDEBUG("callback for %s (%d)", device->FriendlyName, action);
-    pthread_mutex_lock(&device->Mutex);
+    switch (action) {	
+        case SQ_CONNECT: {
+            LOG_SDEBUG("[%p]: callback received SQ_CONNECT", Device);
+            tHuebridgeReq *Req = malloc(sizeof(tHuebridgeReq));
 
-    switch (action) {
-        case SQ_FINISHED:
-            device->TrackRunning = false;
-            device->TrackDuration = 0;
+            Device->sqState = SQ_PLAY;
+
+            strcpy(Req->Type, "CONNECT");
+            QueueInsert(&Device->Queue, Req);
+            pthread_cond_signal(&Device->Cond);
+            
             break;
-        case SQ_STOP: {
-            tHueReq *Req = malloc(sizeof(tHueReq));
+        }
+        case SQ_FINISHED: {
+            LOG_SDEBUG("[%p]: callback received SQ_FINISHED", Device);
 
-            device->TrackRunning = false;
-            device->TrackDuration = 0;
-            device->sqState = SQ_STOP;
-            chue_restore_all_light_states_from_file(&device->Hue);
-            virtual_stop(device->vPlayer);
+            Device->TrackRunning = false;
+            Device->TrackDuration = 0;
 
-            strcpy(Req->Type, "STOP");
-            QueueInsert(&device->Queue, Req);
-            pthread_cond_signal(&device->Cond);
+            break;
+        }
+        case SQ_METASEND: {
+            LOG_SDEBUG("[%p]: callback received SQ_METASEND", Device);
+
+            Device->MetadataWait = 5;
+
             break;
         }
         case SQ_PAUSE: {
-            tHueReq *Req;
+            LOG_SDEBUG("[%p]: callback received SQ_PAUSE", Device);
+            tHuebridgeReq *Req = malloc(sizeof(tHuebridgeReq));
 
-            device->TrackRunning = false;
-            device->sqState = SQ_PAUSE;
-            chue_restore_all_light_states_from_file(&device->Hue);
-            virtual_pause(device->vPlayer);
+            Device->sqState = SQ_PAUSE;
+            Device->TrackRunning = false;
 
-            Req = malloc(sizeof(tHueReq));
+            huebridge_pause(Device->HueBridge);
+
             strcpy(Req->Type, "PAUSE");
-            QueueInsert(&device->Queue, Req);
-            pthread_cond_signal(&device->Cond);
+            QueueInsert(&Device->Queue, Req);
+            pthread_cond_signal(&Device->Cond);
+            break;
+        }
+        case SQ_SETNAME: {
+            LOG_SDEBUG("[%p]: callback received SQ_SETNAME", Device);
+
+            strcpy(Device->sq_config.name, (char*) param);
+
+            break;
+        } 
+        case SQ_SETSERVER: {
+            LOG_SDEBUG("[%p]: callback received SQ_SETSERVER");
+
+            strcpy(Device->sq_config.dynamic.server, inet_ntoa(*(struct in_addr*)param));
+
+            break;
+        }
+        case SQ_STARTED: {
+            LOG_SDEBUG("[%p]: callback received SQ_STARTED", Device);
+
+            Device->TrackRunning = true;
+            Device->MetadataWait = 1;
+            Device->MetadataHash = 0;
+
+            break;
+        }
+        case SQ_STOP: {
+            LOG_SDEBUG("[%p]: callback received SQ_STOP", Device);
+            tHuebridgeReq *Req = malloc(sizeof(tHuebridgeReq));
+
+            Device->sqState = SQ_STOP;
+            Device->TrackRunning = false;
+            Device->TrackDuration = 0;
+
+            huebridge_stop(Device->HueBridge);
+
+            strcpy(Req->Type, "STOP");
+            QueueInsert(&Device->Queue, Req);
+            pthread_cond_signal(&Device->Cond);
+
             break;
         }
         case SQ_UNPAUSE: {
-            tHueReq *Req = malloc(sizeof(tHueReq));
+            LOG_SDEBUG("[%p]: callback received SQ_UNPAUSE", Device);
+            tHuebridgeReq *Req = malloc(sizeof(tHuebridgeReq));
 
-            device->TrackRunning = true;
-            device->sqState = SQ_PLAY;
+            Device->sqState = SQ_PLAY;
+            Device->TrackRunning = true;
 
-            chue_dump_all_light_states_to_file(&device->Hue);
-            if (*((unsigned*) param)) virtual_start_at(device->vPlayer, TIME_MS2NTP(*((unsigned*) param)));
+            if (*((unsigned*) param))
+                huebridge_start_at(Device->HueBridge, TIME_MS2NTP(*((unsigned*) param)));
 
             strcpy(Req->Type, "UNPAUSE");
-            QueueInsert(&device->Queue, Req);
-            pthread_cond_signal(&device->Cond);
+            QueueInsert(&Device->Queue, Req);
+            pthread_cond_signal(&Device->Cond);
+
             break;
         }
         case SQ_VOLUME: {
-            u32_t Volume = *(u16_t*) param;
-            tHueReq *Req = malloc(sizeof(tHueReq));
+            LOG_SDEBUG("[%p]: callback received SQ_VOLUME", Device);
+
+            tHuebridgeReq *Req = malloc(sizeof(tHuebridgeReq));
+            u32_t volume = *(u16_t*) param;
             int i;
 
-            for (i = 100; Volume < LMSVolumeMap[i] && i; i--);
-            if (device->Volume == Volume) break;
+            for (i = 100; volume < LMSVolumeMap[i] && i; i--)
+                if (Device->Volume == volume)
+                    break;
 
-            device->Volume = Volume;
+            Device->Volume = volume;
 
-            Req->Data.Volume = device->Volume;
+            Req->Data.Volume = Device->Volume;
             strcpy(Req->Type, "VOLUME");
-            QueueInsert(&device->Queue, Req);
-            pthread_cond_signal(&device->Cond);
-            break;
-        }
-        case SQ_CONNECT: {
-            tHueReq *Req = malloc(sizeof(tHueReq));
-
-            device->sqState = SQ_PLAY;
-            chue_dump_all_light_states_to_file(&device->Hue);
-            virtual_connect(device->vPlayer);
-
-            strcpy(Req->Type, "CONNECT");
-            QueueInsert(&device->Queue, Req);
-            pthread_cond_signal(&device->Cond);
+            QueueInsert(&Device->Queue, Req);
+            pthread_cond_signal(&Device->Cond);
 
             break;
         }
-        case SQ_METASEND:
-            device->MetadataWait = 5;
+        default: {
+            LOG_SDEBUG("[%p]: callback received UNKNOWN command (%d)", Device, action);
             break;
-        case SQ_STARTED:
-            device->TrackRunning = true;
-            device->MetadataWait = 1;
-            device->MetadataHash = 0;
-            break;
-        case SQ_SETNAME:
-            strcpy(device->sq_config.name, (char*) param);
-            break;
-        case SQ_SETSERVER:
-            strcpy(device->sq_config.dynamic.server, inet_ntoa(*(struct in_addr*) param));
-            break;
-        default:
-            break;
+        }
     }
 
-    pthread_mutex_unlock(&device->Mutex);
-    
-    return rc;
+    pthread_mutex_unlock(&Device->Mutex);
+    return true;
 }
 
-
-/*----------------------------------------------------------------------------*/
-int CallbackEventHandler(Upnp_EventType EventType, void *Event, void *Cookie)
-{
-    LOG_SDEBUG("event: %i [%s] [%p]", EventType, uPNPEvent2String(EventType), Cookie);
-
-    switch ( EventType ) {
-        case UPNP_DISCOVERY_ADVERTISEMENT_ALIVE:
-            break;
-        case UPNP_DISCOVERY_SEARCH_RESULT: {
-            struct Upnp_Discovery *d_event = (struct Upnp_Discovery *) Event;
-            struct sLocList **p, *prev = NULL;
-
-            LOG_SDEBUG("Answer to uPNP search %d", d_event->Location);
-            if (d_event->ErrCode != UPNP_E_SUCCESS) {
-                LOG_SDEBUG("Error in Discovery Callback -- %d", d_event->ErrCode);
-                break;
-            }
-
-            ithread_mutex_lock(&glHBFoundMutex);
-            p = &glHBFoundList;
-            while (*p) {
-                prev = *p;
-                p = &((*p)->Next);
-            }
-            (*p) = (struct sLocList*) malloc(sizeof (struct sLocList));
-            (*p)->Location = strdup(d_event->Location);
-            (*p)->Next = NULL;
-            if (prev) prev->Next = *p;
-            ithread_mutex_unlock(&glHBFoundMutex);
-            break;
-        }
-        case UPNP_DISCOVERY_SEARCH_TIMEOUT:	{
-            pthread_attr_t attr;
-
-            pthread_attr_init(&attr);
-            pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + 32*1024);
-            pthread_create(&glUpdateHueThread, &attr, &UpdateHueThread, NULL);
-            pthread_detach(glUpdateHueThread);
-            pthread_attr_destroy(&attr);
-            break;
-        }
-        case UPNP_DISCOVERY_ADVERTISEMENT_BYEBYE: {
-            struct Upnp_Discovery *d_event = (struct Upnp_Discovery *) Event;
-            struct sHB *p;
-            int i;
-
-            for (i = 0; i < MAX_RENDERERS; i++) {
-                if (!glHBDevices[i].InUse) continue;
-                if (!strcmp(glHBDevices[i].UDN, d_event->DeviceId)) break;
-            }
-
-            if (i == MAX_RENDERERS) break;
-
-            p = glHBDevices + i;
-
-            ithread_mutex_lock(&p->Mutex);
-
-            if (!*d_event->ServiceType && p->Connected) {
-                p->Connected = false;
-                LOG_INFO("[%p]: Player BYE-BYE", p);
-            }
-
-            ithread_mutex_unlock(&p->Mutex);
-
-            break;
-        }
-        case UPNP_EVENT_AUTORENEWAL_FAILED:
-        case UPNP_EVENT_SUBSCRIPTION_EXPIRED:
-        case UPNP_CONTROL_GET_VAR_COMPLETE:
-        case UPNP_EVENT_RENEWAL_COMPLETE:
-        case UPNP_EVENT_SUBSCRIBE_COMPLETE:
-        case UPNP_EVENT_SUBSCRIPTION_REQUEST:
-        case UPNP_CONTROL_ACTION_REQUEST:
-        case UPNP_EVENT_UNSUBSCRIBE_COMPLETE:
-        case UPNP_CONTROL_GET_VAR_REQUEST:
-        case UPNP_CONTROL_ACTION_COMPLETE:
-        case UPNP_EVENT_RECEIVED:
-        break;
-    }
-
-    Cookie = Cookie;
-    
-    return 0;
-}
-
-
-/*----------------------------------------------------------------------------*/
-static void *PlayerThread(void *args)
-{
-    struct sHB *Device = (struct sHB*) args;
+static void *PlayerThread(void *args) {
+    struct sMR *Device = (struct sMR*) args;
 
     Device->Running = true;
 
     while (Device->Running) {
-        tHueReq *req = GetRequest(&Device->Queue, &Device->Mutex, &Device->Cond, 1000);
+        // tHuebridgeReq is free at end of this thread.
+        tHuebridgeReq *req = GetRequest(&Device->Queue, &Device->Mutex, &Device->Cond, 1000);
 
         // empty means timeout every sec
         if (!req) {
@@ -466,8 +380,9 @@ static void *PlayerThread(void *args)
 
             LOG_DEBUG("[%p]: tick %u", Device, now);
 
-            // after that, only check what's needed when running
-            if (!Device->TrackRunning) continue;
+            // after that, only check what's needed when a track is running
+            if (!Device->TrackRunning)
+                continue;
 
             pthread_mutex_lock(&Device->Mutex);
             if (Device->MetadataWait && !--Device->MetadataWait) {
@@ -479,15 +394,16 @@ static void *PlayerThread(void *args)
 
                 valid = sq_get_metadata(Device->SqueezeHandle, &metadata, false);
 
-                // not a valid metadata, nothing to update
+                // no valid metadata, nothing to update
                 if (!valid) {
                     Device->MetadataWait = 5;
                     sq_free_metadata(&metadata);
                     continue;
-				}
+                }
 
-                // on live stream, gather metadata every 5 seconds
-                if (metadata.remote && !metadata.duration) Device->MetadataWait = 5;
+                // on live stream, get metadata every 5 seconds.
+                if (metadata.remote && !metadata.duration)
+                    Device->MetadataWait = 5;
 
                 hash = hash32(metadata.title) ^ hash32(metadata.artwork);
 
@@ -502,27 +418,43 @@ static void *PlayerThread(void *args)
                              div(metadata.duration, 1000).quot,
                              div(metadata.duration,1000).rem, metadata.file_size,
                              metadata.artwork ? metadata.artwork : "");
-                }
+                } 
 
                 sq_free_metadata(&metadata);
             }
-            else pthread_mutex_unlock(&Device->Mutex);
+            else {
+                pthread_mutex_unlock(&Device->Mutex);
+            }
 
             continue;
         }
 
-        LOG_INFO("[%p]: request %s", Device, req->Type);
+        LOG_INFO("[%p]: request to player %s", Device, req->Type);
 
         if (!strcasecmp(req->Type, "CONNECT")) {
+            LOG_INFO("[%p]:  hue streaming connecting ...", Device);
+
+            if (huebridge_connect(Device->HueBridge)) {
+                LOG_INFO("[%p]: hue streaming connected", Device);
+            }
+            else {
+                LOG_ERROR("[%p]: hue streaming failed to connect", Device);
+            }
         }
 
-        if (!strcasecmp(req->Type, "PAUSE")) {
+        if (!strcasecmp(req->Type, "OFF")) {
+            LOG_INFO("[%p]: hue stream disconnecting ...", Device);
+            huebridge_disconnect(Device->HueBridge);
+            huebridge_sanitize(Device->HueBridge);
         }
 
         if (!strcasecmp(req->Type, "STOP")) {
         }
 
-        if (!strcasecmp(req->Type, "OFF")) {
+        if (!strcasecmp(req->Type, "PAUSE")) {
+        }
+
+        if (!strcasecmp(req->Type, "FLUSH")) {
         }
 
         if (!strcasecmp(req->Type, "VOLUME")) {
@@ -534,449 +466,377 @@ static void *PlayerThread(void *args)
     return NULL;
 }
 
+char *GetmDNSAttribute(txt_attr_t *p, int count, char *name){
+    int j;
 
-/*----------------------------------------------------------------------------*/
-static bool RefreshTO(char *UDN)
-{
-    int i;
+    for (j = 0; j < count; j++)
+        if ( !strcasecmp(p[j].name, name))
+            return strdup(p[j].value);
 
-    for (i = 0; i < MAX_RENDERERS; i++) {
-        if (glHBDevices[i].InUse && !strcmp(glHBDevices[i].UDN, UDN)) {
-            glHBDevices[i].TimeOut = false;
-            glHBDevices[i].MissingCount = glHBDevices[i].Config.RemoveCount;
-            
-            return true;
-        }
-    }
-    
-    return false;
+    return NULL;
 }
 
-
-/*----------------------------------------------------------------------------*/
-static void *UpdateHueThread(void *args)
-{
-    struct sHB *Device = NULL;
-    int i, TimeStamp;
-    static bool Running = false;
-    struct sLocList *p, *m;
-
-    if (Running) return NULL;
-    Running = true;
-
-    LOG_DEBUG("Begin hue devices update", NULL);
-    TimeStamp = gettime_ms();
-
-    // first add any newly found uPNP renderer
-    ithread_mutex_lock(&glHBFoundMutex);
-    m = p = glHBFoundList;
-    glHBFoundList = NULL;
-    ithread_mutex_unlock(&glHBFoundMutex);
-
-    if (!glMainRunning) {
-        LOG_DEBUG("Aborting ...", NULL);
-        while (p) {
-            m = p->Next;
-            free(p->Location);
-            free(p);
-            p = m;
-        }
-
-        return NULL;
+struct sMR *SearchUDN(char *UDN) {
+    int i;
+    
+    for (i = 0; i < MAX_RENDERERS; i++) {
+        if (glMRDevices[i].Running && !strcmp(glMRDevices[i].UDN, UDN))
+            return glMRDevices + i;
     }
 
-    while (p) {
-        IXML_Document *DescDoc = NULL;
-        char *UDN = NULL, *Manufacturer = NULL, *ModelName;
-        int rc;
-        void *n = p->Next;
+    return NULL;
+}
 
-        rc = UpnpDownloadXmlDoc(p->Location, &DescDoc);
-        if (rc != UPNP_E_SUCCESS) {
-            LOG_DEBUG("Error obtaining description %s -- error = %d\n", p->Location, rc);
-            if (DescDoc) ixmlDocument_free(DescDoc);
-            p = n;
+bool mDNSsearchCallback(mDNSservice_t *slist, void *cookie, bool *stop) {
+    int j;
+    struct sMR    *Device;
+    mDNSservice_t *s;
+    u32_t         now = gettime_ms();
+
+    for (s = slist; s && glMainRunning; s = s->next) {
+
+        // ignore announces made on behalf
+        if (!s->name || s->host.s_addr != s->addr.s_addr)
+            continue;
+
+        // is that device already there
+        if ((Device = SearchUDN(s->name)) != NULL) {
+            Device->Expired = 0;
+            
+            // device disconnected
+            if (s->expired) {
+                if(!huebridge_is_connected(Device->HueBridge) && !Device->Config.RemoveTimeout) {
+                        LOG_INFO("[%p]: removing renderer (%s)", Device, Device->FriendlyName);
+                        if (Device->SqueezeHandle)
+                            sq_delete_device(Device->SqueezeHandle);
+                        DelHueDevice(Device);
+                }
+                else {
+                    LOG_INFO("[%p]: keep missing hue entertainment bridge (%s)", Device, Device->FriendlyName);
+                    Device->Expired = now ? now : 1;
+                }
+            }
             continue;
         }
 
-        Manufacturer = XMLGetFirstDocumentItem(DescDoc, "manufacturer");
-        ModelName = XMLGetFirstDocumentItem(DescDoc, "modelName");
-        UDN = XMLGetFirstDocumentItem(DescDoc, "UDN");
-        if (!strstr(Manufacturer, cLogitech) && strstr(ModelName, cPhilipsHueBridge) && !RefreshTO(UDN)) {
-            // new device so search a free spot.
-            for (i = 0; i < MAX_RENDERERS && glHBDevices[i].InUse; i++);
-
-            // no more room !
-            if (i == MAX_RENDERERS) {
-                LOG_ERROR("Too many hue devices", NULL);
-                NFREE(UDN);
-                NFREE(Manufacturer);
-                break;
-            }
-
-            Device = &glHBDevices[i];
-            if (AddHueDevice(Device, UDN, DescDoc, p->Location) && !glSaveConfigFile) {
-                // create a new slimdevice
-                Device->SqueezeHandle = sq_reserve_device(Device, &sq_callback);
-                if (!*(Device->sq_config.name)) strcpy(Device->sq_config.name, Device->Hue.name);
-                if (!Device->SqueezeHandle || !sq_run_device(Device->vPlayer, Device->SqueezeHandle, &Device->Hue, &Device->sq_config)) {
-                    sq_release_device(Device->SqueezeHandle);
-                    Device->SqueezeHandle = 0;
-                    LOG_ERROR("[%p]: cannot create squeezelite instance (%s)", Device, Device->FriendlyName);
-                    DelHueDevice(Device);
-                }
-            }
+        // disconnect of an unknown device
+        if (!s->port && !s->addr.s_addr) {
+            LOG_ERROR("unknown device %s disconnected", s->name);
+            continue;
         }
 
-        if (DescDoc) ixmlDocument_free(DescDoc);
-        NFREE(UDN);
-        NFREE(Manufacturer);
-        p = n;
+        // should not happen
+        if (s->expired) {
+            LOG_DEBUG("device %s already expired", s->name);
+            continue;
+        }
+
+        // device creation so search for a free spot
+        for (j = 0; j < MAX_RENDERERS && glMRDevices[j].Running; j++);
+
+        // max number of devices is reached
+        if (j == MAX_RENDERERS) {
+            LOG_ERROR("max number of hue bridge entertainment devices reached", NULL);
+            break;
+        }
+
+        Device = glMRDevices + j;
+
+        if(AddHueDevice(Device, s) && !glDiscovery) {
+            // create a new slimdevice
+            Device->SqueezeHandle = sq_reserve_device(Device, &sq_callback);
+
+            if (!*(Device->sq_config.name))
+                strcpy(Device->sq_config.name, Device->FriendlyName);
+ 
+            if (!Device->SqueezeHandle || !sq_run_device(Device->SqueezeHandle, Device->HueBridge, &Device->sq_config)) {
+                sq_release_device(Device->SqueezeHandle);
+                Device->SqueezeHandle = 0;
+                LOG_ERROR("[%p]: cannot create squeezelite instance for device %s", Device, Device->FriendlyName);
+                DelHueDevice(Device);
+            }
+
+        }
     }
 
-    // free the list of discovered location URL's
-    p = m;
-    while (p) {
-        m = p->Next;
-        free(p->Location);
-        free(p);
-        p = m;
-    }
+    // walk through list of devices with expired timeout and remove them
+    for (j = 0; j < MAX_RENDERERS; j++) {
+        Device = glMRDevices + j;
+        if (!Device->Running || Device->Config.RemoveTimeout <= 0 || !Device->Expired 
+                             || now < Device->Expired + Device->Config.RemoveTimeout*1000)
+            continue;
 
-    // then walk through the list of devices to remove missing ones
-    for (i = 0; i < MAX_RENDERERS; i++) {
-        Device = &glHBDevices[i];
-        if (!Device->InUse || !Device->Config.RemoveCount) continue;
-        if (Device->TimeOut && Device->MissingCount) Device->MissingCount--;
-        if (Device->Connected || Device->MissingCount) continue;
+        LOG_INFO("[%p]: removing renderer (%s) on timeout", Device, Device->FriendlyName);
+ 
+        if (Device->SqueezeHandle) 
+            sq_delete_device(Device->SqueezeHandle);
 
-        LOG_INFO("[%p]: removing (%s)", Device, Device->FriendlyName);
-        if (Device->SqueezeHandle) sq_delete_device(Device->SqueezeHandle);
         DelHueDevice(Device);
+    }    
+
+    if (glAutoSaveConfigFile || glDiscovery || glDeviceRegister) {
+        LOG_DEBUG("update configuration %s", glConfigFileName);
+        SaveConfig(glConfigFileName, glConfigID, false);
     }
 
-    glDiscovery = true;
-    if (glAutoSaveConfigFile && !glSaveConfigFile) {
-        LOG_DEBUG("Updating configuration %s", glConfigName);
-        SaveConfig(glConfigName, glConfigID, false);
-    }
-
-    LOG_DEBUG("End Hue devices update %d", gettime_ms() - TimeStamp);
-
-    Running = false;
-    return NULL;
+    return false;
 }
 
-
-/*----------------------------------------------------------------------------*/
-static void *MainThread(void *args)
-{
-    unsigned last = gettime_ms();
-    u32_t ScanPoll = glScanInterval*1000 + 1;
-
-    while (glMainRunning) {
-        int i;
-        int elapsed = gettime_ms() - last;
-
-        // reset timeout and re-scan devices
-        ScanPoll += elapsed;
-        if (glScanInterval && ScanPoll > glScanInterval*1000) {
-            int rc;
-            ScanPoll = 0;
-
-            for (i = 0; i < MAX_RENDERERS; i++) {
-                glHBDevices[i].TimeOut = true;
-                glDiscovery = false;
-            }
-
-            // launch a new search for Media Render
-            rc = UpnpSearchAsync(glControlPointHandle, glScanTimeout, SEARCH_TARGET, NULL);
-            if (UPNP_E_SUCCESS != rc) LOG_ERROR("Error sending search update%d", rc);
-        }
-
-        if (glLogFile && glLogLimit != - 1) {
-            s32_t size = ftell(stderr);
-
-            if (size > glLogLimit*1024*1024) {
-                u32_t Sum, BufSize = 16384;
-                u8_t *buf = malloc(BufSize);
-
-                FILE *rlog = fopen(glLogFile, "rb");
-                FILE *wlog = fopen(glLogFile, "r+b");
-                LOG_DEBUG("Resizing log", NULL);
-                for (Sum = 0, fseek(rlog, size - (glLogLimit*1024*1024) / 2, SEEK_SET);
-                    (BufSize = fread(buf, 1, BufSize, rlog)) != 0;
-                    Sum += BufSize, fwrite(buf, 1, BufSize, wlog));
-
-                Sum = fresize(wlog, Sum);
-                fclose(wlog);
-                fclose(rlog);
-                NFREE(buf);
-                if (!freopen(glLogFile, "a", stderr)) {
-                    LOG_ERROR("re-open error while truncating log", NULL);
-                }
-            }
-        }
-
-        last = gettime_ms();
-        sleep(1);
-    }
+static void *mDNSsearchThread(void *args) {
+    // launch mDNS query
+    query_mDNS(glmDNSsearchHandle, "_hue._tcp.local", 120,
+               glDiscovery ? MDNS_DISCOVERY_TIME : 0, &mDNSsearchCallback, NULL);
 
     return NULL;
 }
 
-
-/*----------------------------------------------------------------------------*/
-static bool AddHueDevice(struct sHB *Device, char *UDN, IXML_Document *DescDoc, const char *location)
-{
-    char *deviceType = NULL;
-    char *friendlyName = NULL;
-    char *URLBase = NULL;
-    char *presURL = NULL;
-    char *manufacturer = NULL;
-    pthread_attr_t attr;
+bool AddHueDevice(struct sMR *Device, mDNSservice_t *s) {
+    pthread_attr_t pattr;
     u32_t mac_size = 6;
-    bool ret = true;
+    char *bridgeid;
+    char *modelid;
+    char *str;
+
+    // get bridgeid at the very beginning as it is needed for getting the config.
+    bridgeid = GetmDNSAttribute(s->attr, s->attr_count, "bridgeid");
 
     // read parameters from default then config file
-    memset(Device, 0, sizeof(struct sHB));
-    memcpy(&Device->Config, &glHBConfig, sizeof(tHBConfig));
+    memcpy(&Device->Config, &glMRConfig, sizeof(tMRConfig));
     memcpy(&Device->sq_config, &glDeviceParam, sizeof(sq_dev_param_t));
-    LoadHBConfig(glConfigID, UDN, &Device->Config, &Device->sq_config);
-    if (!Device->Config.Enabled) return false;
+    LoadMRConfig(glConfigID, bridgeid, &Device->Config, &Device->sq_config);
 
-    // Read key elements from description document
-    deviceType = XMLGetFirstDocumentItem(DescDoc, "deviceType");
-    friendlyName = XMLGetFirstDocumentItem(DescDoc, "friendlyName");
-    if (!friendlyName || !*friendlyName) friendlyName = strdup(UDN);
-    URLBase = XMLGetFirstDocumentItem(DescDoc, "URLBase");
-    presURL = XMLGetFirstDocumentItem(DescDoc, "presentationURL");
-    manufacturer = XMLGetFirstDocumentItem(DescDoc, "manufacturer");
+    strcpy(Device->UDN, bridgeid);
+    NFREE(bridgeid);
 
-    LOG_SDEBUG("UDN:\t%s\nDeviceType:\t%s\nFriendlyName:\t%s", UDN, deviceType, friendlyName);
-
-    if (presURL) {
-        char UsedPresURL[200] = "";
-        UpnpResolveURL((URLBase ? URLBase : location), presURL, UsedPresURL);
-        strcpy(Device->PresURL, UsedPresURL);
+    modelid = GetmDNSAttribute(s->attr, s->attr_count, "modelid");
+    if (modelid && strcasestr(modelid, "BSB001")) {
+        LOG_DEBUG("[%p]: hue bridge (modelid: %s) does not support protocol", Device, modelid);
+        NFREE(modelid);
+        return false;
     }
-    else strcpy(Device->PresURL, "");
+    strcpy(Device->ModelId, GetmDNSAttribute(s->attr, s->attr_count, "modelid"));
+    NFREE(modelid);
 
-    LOG_INFO("[%p]: adding renderer (%s)", Device, friendlyName);
+    if (!Device->Config.Enabled)
+        return false;
 
-    Device->TimeOut = false;
-    Device->Connected = true;
-    Device->MissingCount = Device->Config.RemoveCount;
-    Device->SqueezeHandle = 0;
-    Device->Running = true;
-    Device->InUse = true;
-    Device->sqState = SQ_STOP;
-    strcpy(Device->UDN, UDN);
-    strcpy(Device->DescDocURL, location);
-    strcpy(Device->FriendlyName, friendlyName);
-    strcpy(Device->Manufacturer, manufacturer);
+    Device->IPAddress = s->addr;
 
-    Device->Hue.ip_address.s_addr = ExtractIP(location);
-    Device->vPlayer = virtual_create(FRAMES_PER_BLOCK);
+    strcpy(Device->FriendlyName, s->hostname);
+    str = strcasestr(Device->FriendlyName, ".local");
+    if (str != NULL)
+        *str = '\0';
 
-    strcpy(Device->Hue.user_name, Device->Config.UserName);
-    strcpy(Device->Hue.cache_dir, glHueCacheDir);
+    Device->On              = false;
+    Device->Running         = true;
+    Device->SqueezeHandle   = 0;
+    Device->sqState         = SQ_STOP;
+    Device->HueBridge       = NULL;
+    Device->Expired         = 0;
+    Device->TrackRunning    = false;
+    Device->Volume          = -1;
+    Device->MetadataWait    = 0;
+    Device->MetadataHash    = 0;
 
-    if(!chue_get_bridge_config(&Device->Hue)){
-        LOG_ERROR("[%p]: cannot get bridge configuration", Device);
-        Device->UserValid = false;
-        ret = false;
-    };
-    
+    strcpy(Device->BridgeId, Device->UDN);
+    LOG_DEBUG("[%p]: found hue bridge (modelid: %s, bridgeid: %s, ip: %s)",
+              Device, Device->ModelId, Device->BridgeId, inet_ntoa(Device->IPAddress));
+
     if (!memcmp(Device->sq_config.mac, "\0\0\0\0\0\0", mac_size)) {
-        memcpy(Device->sq_config.mac, Device->Hue.mac, mac_size);
+        if (SendARP(Device->IPAddress.s_addr, INADDR_ANY, (u32_t*) Device->sq_config.mac, &mac_size)) {
+            u32_t hash = hash32(Device->UDN);
+
+            LOG_ERROR("[%p]: cannot get mac address for device %s, creating fake %x", Device, Device->FriendlyName, hash);
+            memcpy(Device->sq_config.mac + 2, &hash, 4);
+        }
+        memset(Device->sq_config.mac, 0xaa, 2);
     }
 
-    if (chue_get_all_lights(&Device->Hue)) {
-        chue_dump_all_light_states_to_file(&Device->Hue);
-        LOG_SDEBUG("[%p]: connected to bridge (%s)", Device, Device->Hue.name);
-        Device->UserValid = true;
-    } 
+    MakeMacUnique(Device);
+
+    Device->HueBridge = huebridge_create(Device->IPAddress, Device->Config.UserName, Device->Config.ClientKey, FRAMES_PER_BLOCK);
+
+    if (!Device->HueBridge) {
+        LOG_ERROR("[%p]: cannot create hue entertainment bridge device", Device);
+        return false;
+    }
+
+    if (glDeviceRegister) {
+        LOG_INFO("[%p]: registering new hue entertainment bridge (%s)", Device, inet_ntoa(Device->IPAddress));
+
+        if (!huebridge_register(Device->HueBridge)) {
+            LOG_ERROR("[%p]: could not register hue entertainment bridge device", Device);
+        }
+        else {
+            LOG_DEBUG("[%p]: setting device username (%s) and clientkey (%s)", Device, Device->HueBridge->hue_rest_ctx.username, Device->HueBridge->hue_rest_ctx.clientkey);
+            strcpy(Device->Config.UserName, Device->HueBridge->hue_rest_ctx.username);
+            strcpy(Device->Config.ClientKey, Device->HueBridge->hue_rest_ctx.clientkey);
+        }
+    }
     else {
-        LOG_WARN("[%p]: cannot get light states", Device);
-        Device->UserValid = false;
-        ret = false;
+        if (!huebridge_check_prerequisites(Device->HueBridge)) {
+            LOG_INFO("[%p]: squeeze2hue could not find needed prerequisites for use with hue entertainment bridge (%s)", Device, inet_ntoa(Device->IPAddress));
+            LOG_INFO("[%p]:     hint: app has to be registered and/or at least one entertainment group containing at least one light needs to be defined", Device);
+            return false;
+        }
     }
-
-    NFREE(manufacturer)
-    NFREE(deviceType);
-    NFREE(friendlyName);
-    NFREE(URLBase);
-    NFREE(presURL);
 
     pthread_mutex_init(&Device->Mutex, 0);
-    pthread_cond_init(&Device->Cond, 0);
     QueueInit(&Device->Queue);
 
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + 32*1024);
-    pthread_create(&Device->Thread, &attr, &PlayerThread, Device);
-    pthread_attr_destroy(&attr);
+    pthread_attr_init(&pattr);
+    pthread_attr_setstacksize(&pattr, PTHREAD_STACK_MIN + 64*1024);
+    pthread_create(&Device->Thread, NULL, &PlayerThread, Device);
+    pthread_attr_destroy(&pattr);
 
-    return ret;
+    return true;
 }
 
-
-/*----------------------------------------------------------------------------*/
-void FlushHueDevices(void)
-{
+void FlushHueDevices(void) {
     int i;
 
     for (i = 0; i < MAX_RENDERERS; i++) {
-        struct sHB *p = &glHBDevices[i];
-        if (p->InUse) DelHueDevice(p);
+        struct sMR *p = &glMRDevices[i];
+        if (p->Running)
+            DelHueDevice(p);
     }
 }
 
-
-/*----------------------------------------------------------------------------*/
-void DelHueDevice(struct sHB *Device)
-{
+void DelHueDevice(struct sMR *Device) {
     pthread_mutex_lock(&Device->Mutex);
     Device->Running = false;
-    Device->InUse = false;
     pthread_cond_signal(&Device->Cond);
     pthread_mutex_unlock(&Device->Mutex);
 
     pthread_join(Device->Thread, NULL);
 
-    pthread_cond_destroy(&Device->Cond);
-    pthread_mutex_destroy(&Device->Mutex);
+    huebridge_destroy(Device->HueBridge);
 
-    virtual_destroy(Device->vPlayer);
+    LOG_INFO("[%p] hue entertainment bridge stopped", Device);
 
-    LOG_INFO("[%p]: Hue device stopped", Device);
-
-    memset(Device, 0, sizeof(struct sHB));
+    //NFREE pointers here.
 }
 
+static void *MainThread(void *args) {
+    while (glMainRunning) {
+        pthread_mutex_lock(&glMainMutex);
+        pthread_cond_reltimedwait(&glMainCond, &glMainMutex, 30*1000);
+        pthread_mutex_unlock(&glMainMutex);
 
-/*----------------------------------------------------------------------------*/
-int uPNPSearchMediaRenderer(void)
-{
-    int rc;
+        if (glLogFile && glLogLimit != -1) {
+            s32_t size = ftell(stderr);
 
-    /* search for (Media Render and wait 15s */
-    glDiscovery = false;
-    rc = UpnpSearchAsync(glControlPointHandle, SCAN_TIMEOUT, SEARCH_TARGET, NULL);
+            if (size > glLogLimit*1024*1024) {
+                u32_t sum, bufSize = 16384;
+                u8_t *buf = malloc(bufSize);
 
-    if (UPNP_E_SUCCESS != rc) {
-        LOG_ERROR("Error sending uPNP search request%d", rc);
-        
-        return false;
+                FILE *rlog = fopen(glLogFile, "rb");
+                FILE *wlog = fopen(glLogFile, "r+b");
+                LOG_DEBUG("resizing log", NULL);
+                for (sum = 0, fseek(rlog, size - (glLogLimit*1024*1024) / 2, SEEK_SET);
+                        (bufSize = fread(buf, 1, bufSize, rlog)) != 0;
+                        sum += bufSize, fwrite(buf, 1, bufSize, wlog));
+
+                sum = fresize(wlog, sum);
+                fclose(wlog);
+                fclose(rlog);
+                NFREE(buf);
+                if (!freopen(glLogFile, "a", stderr)) {
+                    LOG_ERROR("re-open errror while truncating log", NULL);
+                }
+            }
+        }
     }
-    
-    return true;
+
+    return NULL;
 }
 
+static bool Start(void) {
+    memset(&glMRDevices, 0, sizeof(glMRDevices));
 
-/*----------------------------------------------------------------------------*/
-int Start(void)
-{
-    int rc;
-    pthread_attr_t attr;
-
-    if (glScanInterval) {
-        if (glScanInterval < SCAN_INTERVAL) glScanInterval = SCAN_INTERVAL;
-        if (glScanTimeout < SCAN_TIMEOUT) glScanTimeout = SCAN_TIMEOUT;
-        if (glScanTimeout > glScanInterval - SCAN_TIMEOUT) glScanTimeout = glScanInterval - SCAN_TIMEOUT;
+    pthread_mutex_init(&glMainMutex, 0);
+    pthread_cond_init(&glMainCond, 0);
+    for (int i = 0; i < MAX_RENDERERS; i++) {
+        pthread_mutex_init(&glMRDevices[i].Mutex, 0);
+        pthread_cond_init(&glMRDevices[i].Cond, 0);
     }
 
-    ithread_mutex_init(&glHBFoundMutex, 0);
-    memset(&glHBDevices, 0, sizeof(glHBDevices));
+    glHost.s_addr = get_localhost(&glHostName);
+    if (!strstr(glInterface, "?")) {
+        glHost.s_addr = inet_addr(glInterface);
+    }
+    LOG_INFO("binding to %s", inet_ntoa(glHost));
 
-    UpnpSetLogLevel(UPNP_ALL);
-
-    if (!strstr(glUPnPSocket, "?")) sscanf(glUPnPSocket, "%[^:]:%u", glIPaddress, &glPort);
-
-    if (*glIPaddress) rc = UpnpInit(glIPaddress, glPort);
-    else rc = UpnpInit(NULL, glPort);
-
-    if (rc != UPNP_E_SUCCESS) {
-        LOG_ERROR("UPnP init failed: %d\n", rc);
-        UpnpFinish();
+    LOG_INFO("initializing hue entertainment interface ...");
+    if (huebridge_rest_init()) {
+        LOG_ERROR("cannot initialize huebridge rest interface", NULL);
         return false;
     }
 
-    UpnpSetMaxContentLength(60000);
-
-    if (!*glIPaddress) strcpy(glIPaddress, UpnpGetServerIpAddress());
-    if (!glPort) glPort = UpnpGetServerPort();
-
-    if (rc != UPNP_E_SUCCESS) {
-        LOG_ERROR("uPNP init failed: %d\n", rc);
-        UpnpFinish();
-
+    /* start the mDNS devices discovery thread */
+    if (( glmDNSsearchHandle = init_mDNS(false, glHost)) == NULL) {
+        LOG_ERROR("annot start mDNS discovery", NULL);
         return false;
     }
-
-    if (!*glIPaddress) strcpy(glIPaddress, UpnpGetServerIpAddress());
-    if (!glPort) glPort = UpnpGetServerPort();
-
-    LOG_INFO("uPNP init success - %s:%u", glIPaddress, glPort);
-
-    rc = UpnpRegisterClient(CallbackEventHandler, 
-                            &glControlPointHandle, &glControlPointHandle);
-
-    if (rc != UPNP_E_SUCCESS) {
-        LOG_ERROR("Error registering ControlPoint: %d", rc);
-        UpnpFinish();
-
-        return false;
-    }
+    pthread_create(&glmDNSsearchThread, NULL, &mDNSsearchThread, NULL);
 
     /* start the main thread */
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN + 64*1024);
-    pthread_create(&glMainThread, &attr, &MainThread, NULL);
-    pthread_attr_destroy(&attr);
-
-    uPNPSearchMediaRenderer();
+    pthread_create(&glMainThread, NULL, &MainThread, NULL);
 
     return true;
 }
 
 
-/*----------------------------------------------------------------------------*/
-static bool Stop(void)
-{
-    struct sLocList *p, *m;
+static bool Stop(void) {
+    int i;
 
-    LOG_DEBUG("flush renderers ...", NULL);
-    FlushHueDevices();
-    LOG_DEBUG("terminate main thread ...", NULL);
-    pthread_join(glUpdateHueThread, NULL);
-    pthread_join(glMainThread, NULL);
-    LOG_DEBUG("un-register libupnp callbacks ...", NULL);
-    UpnpUnRegisterClient(glControlPointHandle);
-    LOG_DEBUG("end libupnp ...", NULL);
-    UpnpFinish();
-
-    ithread_mutex_lock(&glHBFoundMutex);
-    m = p = glHBFoundList;
-    glHBFoundList = NULL;
-    ithread_mutex_unlock(&glHBFoundMutex);
-    while (p) {
-        m = p->Next;
-        free(p->Location);
-        free(p);
-        p = m;
-    }
-
-    return true;
-}
-
-
-/*---------------------------------------------------------------------------*/
-static void sighandler(int signum) {
     glMainRunning = false;
 
-    if (!glGracefullShutdown) {
+    LOG_DEBUG("terminate mDNS search thread ...", NULL);
+    close_mDNS(glmDNSsearchHandle);
+    pthread_join(glmDNSsearchThread, NULL);
+
+    LOG_DEBUG("flush hue bridge devices ...", NULL);
+    FlushHueDevices();
+
+    LOG_INFO("stopping hue entertainment interface ...");
+    huebridge_rest_cleanup();
+
+    LOG_DEBUG("terminate main thread ...", NULL);
+    pthread_cond_signal(&glMainCond);
+    pthread_join(glMainThread, NULL);
+    pthread_mutex_destroy(&glMainMutex);
+    pthread_cond_destroy(&glMainCond);
+    for (i = 0; i < MAX_RENDERERS; i++) {
+        pthread_mutex_destroy(&glMRDevices[i].Mutex);
+        pthread_cond_destroy(&glMRDevices[i].Cond);
+    }
+
+    free(glHostName);
+
+    if (glConfigID) {
+        ixmlDocument_free(glConfigID);
+    }
+
+#if WIN
+    winsock_close();
+#endif
+
+    return true;
+}
+
+static void sighandler(int signum) {
+    static bool quit = false;
+
+    // give it some time to terminate
+    if (quit) {
+        LOG_INFO("please wait for clean exit!", NULL);
+        return;
+    }
+
+    quit = true;
+
+    if (!glGracefulShutdown) {
         LOG_INFO("forced exit", NULL);
         exit(EXIT_SUCCESS);
     }
@@ -991,22 +851,21 @@ static void sighandler(int signum) {
 bool ParseArgs(int argc, char **argv) {
     char *optarg = NULL;
     int optind = 1;
-    int i;
+    int i = 1;
 
-#define MAXCMDLINE 256
-    char cmdline[MAXCMDLINE] = "";
+    char cmdline[256] = "";
 
-    for (i = 0; i < argc && (strlen(argv[i]) + strlen(cmdline) + 2 < MAXCMDLINE); i++) {
+    for (i = 0; i < argc && (strlen(argv[i]) + strlen(cmdline) + 2 < sizeof(cmdline)); i++) {
         strcat(cmdline, argv[i]);
         strcat(cmdline, " ");
     }
 
     while (optind < argc && strlen(argv[optind]) >= 2 && argv[optind][0] == '-') {
         char *opt = argv[optind] + 1;
-        if (strstr("stxdfpicb", opt) && optind < argc - 1) {
+        if (strstr("stxdfpicbM", opt) && optind < argc - 1) {
             optarg = argv[optind + 1];
             optind += 2;
-        } else if (strstr("tzZIk"
+        } else if (strstr("tzZIkr"
 #if defined(RESAMPLE)
                           "uR"
 #endif
@@ -1021,8 +880,14 @@ bool ParseArgs(int argc, char **argv) {
         }
 
         switch (opt[0]) {
+            case 'r':
+                glDeviceRegister = true;
+                break;
             case 's':
                 strcpy(glDeviceParam.server, optarg);
+                break;
+            case 'M':
+                strcpy(glModelName, optarg);
                 break;
             case 'b':
                 strcpy(glInterface, optarg);
@@ -1044,10 +909,11 @@ bool ParseArgs(int argc, char **argv) {
                 glLogFile = optarg;
                 break;
             case 'i':
-                glSaveConfigFile = optarg;
+                strcpy(glConfigFileName, optarg);
+                glDiscovery = true;
                 break;
-            case 'c':
-                strcpy(glHueCacheDir, optarg);
+            case 'x':
+                strcpy(glConfigFileName, optarg);
                 break;
             case 'I':
                 glAutoSaveConfigFile = true;
@@ -1059,14 +925,15 @@ bool ParseArgs(int argc, char **argv) {
                 glInteractive = false;
                 break;
             case 'k':
-                glGracefullShutdown = false;
+                glGracefulShutdown = false;
                 break;
 #if LINUX || FREEBSD || SUNOS
             case 'z':
                 glDaemonize = true;
                 break;
 #endif
-            case 'd': {
+            case 'd': 
+                {
                     char *l = strtok(optarg, "=");
                     char *v = strtok(NULL, "=");
                     log_level new = lWARN;
@@ -1076,22 +943,20 @@ bool ParseArgs(int argc, char **argv) {
                         if (!strcmp(v, "info"))   new = lINFO;
                         if (!strcmp(v, "debug"))  new = lDEBUG;
                         if (!strcmp(v, "sdebug")) new = lSDEBUG;
-                        if (!strcmp(l, "all") || !strcmp(l, "slimproto"))	slimproto_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "stream"))    	stream_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "decode"))    	decode_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "output"))    	output_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "main"))     	main_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "util"))    	util_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "virtual"))     virtual_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "hue"))         chue_loglevel = new;
-                        if (!strcmp(l, "all") || !strcmp(l, "slimmain"))    slimmain_loglevel = new;				}
+                        if (!strcmp(l, "all") || !strcmp(l, "huebridge")) huebridge_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "huebridge")) huestream_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "main")) main_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "slimmain")) slimmain_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "slimproto")) slimproto_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "util")) util_loglevel = new;
+                        if (!strcmp(l, "all") || !strcmp(l, "output")) output_loglevel = new;
+                    }
                     else {
                         printf("%s", usage);
-
                         return false;
                     }
                 }
-			    break;
+                break;
             case 't':
                 printf("%s", license);
 
@@ -1128,15 +993,24 @@ int main(int argc, char *argv[])
     // first try to find a config file on the command line
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-x")) {
-            strcpy(glConfigName, argv[i+1]);
+            strcpy(glConfigFileName, argv[i+1]);
         }
     }
 
     // load config from xml file
-    glConfigID = (void*) LoadConfig(glConfigName, &glHBConfig, &glDeviceParam);
+    glConfigID = (void*) LoadConfig(glConfigFileName, &glMRConfig, &glDeviceParam);
+
+    // do some parameter migration
+    if (!glMigration || glMigration == 1 || glMigration == 2) {
+        glMigration = 3;
+        if (!strcasestr(glDeviceParam.codecs, "ogg"))
+            strcat(glDeviceParam.codecs, ",ogg");
+        SaveConfig(glConfigFileName, glConfigID, CONFIG_MIGRATE);
+    }
 
     // potentially overwrite with some cmdline parameters
-    if (!ParseArgs(argc, argv)) exit(1);
+    if (!ParseArgs(argc, argv))
+        exit(1);
 
     if (glLogFile) {
         if (!freopen(glLogFile, "a", stderr)) {
@@ -1150,8 +1024,23 @@ int main(int argc, char *argv[])
         LOG_ERROR("\n\n!!!!!!!!!!!!!!!!!! ERROR LOADING CONFIG FILE !!!!!!!!!!!!!!!!!!!!!\n", NULL);
     }
 
+    if (glDiscovery) {
+        Start();
+        sleep(MDNS_DISCOVERY_TIME + 1);
+        Stop();
+        return(0);
+    }
+
+    if (glDeviceRegister) {
+        Start();
+        sleep(MDNS_DISCOVERY_TIME + HUE_APP_REGISTER_TIME + 1);
+        glMainRunning = false;
+        Stop();
+        return(0);
+    }
+
 #if LINUX || FREEBSD || SUNOS
-    if (glDaemonize && !glSaveConfigFile) {
+    if (glDaemonize) {
         if (daemon(1, glLogFile ? 1 : 0)) {
             fprintf(stderr, "error daemonizing: %s\n", strerror(errno));
         }
@@ -1170,19 +1059,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    sq_init();
+    sq_init(glModelName);
 
     if (!Start()) {
         LOG_ERROR("Cannot start", NULL);
         strcpy(resp, "exit");
     }
 
-    if (glSaveConfigFile) {
-        while (!glDiscovery) sleep(1);
-        SaveConfig(glSaveConfigFile, glConfigID, true);
-    }
-
-    while (strcmp(resp, "exit") && !glSaveConfigFile) {
+    while (strcmp(resp, "exit")) {
 
 #if LINUX || FREEBSD || SUNOS
         if (!glDaemonize && glInteractive)
@@ -1200,66 +1084,49 @@ int main(int argc, char *argv[])
 #endif
 #endif
 
-        if (!strcmp(resp, "streamdbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            stream_loglevel = debug2level(level);
-        }
+        SET_LOGLEVEL(decode)
+        SET_LOGLEVEL(huebridge)
+        SET_LOGLEVEL(hueprocess)
+        SET_LOGLEVEL(huestream)
+        SET_LOGLEVEL(main)
+        SET_LOGLEVEL(output)
+        SET_LOGLEVEL(slimmain)
+        SET_LOGLEVEL(slimproto)
+        SET_LOGLEVEL(stream)
+        SET_LOGLEVEL(util)
 
-        if (!strcmp(resp, "outputdbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            output_loglevel = debug2level(level);
-        }
-
-        if (!strcmp(resp, "decodedbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            decode_loglevel = debug2level(level);
-        }
-
-        if (!strcmp(resp, "slimprotodbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            slimproto_loglevel = debug2level(level);
-        }
-
-        if (!strcmp(resp, "maindbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            main_loglevel = debug2level(level);
-        }
-
-        if (!strcmp(resp, "slimmainqdbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            slimmain_loglevel = debug2level(level);
-        }
-
-        if (!strcmp(resp, "utildbg"))	{
-            char level[20];
-            i = scanf("%s", level);
-            util_loglevel = debug2level(level);
-        }
-        
-        if (!strcmp(resp, "huedbg"))    {
-            char level[20];
-            i = scanf("%s", level);
-            chue_loglevel = chue_log_debug2level(level);
-        }
-
-        if (!strcmp(resp, "save"))	{
+        if (!strcmp(resp, "save")) {
             char name[128];
             i = scanf("%s", name);
             SaveConfig(name, glConfigID, true);
         }
+
+        if (!strcmp(resp, "dump") || !strcmp(resp, "dumpall")) {
+            bool all = !strcmp(resp, "dumpall");
+
+            for (i = 0; i < MAX_RENDERERS; i++) {
+                struct sMR *p = &glMRDevices[i];
+                bool locked = pthread_mutex_trylock(&p->Mutex);
+
+                if (!locked)
+                    pthread_mutex_unlock(&p->Mutex);
+
+                if (!p->Running && !all)
+                    continue;
+
+                printf("%20.20s [r:%u] [l:%u] [sq:%u] [%s] [mw:%u] [%p::%p]\n",
+                       p->FriendlyName, p->Running, locked, p->sqState,
+                       inet_ntoa(p->IPAddress), p->MetadataWait,
+                       p, sq_get_ptr(p->SqueezeHandle));
+            }
+        }
+
     }
 
-    if (glConfigID) ixmlDocument_free(glConfigID);
     glMainRunning = false;
     LOG_INFO("stopping squeezelite devices ...", NULL);
     sq_end();
-    LOG_INFO("stopping Virtual devices ...", NULL);
+    LOG_INFO("stopping Hue Entertainment Bridge devices ...", NULL);
     Stop();
     LOG_INFO("all done", NULL);
 

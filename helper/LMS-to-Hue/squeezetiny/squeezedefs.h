@@ -1,9 +1,9 @@
-/* 
+/*
  *  Squeezelite - lightweight headless squeezebox emulator
  *
  *  (c) Adrian Smith 2012-2014, triode1@btinternet.com
  *  (c) Philippe, philippe_44@outlook.com for raop/multi-instance modifications
- *  
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -23,10 +23,22 @@
 #ifndef __SQUEEZEDEFS_H
 #define __SQUEEZEDEFS_H
 
-#define VERSION "v0.0.1.0.1"" ("__DATE__" @ "__TIME__")"
+#define VERSION "v0.4.53.1"" ("__DATE__" @ "__TIME__")"
 
 #include <pthread.h>
 #include "platform.h"
+
+#if defined(USE_SSL)
+#undef USE_SSL
+#define USE_SSL 1
+#else
+#define USE_SSL 0
+#endif
+
+#if defined(LOOPBACK)
+#undef LOOPBACK
+#define LOOPBACK 1
+#endif
 
 #define STREAM_THREAD_STACK_SIZE (1024 * 64)
 #define DECODE_THREAD_STACK_SIZE (1024 * 128)
@@ -45,7 +57,6 @@ int _mutex_timedlock(mutex_type *m, u32_t wait);
 
 #if LINUX || OSX || FREEBSD || SUNOS
 
-#define closesocket(s) close(s)
 #define last_error() errno
 #define ERROR_WOULDBLOCK EWOULDBLOCK
 #define mutex_create_p(m) pthread_mutexattr_t attr; pthread_mutexattr_init(&attr); pthread_mutexattr_setprotocol(&attr, PTHREAD_PRIO_INHERIT); pthread_mutex_init(&m, &attr); pthread_mutexattr_destroy(&attr)

@@ -22,82 +22,66 @@
 #ifndef __SQUEEZE2HUE_H
 #define __SQUEEZE2HUE_H
 
-#include <signal.h>
-#include <stdarg.h>
-#include <stdio.h>
-
-#include "upnp.h"
-#include "pthread.h"
-#include "squeezedefs.h"
+#include <stdbool.h>
 #include "squeezeitf.h"
+#include "mdnssd-itf.h"
+#include "hue_bridge.h"
+#include "hue_rest.h"
 #include "util.h"
-#include "virtual.h"
 
-#include "chue.h"
+#define MAX_RENDERERS 32
+#define SCAN_TIMEOUT  15
+#define SCAN_INTERVAL 30
 
-/*----------------------------------------------------------------------------*/
-/* typedefs */
-/*----------------------------------------------------------------------------*/
+enum {CONFIG_CREATE, CONFIG_UPDATE, CONFIG_MIGRATE};
 
-#define MAX_PROTO               128
-#define MAX_RENDERERS           32
-#define RESOURCE_LENGTH         250
-#define	SCAN_TIMEOUT            15
-#define SCAN_INTERVAL           30
-
-typedef struct sHueReq {
+typedef struct sHuebridgeReq {
     char Type[20];
     union {
-        u8_t Volume;
+        float Volume;
+        u64_t FlushTS;
     } Data;
-} tHueReq;
+} tHuebridgeReq;
 
-typedef struct sHBConfig {
+typedef struct sMRConfig {
     bool Enabled;
-    bool UserValid;
-    char Name[SQ_STR_LENGTH];
-    char UserName[SQ_STR_LENGTH];
-    int	RemoveCount;
-} tHBConfig;
+    int  RemoveTimeout;
+    bool AutoPlay;
+    char UserName[_STR_LEN_];
+    char ClientKey[_STR_LEN_];
+} tMRConfig;
 
-
-struct sHB {
-    bool InUse;
-    tHBConfig Config;
-    struct virtualcl_s *vPlayer;
-    sq_dev_param_t sq_config;
-    bool on;
-    chue_bridge_t    Hue;
-    bool UserValid;
-    char Manufacturer[RESOURCE_LENGTH];
-    char UDN[RESOURCE_LENGTH];
-    char FriendlyName[RESOURCE_LENGTH];
-    char PresURL[RESOURCE_LENGTH];
-    char DescDocURL[RESOURCE_LENGTH];
-    bool			TimeOut, Connected;
-    int	 			SqueezeHandle;
-    sq_action_t		sqState;
-    u8_t			Volume;
-    int				MissingCount;
-    bool			Running;
-    pthread_t		Thread;
-    pthread_mutex_t Mutex;
-    pthread_cond_t	Cond;
-    tQueue			Queue;
-    u32_t			TrackDuration;
-    bool			TrackRunning;
-    u8_t			MetadataWait;
-    u32_t			MetadataHash;
+struct sMR {
+    bool                   On;
+    bool                   Running;
+    int                    SqueezeHandle;
+    sq_dev_param_t         sq_config;
+    sq_action_t            sqState;
+    char                   UDN[_STR_LEN_];
+    char                   FriendlyName[_STR_LEN_];
+    pthread_t              Thread;
+    pthread_mutex_t        Mutex;
+    pthread_cond_t         Cond;
+    tMRConfig              Config;
+    u32_t                  Expired;
+    struct huebridgecl_s   *HueBridge;
+    struct in_addr         IPAddress;
+    char                   ModelId[_STR_LEN_];
+    char                   BridgeId[_STR_LEN_];
+    tQueue                 Queue;
+    bool                   TrackRunning;
+    u32_t                  TrackDuration;
+    u8_t                   MetadataWait;
+    u32_t                  MetadataHash;
+    u8_t                   Volume;
 };
 
 extern char glInterface[];
-extern s32_t glLogLimit;
-extern tHBConfig glHBConfig;
+extern tMRConfig glMRConfig;
+extern struct sMR glMRDevices[MAX_RENDERERS];
 extern sq_dev_param_t glDeviceParam;
-extern char glSQServer[SQ_STR_LENGTH];
 extern u32_t glScanInterval;
 extern u32_t glScanTimeout;
-extern struct sHB glHBDevices[MAX_RENDERERS];
+extern s32_t glLogLimit;
 
-
-#endif
+#endif /* __SQUEEZE2HUE_H */
