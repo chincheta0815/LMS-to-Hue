@@ -31,8 +31,6 @@
 #include "log_util.h"
 
 #include "hue_bridge.h"
-#include "hue_stream.h"
-#include "hue_analyze.h"
 
 #ifdef SEC
 #undef SEC
@@ -181,13 +179,6 @@ bool huebridge_accept_frames(struct huebridgecl_s *p) {
 
 /*----------------------------------------------------------------------------*/
 bool huebridge_process_chunk(struct huebridgecl_s *p, s16_t *sample, int frames, u64_t *playtime) {
-    int i;
-    s16_t channel_left[frames/2];
-    s16_t channel_right[frames/2];
-    audio_type_t audio_type;
-
-    p->flash_mode = 0;
-
     if (!p || !sample) {
         LOG_ERROR("[%p]: something went wrong (s:%p)", p, sample);
 
@@ -199,25 +190,8 @@ bool huebridge_process_chunk(struct huebridgecl_s *p, s16_t *sample, int frames,
     *playtime = TS2NTP(p->head_ts, 44100);
     p->head_ts += p->chunk_len;
 
-    //LOG_SDEBUG("[%p]: chunk_len %d, samples %d", p, p->chunk_len, frames);
-
-    audio_type = STEREO;
-    if (audio_type == MONO) {
-        for (i = 0; i < (frames / 2); i++) {
-            channel_left[i] = (sample[i] / 2) + (sample[i+1] / 2);
-            channel_right[i] = channel_left[i];
-            LOG_SDEBUG("[%p]: channel left (%d), channel right (%d)", p, channel_left[i], channel_right[i]);
-        }
-    }
-    else if (audio_type == STEREO) {
-        for (i = 0; i < (frames / 2); i++) {
-            channel_left[i] = sample[i];
-            channel_right[i] = sample[i+1];
-            LOG_SDEBUG("[%p]: channel left (%d), channel right (%d)", p, channel_left[i], channel_right[i]);
-        }
-    }
-
-    hue_analyze_audio(p, channel_left, channel_right);
+    hue_write_to_fft_input_buffers(frames, sample, p->hueaudio);
+    //hue_analyze_audio(p->hueaudio);
 
     pthread_mutex_unlock(&p->Mutex);
 
@@ -247,8 +221,8 @@ struct huebridgecl_s *huebridge_create(struct in_addr ipAddress, char *username,
     int hue_rest_loglevel;
     struct huebridgecl_s *huebridgecld;
 
-    if (chunk_len > MAX_SAMPLES_PER_CHUNK) {
-        LOG_ERROR("chunk length must be below %d", MAX_SAMPLES_PER_CHUNK);
+    if (chunk_len > MAX_FRAMES_PER_CHUNK) {
+        LOG_ERROR("chunk length must be below %d", MAX_FRAMES_PER_CHUNK);
         return NULL;
     }
 
@@ -257,15 +231,15 @@ struct huebridgecl_s *huebridge_create(struct in_addr ipAddress, char *username,
 
     hue_rest_loglevel = 0;
     if (*loglevel >= lDEBUG)
-        hue_rest_loglevel = MSG_DEBUG;
+        hue_rest_loglevel = HUE_MSG_DEBUG;
     if (*loglevel == lERROR)
-        hue_rest_loglevel = MSG_ERR;
+        hue_rest_loglevel = HUE_MSG_ERR;
     if (*loglevel == lWARN)
-        hue_rest_loglevel = MSG_INFO;
+        hue_rest_loglevel = HUE_MSG_INFO;
     if (*loglevel == lINFO)
-        hue_rest_loglevel = MSG_INFO;
+        hue_rest_loglevel = HUE_MSG_INFO;
     if (*loglevel == lSILENCE)
-        hue_rest_loglevel = MSG_OFF;
+        hue_rest_loglevel = HUE_MSG_OFF;
 
     if (hue_rest_init_ctx(&huebridgecld->hue_rest_ctx, huebridge_rest_callback, inet_ntoa(ipAddress), HUE_API_SSL_PORT, username, hue_rest_loglevel)) {
         LOG_ERROR("[%p]: failed to initialize hue rest context for bridge %s", huebridgecld, inet_ntoa(ipAddress));
@@ -287,8 +261,9 @@ struct huebridgecl_s *huebridge_create(struct in_addr ipAddress, char *username,
     pthread_mutex_init(&huebridgecld->Mutex, NULL);
 
     huebridgecld->chunk_len = chunk_len;
-
     huebridge_sanitize(huebridgecld);
+
+    huebridgecld->hueaudio = hue_audio_create();
 
     return huebridgecld;
 }
@@ -393,7 +368,7 @@ bool huebridge_connect(struct huebridgecl_s *p) {
     pthread_mutex_lock(&p->Mutex);
 
     if (p->ConnectionState == HUE_STREAM_DISCONNECTED) {
-        if(!hue_ent_stream_init(p)) {
+        if (!hue_ent_stream_init(p)) {
             pthread_mutex_unlock(&p->Mutex);
             return false;
         }

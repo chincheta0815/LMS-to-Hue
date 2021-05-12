@@ -1,4 +1,4 @@
-CFLAGS  ?= -g -O0 -Wall -Werror -fPIC $(OPTS) $(INCLUDE) $(DEFINES) -arch x86_64 -mmacosx-version-min=10.10
+CFLAGS  ?= -g -O0 -Wall -fPIC $(OPTS) $(INCLUDE) $(DEFINES) -arch x86_64 -mmacosx-version-min=10.10
 LDFLAGS ?= -lpthread -ldl -lm -lc++ -L. -arch x86_64 -mmacosx-version-min=10.10
 
 OBJ			= bin/osx

@@ -681,6 +681,8 @@ bool AddHueDevice(struct sMR *Device, mDNSservice_t *s) {
         }
     }
 
+    Device->HueBridge->flash_mode = HUE_COLOR_FREQ;
+
     pthread_mutex_init(&Device->Mutex, 0);
     QueueInit(&Device->Queue);
 

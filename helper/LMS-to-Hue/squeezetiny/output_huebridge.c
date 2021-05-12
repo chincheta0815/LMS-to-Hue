@@ -23,13 +23,13 @@
 #include "squeezelite.h"
 #include "hue_bridge.h"
 
-extern log_level	output_loglevel;
-static log_level 	*loglevel = &output_loglevel;
-
 #define LOCK   mutex_lock(ctx->outputbuf->mutex)
 #define UNLOCK mutex_unlock(ctx->outputbuf->mutex)
 #define LOCK_S   mutex_lock(ctx->streambuf->mutex)
 #define UNLOCK_S mutex_unlock(ctx->streambuf->mutex)
+
+extern log_level    huebridge_loglevel;
+static log_level    *loglevel = &huebridge_loglevel;
 
 /*---------------------------------------------------------------------------*/
 void wake_output(struct thread_ctx_s *ctx) {
@@ -70,6 +70,7 @@ void output_close(struct thread_ctx_s *ctx) {
 
 /*---------------------------------------------------------------------------*/
 static void *output_huebridge_thread(struct thread_ctx_s *ctx) {
+
     while (ctx->output_running) {
         bool ran = false;
 
@@ -78,7 +79,7 @@ static void *output_huebridge_thread(struct thread_ctx_s *ctx) {
             u64_t playtime;
 
             LOCK;
-            // this will internally loop till we have exactly 2048 frames
+            // this will internally loop till we have exactly 4096 frames
             _output_frames(FRAMES_PER_BLOCK, ctx);
             UNLOCK;
 

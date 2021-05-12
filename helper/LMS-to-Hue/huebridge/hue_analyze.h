@@ -1,51 +1,87 @@
-#ifndef __HUE_ANALYZE_H_
-#define __HUE_ANALYZE_H_
+#ifndef __HUE_AUDIO_H_
+#define __HUE_AUDIO_H_
+
+#include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "platform.h"
 #include "fftw3.h"
 
-#ifndef MAX_SAMPLES_PER_CHUNK
-#define MAX_SAMPLES_PER_CHUNK 4096
-#endif
-
-typedef enum {
-                MONO   = 1,
-                STEREO = 2
-} audio_type_t;
-
-typedef enum {
-        HUE_LIGHT_FREQ,
-        HUE_COLOR_FREQ
-} flash_mode_t;
-
 struct huebridgecl_s;
 
-struct hue_analyze_ctx {
-        int bars;
-        double g;
-        int height;
-        int silence;
-        int sleep;
-        flash_mode_t mode;
-        unsigned f[200];
-        int *fl;
-        int flast[200];
-        int fall[200];
-        int fpeak[200];
-        float k[200];
-        float fc[200];
-        float fre[200];
-        int lcf[200];
-        int hcf[200];
-        double smh;
-        double inl[2 * (MAX_SAMPLES_PER_CHUNK / 2 + 1)];
-        fftw_complex outl[2 * (MAX_SAMPLES_PER_CHUNK / 2 + 1)];
-        double sense;
-        bool senselow;
-        fftw_plan pl;
-        int fmem[200];
-};
+typedef enum {
+    MONO,
+    STEREO
+} channels_t; 
 
-bool hue_analyze_audio(struct huebridgecl_s *p, s16_t channel_left[MAX_SAMPLES_PER_CHUNK/2], s16_t channel_right[MAX_SAMPLES_PER_CHUNK/2]);
+typedef enum {
+    AVERAGE,
+    LEFT,
+    RIGHT
+} mono_option_t;
 
-#endif /* __HUE_ANALYZE_H_ */
+typedef struct hueaudio_s {
+    channels_t channels;
+    mono_option_t mono_option;
+    int bass_cut_off;
+    int treble_cut_off;
+    int lower_cut_off;
+    int upper_cut_off;
+
+    int height;
+    int sampling_rate;
+
+    int sense;
+    double ignore;
+
+    bool autosense;
+    bool senselow;
+
+    int waves;
+    double monstercat;
+
+    double gravity;
+    double integral;
+
+    int number_of_bars;
+
+    int *brightness;
+
+    bool first;
+
+    int FFTbassbufferSize;
+    int FFTmidbufferSize;
+    int FFTtreblebufferSize;
+    double *bass_multiplier;
+    double *mid_multiplier;
+    double *treble_multiplier;
+    double *in_bass_r_raw, *in_bass_l_raw;
+    double *in_mid_r_raw, *in_mid_l_raw;
+    double *in_treble_r_raw, *in_treble_l_raw;
+    double *in_bass_r, *in_bass_l;
+    double *in_mid_r, *in_mid_l;
+    double *in_treble_r, *in_treble_l;
+    fftw_complex *out_bass_l, *out_bass_r;
+    fftw_plan p_bass_l, p_bass_r;
+    fftw_complex *out_mid_l, *out_mid_r;
+    fftw_plan p_mid_l, p_mid_r;
+    fftw_complex *out_treble_l, *out_treble_r;
+    fftw_plan p_treble_l, p_treble_r;
+} hueaudio_data_t;
+
+struct hueaudio_s *hue_audio_create(void);
+bool hue_audio_destroy(struct hueaudio_s *p);
+
+void hue_set_fft_buffers_to_zero(struct hueaudio_s *p);
+bool hue_write_to_fft_input_buffers(s16_t frames, s16_t buf[frames * 2], struct hueaudio_s *p);
+bool hue_analyze_audio(struct hueaudio_s *p);
+
+#endif /* __HUE_AUDIO_H_ */

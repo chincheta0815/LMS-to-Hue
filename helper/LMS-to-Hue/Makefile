@@ -57,7 +57,7 @@ INCLUDE = -I$(SQUEEZETINY) \
 
 DEPS	= $(SQUEEZETINY)/squeezedefs.h
 		  
-SOURCES = conf_util.c hue_bridge.c hue_stream.c hue_analyze.c \
+SOURCES = conf_util.c hue_bridge.c hue_analyze.c hue_stream.c \
           log_util.c mdnssd-min.c squeeze2hue.c util.c \
           buffer.c decode.c main.c output.c output_huebridge.c output_pack.c \
           pcm.c process.c resample.c slimproto.c stream.c utils.c util_common.c

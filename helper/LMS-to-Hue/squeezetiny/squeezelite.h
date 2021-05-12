@@ -466,7 +466,7 @@ frames_t _output_frames(frames_t avail, struct thread_ctx_s *ctx);
 void _checkfade(bool, struct thread_ctx_s *ctx);
 void wake_output(struct thread_ctx_s *ctx);
 
-// output_raop.c
+// output_huebridge.c
 void output_init_common(void *device, unsigned output_buf_size, u32_t sample_rate, struct thread_ctx_s *ctx);
 bool output_huebridge_thread_init(struct huebridgecl_s *huebridgecl, unsigned output_buf_size, struct thread_ctx_s *ctx);
 void output_close_common(struct thread_ctx_s *ctx);
@@ -476,15 +476,6 @@ void _scale_and_pack_frames(void *outputptr, s32_t *inputptr, frames_t cnt, s32_
 void _apply_cross(struct buffer *outputbuf, frames_t out_frames, s32_t cross_gain_in, s32_t cross_gain_out, s32_t **cross_ptr);
 s32_t gain(s32_t gain, s32_t value);
 s32_t to_gain(float f);
-
-// dop.c
-#if DSD
-bool is_flac_dop(u32_t *lptr, u32_t *rptr, frames_t frames);
-void update_dop_marker(u32_t *ptr, frames_t frames);
-void dop_silence_frames(u32_t *ptr, frames_t frames);
-void dop_init(bool enable, unsigned delay);
-#endif
-
 
 /***************** main thread context**************/
 typedef struct {

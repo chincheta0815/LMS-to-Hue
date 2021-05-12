@@ -22,20 +22,22 @@
 #ifndef __HUE_BRIDGE_H_
 #define __HUE_BRIDGE_H_
 
+#include "curses.h"
+
 #include "platform.h"
 #include "hue_rest.h"
 #include "hue_entertainment.h"
-#include "dtls.h"
-
+#include "hue_dtls.h"
 #include "hue_analyze.h"
+#include "hue_stream.h"
 
 #define HUE_API_SSL_PORT  443
 #define HUE_API_DTLS_PORT 2100
 #define HUE_APP_REGISTER_TIME 30
 
-#define HUE_ENTERTAINMENT_FRAMERATE 50
+#define HUE_ENTERTAINMENT_FRAMERATE 30
 
-#define MAX_SAMPLES_PER_CHUNK 4096
+#define MAX_FRAMES_PER_CHUNK 1024
 
 #define NTP2MS(ntp) ((((ntp) >> 10) * 1000L) >> 22)
 #define MS2NTP(ms) (((((u64_t) (ms)) << 22) / 1000) << 10)
@@ -52,6 +54,11 @@ typedef enum huebridge_states_s {
         HUE_STREAM_ACTIVE = 3
 } huebridge_state_t;
 
+typedef enum huebridge_flash_mode_s {
+        HUE_LIGHT_FREQ,
+        HUE_COLOR_FREQ        
+} huebridge_flash_mode_t;
+
 typedef struct huebridgecl_s {
     huebridge_state_t ConnectionState;
     huebridge_state_t StreamState;
@@ -63,11 +70,11 @@ typedef struct huebridgecl_s {
     int light_count;
     pthread_t stream_thread;
     bool stream_thread_running;
-    flash_mode_t flash_mode;
+    huebridge_flash_mode_t flash_mode;
     struct hue_rest_ctx hue_rest_ctx;
     struct hue_ent_ctx hue_ent_ctx;
-    struct dtls_ctx hue_dtls_ctx;
-    struct hue_analyze_ctx hue_analyze_ctx;
+    struct hue_dtls_ctx hue_dtls_ctx;
+    struct hueaudio_s *hueaudio;
 } huebridgecl_data_t;
 
 struct  huebridgecl_s *huebridge_create(struct in_addr ipAddress, char *username, char *clientkey, int chunk_len);
